@@ -1,0 +1,6 @@
+{
+  "name": "AEGORA",
+  "description": "The World's Cybersecurity Learning, Practice, Intelligence & Career Ecosystem. Learn, practice, prove, and master cybersecurity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
