@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -41,8 +42,8 @@ fun AegoraBottomNav(
     modifier = modifier
       .fillMaxWidth()
       .windowInsetsPadding(WindowInsets.navigationBars),
-    color = CyberSurfaceVariant,
-    tonalElevation = 2.dp,
+    color = CyberSurface,
+    tonalElevation = 4.dp,
     border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorder)
   ) {
     Row(
@@ -55,7 +56,7 @@ fun AegoraBottomNav(
       AegoraNavTab.entries.forEach { tab ->
         val isSelected = tab == currentTab
         val iconColor by animateColorAsState(
-          targetValue = if (isSelected) VibrantPurpleOnContainer else TextSecondaryDark,
+          targetValue = if (isSelected) CyberCyan else TextSecondaryDark,
           label = "nav_icon_color"
         )
 
@@ -72,7 +73,12 @@ fun AegoraBottomNav(
               .height(32.dp)
               .width(52.dp)
               .clip(RoundedCornerShape(16.dp))
-              .background(if (isSelected) VibrantNavPill else Color.Transparent),
+              .background(if (isSelected) CyberCyan.copy(alpha = 0.18f) else Color.Transparent)
+              .border(
+                1.dp,
+                if (isSelected) CyberCyan.copy(alpha = 0.5f) else Color.Transparent,
+                RoundedCornerShape(16.dp)
+              ),
             contentAlignment = Alignment.Center
           ) {
             Icon(
@@ -91,7 +97,7 @@ fun AegoraBottomNav(
               fontSize = 10.sp,
               fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
             ),
-            color = if (isSelected) TextPrimaryDark else TextSecondaryDark
+            color = if (isSelected) CyberCyan else TextSecondaryDark
           )
         }
       }

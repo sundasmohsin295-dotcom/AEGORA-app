@@ -2,57 +2,57 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Vibrant Palette - Base Surfaces
-val CyberBackground = Color(0xFFFEF7FF)
-val CyberSurface = Color(0xFFFFFFFF)
-val CyberSurfaceVariant = Color(0xFFF3EDF7)
-val CyberSurfaceElevated = Color(0xFFEADDFF)
-val CyberBorder = Color(0xFFE0D8E8)
-val CyberBorderSubtle = Color(0xFFECE6F0)
+// Pure OLED & Deep Slate Cyber Canvas
+val CyberBackground = Color(0xFF000000)          // Pure OLED Black
+val CyberSurface = Color(0xFF0D0D12)             // Deep Cyber Glass Surface (Dark Slate)
+val CyberSurfaceVariant = Color(0xFF13131A)      // Elevated Dark Panel
+val CyberSurfaceElevated = Color(0xFF1A1A24)     // High-Elevation Glass Panel
+val CyberBorder = Color(0xFF272738)              // Subtle Cyber Border
+val CyberBorderSubtle = Color(0xFF1E1E2E)        // Low-opacity Grid & Outlines
 
-// Vibrant Brand Primary & Accents
-val CyberCyan = Color(0xFF6750A4)       // Vibrant Purple (Primary Theme Accent)
-val CyberCyanDark = Color(0xFF4F378B)
-val CyberBlue = Color(0xFF006399)       // Vibrant Deep Ocean Blue
-val CyberIndigo = Color(0xFF6750A4)     // Rich Purple
-val CyberViolet = Color(0xFF7F56D9)     // Royal Violet
+// Ultra-Vibrant Cyberpunk Neon Accents
+val CyberCyan = Color(0xFF00F0FF)               // High-Saturation Electric Cyan
+val CyberCyanDark = Color(0xFF00A3AD)
+val CyberBlue = Color(0xFF0099FF)               // Vivid Laser Blue
+val CyberIndigo = Color(0xFF6366F1)             // Electric Indigo
+val CyberViolet = Color(0xFF8B5CF6)             // Neon Violet
+val CyberMagenta = Color(0xFFFF007F)            // Vivid Neon Magenta / Pink
+val CyberEmerald = Color(0xFF00FF66)            // Terminal Matrix Green / Success
+val CyberGreen = Color(0xFF00FF41)              // Pure Terminal Green
+val CyberAmber = Color(0xFFFFB800)              // High-Voltage Amber
+val CyberCrimson = Color(0xFFFF003C)            // Cyber Threat Crimson / Red Alert
+val CyberRed = Color(0xFFFF1E44)
+val CyberGold = Color(0xFFFFD700)               // Overclock Gold
 
-// Semantic Status & Vibrant Alert Colors
-val CyberEmerald = Color(0xFF00875A)    // Vibrant Emerald / Success
-val CyberAmber = Color(0xFFD97706)      // Vibrant Warm Amber / Warning
-val CyberCrimson = Color(0xFFB3261E)    // Vibrant Coral Crimson / Critical
-val CyberRed = Color(0xFFB3261E)        // Vibrant Red / Alert
-val CyberGold = Color(0xFFE6A700)       // Milestone Gold
-val CyberMagenta = Color(0xFF9C27B0)    // Vibrant Magenta / Genome
+// Dark Glassmorphic Pill & Container Accents
+val VibrantPinkContainer = Color(0xFF2E0018)
+val VibrantPinkOnContainer = Color(0xFFFF80BF)
+val VibrantPurpleContainer = Color(0xFF1A102E)
+val VibrantPurpleOnContainer = Color(0xFFD8B4FE)
+val VibrantBlueContainer = Color(0xFF081E36)
+val VibrantBlueOnContainer = Color(0xFF7DD3FC)
+val VibrantMintContainer = Color(0xFF042416)
+val VibrantMintOnContainer = Color(0xFF86EFAC)
+val VibrantEmeraldContainer = Color(0xFF042416)
+val VibrantEmeraldOnContainer = Color(0xFF86EFAC)
+val VibrantAmberContainer = Color(0xFF2A1C00)
+val VibrantAmberOnContainer = Color(0xFFFDE047)
+val VibrantNavPill = Color(0xFF1E1E2E)
 
-// High-Contrast Vibrant Card & Container Tones
-val VibrantPinkContainer = Color(0xFFFFD8E4)
-val VibrantPinkOnContainer = Color(0xFF31111D)
-val VibrantPurpleContainer = Color(0xFFEADDFF)
-val VibrantPurpleOnContainer = Color(0xFF21005D)
-val VibrantBlueContainer = Color(0xFFC2E7FF)
-val VibrantBlueOnContainer = Color(0xFF001D35)
-val VibrantMintContainer = Color(0xFFC7F3DC)
-val VibrantMintOnContainer = Color(0xFF00391C)
-val VibrantEmeraldContainer = Color(0xFFC7F3DC)
-val VibrantEmeraldOnContainer = Color(0xFF00391C)
-val VibrantAmberContainer = Color(0xFFFFE088)
-val VibrantAmberOnContainer = Color(0xFF3E2E00)
-val VibrantNavPill = Color(0xFFE8DEF8)
+// High-Contrast Cyber Typography
+val TextPrimaryDark = Color(0xFFFFFFFF)          // Stark White
+val TextSecondaryDark = Color(0xFFA1A1AA)        // Muted Silver
+val TextTertiaryDark = Color(0xFF71717A)         // Dim Slate
+val CodeBackground = Color(0xFF050508)           // Pitch Black Terminal
+val CodeGreen = Color(0xFF00FF41)                // Matrix Terminal Green
+val CodeAmber = Color(0xFFFFB800)
 
-// Text Tones
-val TextPrimaryDark = Color(0xFF1D1B20)
-val TextSecondaryDark = Color(0xFF49454F)
-val TextTertiaryDark = Color(0xFF79747E)
-val CodeBackground = Color(0xFF211F26)
-val CodeGreen = Color(0xFF4ADE80)
-
-// Light Theme Alternates (Aligned)
-val CyberBackgroundLight = Color(0xFFFEF7FF)
-val CyberSurfaceLight = Color(0xFFFFFFFF)
-val CyberSurfaceVariantLight = Color(0xFFF3EDF7)
-val CyberBorderLight = Color(0xFFE0D8E8)
-val TextPrimaryLight = Color(0xFF1D1B20)
-val TextSecondaryLight = Color(0xFF49454F)
-val TextTertiaryLight = Color(0xFF79747E)
+// Light Theme Alternates (Aligned for compatibility)
+val CyberBackgroundLight = CyberBackground
+val CyberSurfaceLight = CyberSurface
+val CyberSurfaceVariantLight = CyberSurfaceVariant
+val CyberBorderLight = CyberBorder
+val TextPrimaryLight = TextPrimaryDark
+val TextSecondaryLight = TextSecondaryDark
+val TextTertiaryLight = TextTertiaryDark
 

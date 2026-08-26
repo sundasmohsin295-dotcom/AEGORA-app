@@ -26,9 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AegoraRepository
 import com.example.model.*
-import com.example.ui.components.CyberCard
-import com.example.ui.components.CyberSectionHeader
-import com.example.ui.components.SkillProgressBar
+import com.example.ui.components.*
 import com.example.ui.theme.*
 
 enum class LabViewTab {
@@ -80,56 +78,73 @@ fun LabSimulatorScreen(
   var showCounterfactuals by remember { mutableStateOf(false) }
   var flagInput by remember { mutableStateOf("") }
   var flagFeedback by remember { mutableStateOf<String?>(null) }
+  var showLabRewardDialog by remember { mutableStateOf(false) }
+  var labRewardPayload by remember { mutableStateOf<DecryptedReward?>(null) }
+
+  if (showLabRewardDialog && labRewardPayload != null) {
+    DecryptingCacheDialog(
+      onDismiss = { showLabRewardDialog = false },
+      reward = labRewardPayload!!
+    )
+  }
 
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
       .background(CyberBackground)
+      .cyberGridBackground()
       .padding(horizontal = 16.dp),
     contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
     // 1. Header
     item {
-      CyberCard(
-        borderColor = CyberCyan.copy(alpha = 0.5f),
-        backgroundColor = CyberSurface
+      Surface(
+        shape = ChamferedCutCornerShape,
+        color = CyberSurface,
+        border = androidx.compose.foundation.BorderStroke(1.2.dp, CyberCyan.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
       ) {
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Column(modifier = Modifier.weight(1f)) {
-            Text(
-              text = "LAYER 3 • ADAPTIVE SIMULATION & COGNITIVE LABS",
-              style = MaterialTheme.typography.labelSmall,
-              color = CyberCyan
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-              text = "Aegora Cyber Simulation Suite",
-              style = MaterialTheme.typography.headlineLarge,
-              color = TextPrimaryDark
-            )
-          }
-          Box(
-            modifier = Modifier
-              .size(40.dp)
-              .clip(CircleShape)
-              .background(CyberCyan.copy(alpha = 0.15f))
-              .border(1.dp, CyberCyan, CircleShape),
-            contentAlignment = Alignment.Center
+        Column(modifier = Modifier.padding(18.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
           ) {
-            Icon(Icons.Default.Terminal, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(20.dp))
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = "LAYER 3 • ADAPTIVE SIMULATION & COGNITIVE LABS",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold
+                ),
+                color = CyberCyan
+              )
+              Spacer(modifier = Modifier.height(2.dp))
+              Text(
+                text = "Aegora Cyber Simulation Suite",
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
+                color = TextPrimaryDark
+              )
+            }
+            Box(
+              modifier = Modifier
+                .size(44.dp)
+                .clip(HexagonShape)
+                .background(CyberCyan.copy(alpha = 0.15f))
+                .border(1.2.dp, CyberCyan, HexagonShape),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(Icons.Default.Terminal, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(22.dp))
+            }
           }
+          Spacer(modifier = Modifier.height(6.dp))
+          Text(
+            text = "Capture the sequence of your reasoning, dissect analytical mistakes, and train in high-noise alert fatigue and uncertainty environments.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextSecondaryDark
+          )
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-          text = "Capture the sequence of your reasoning, dissect analytical mistakes, and train in high-noise alert fatigue and uncertainty environments.",
-          style = MaterialTheme.typography.bodyMedium,
-          color = TextSecondaryDark
-        )
       }
     }
 
@@ -316,8 +331,9 @@ fun LabSimulatorScreen(
           Spacer(modifier = Modifier.height(12.dp))
 
           if (!isContained) {
-            Button(
-              onClick = {
+            HoldToHackButton(
+              text = "HOLD TO EXECUTE CONTAINMENT",
+              onComplete = {
                 if (selectedContainmentIndex != null) {
                   isContained = true
                   AegoraRepository.logReasoningStep(
@@ -330,15 +346,22 @@ fun LabSimulatorScreen(
                       isOptimalStep = selectedContainmentIndex == simulation.correctContainmentIndex
                     )
                   )
+                  if (selectedContainmentIndex == simulation.correctContainmentIndex) {
+                    labRewardPayload = DecryptedReward(
+                      xpMultiplier = "2.8x ACCURACY BONUS",
+                      bonusXp = 350,
+                      rareBadgeName = "Incident Commander: Zero Spreading",
+                      rareBadgeIcon = Icons.Default.Shield,
+                      loreFragment = "NIST SP 800-61 Rev 2 Containment Protocol verified. C2 ingress completely severed within SLA."
+                    )
+                    showLabRewardDialog = true
+                  }
                 }
               },
-              enabled = selectedContainmentIndex != null,
-              colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-              shape = RoundedCornerShape(8.dp),
+              primaryColor = CyberCyan,
+              activeColor = CyberEmerald,
               modifier = Modifier.fillMaxWidth()
-            ) {
-              Text("Execute Containment Action", color = CyberBackground, fontWeight = FontWeight.Bold)
-            }
+            )
           } else {
             Surface(
               shape = RoundedCornerShape(8.dp),
@@ -1163,32 +1186,39 @@ fun LabSimulatorScreen(
           Spacer(modifier = Modifier.height(10.dp))
 
           if (!ctf.isSolved) {
-            Row(
+            Column(
               modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(8.dp)
+              verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
               OutlinedTextField(
                 value = flagInput,
                 onValueChange = { flagInput = it },
                 label = { Text("Enter Flag (aegora{...})", color = TextSecondaryDark, fontSize = 12.sp) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 singleLine = true
               )
-              Button(
-                onClick = {
+              HoldToHackButton(
+                text = "HOLD TO SUBMIT FLAG",
+                onComplete = {
                   if (flagInput.trim().equals(ctf.flag, ignoreCase = true)) {
-                    flagFeedback = "✓ Correct Flag Captured!"
+                    flagFeedback = "✓ Correct Flag Captured! Decrypting Rewards..."
                     flagInput = ""
+                    labRewardPayload = DecryptedReward(
+                      xpMultiplier = "4.0x CTF VICTORY",
+                      bonusXp = ctf.points * 2,
+                      rareBadgeName = "CTF Breaker: ${ctf.title}",
+                      rareBadgeIcon = Icons.Default.EmojiEvents,
+                      loreFragment = "FLAG DECRYPTED: ${ctf.flag} -> Exploit payload neutralized and forensic artifact recorded in your portfolio."
+                    )
+                    showLabRewardDialog = true
                   } else {
-                    flagFeedback = "✗ Invalid Flag. Keep hunting."
+                    flagFeedback = "✗ Invalid Flag. Keep hunting or inspect memory logs."
                   }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.align(Alignment.CenterVertically)
-              ) {
-                Text("Submit", color = CyberBackground, fontWeight = FontWeight.Bold)
-              }
+                primaryColor = CyberGold,
+                activeColor = CyberEmerald,
+                modifier = Modifier.fillMaxWidth()
+              )
             }
             if (flagFeedback != null) {
               Spacer(modifier = Modifier.height(4.dp))

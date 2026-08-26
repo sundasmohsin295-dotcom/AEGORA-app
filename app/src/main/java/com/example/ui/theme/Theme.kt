@@ -1,22 +1,20 @@
 package com.example.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val VibrantColorScheme = lightColorScheme(
+private val TrueCyberDarkColorScheme = darkColorScheme(
   primary = CyberCyan,
-  onPrimary = CyberSurface,
+  onPrimary = CyberBackground,
   primaryContainer = VibrantPurpleContainer,
   onPrimaryContainer = VibrantPurpleOnContainer,
   secondary = CyberBlue,
-  onSecondary = CyberSurface,
+  onSecondary = CyberBackground,
   secondaryContainer = VibrantBlueContainer,
   onSecondaryContainer = VibrantBlueOnContainer,
   tertiary = CyberViolet,
-  onTertiary = CyberSurface,
+  onTertiary = CyberBackground,
   tertiaryContainer = VibrantPinkContainer,
   onTertiaryContainer = VibrantPinkOnContainer,
   background = CyberBackground,
@@ -28,18 +26,19 @@ private val VibrantColorScheme = lightColorScheme(
   outline = CyberBorder,
   outlineVariant = CyberBorderSubtle,
   error = CyberCrimson,
-  onError = CyberSurface
+  onError = TextPrimaryDark
 )
 
 @Composable
 fun AegoraTheme(
-  darkTheme: Boolean = false,
+  darkTheme: Boolean = true,
   content: @Composable () -> Unit
 ) {
   MaterialTheme(
-    colorScheme = VibrantColorScheme,
+    colorScheme = TrueCyberDarkColorScheme,
     typography = Typography,
     content = content
   )
 }
+
 

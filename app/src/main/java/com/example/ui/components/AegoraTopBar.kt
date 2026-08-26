@@ -57,14 +57,18 @@ fun AegoraTopBar(
         Box(
           modifier = Modifier
             .size(42.dp)
-            .clip(CircleShape)
-            .background(VibrantPurpleContainer),
+            .clip(HexagonShape)
+            .background(CyberCyan.copy(alpha = 0.15f))
+            .border(1.2.dp, CyberCyan, HexagonShape),
           contentAlignment = Alignment.Center
         ) {
           Text(
             text = userProfile.callsign.take(1).uppercase(),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = VibrantPurpleOnContainer
+            style = MaterialTheme.typography.titleMedium.copy(
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace
+            ),
+            color = CyberCyan
           )
         }
 
@@ -89,6 +93,7 @@ fun AegoraTopBar(
             Text(
               text = "AEGORA ONLINE",
               style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.5.sp
               ),
@@ -106,8 +111,8 @@ fun AegoraTopBar(
         // Streak Chip
         Surface(
           shape = RoundedCornerShape(16.dp),
-          color = VibrantAmberContainer,
-          border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorderSubtle)
+          color = CyberSurfaceElevated,
+          border = androidx.compose.foundation.BorderStroke(1.dp, CyberAmber.copy(alpha = 0.5f))
         ) {
           Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -116,14 +121,17 @@ fun AegoraTopBar(
             Icon(
               imageVector = Icons.Default.LocalFireDepartment,
               contentDescription = "Streak",
-              tint = VibrantAmberOnContainer,
+              tint = CyberAmber,
               modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(
               text = "${userProfile.currentStreak}d",
-              style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-              color = VibrantAmberOnContainer
+              style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace
+              ),
+              color = CyberAmber
             )
           }
         }
@@ -131,8 +139,8 @@ fun AegoraTopBar(
         // XP Chip
         Surface(
           shape = RoundedCornerShape(16.dp),
-          color = VibrantBlueContainer,
-          border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorderSubtle)
+          color = CyberSurfaceElevated,
+          border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.5f))
         ) {
           Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -141,14 +149,17 @@ fun AegoraTopBar(
             Icon(
               imageVector = Icons.Default.Bolt,
               contentDescription = "XP",
-              tint = VibrantBlueOnContainer,
+              tint = CyberCyan,
               modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(
               text = "${userProfile.xp}",
-              style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-              color = VibrantBlueOnContainer
+              style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace
+              ),
+              color = CyberCyan
             )
           }
         }
