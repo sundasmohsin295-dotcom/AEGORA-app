@@ -1433,12 +1433,55 @@ echo "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbg
   )
   val activeReasoningGraph: StateFlow<ReasoningGraph> = _activeReasoningGraph.asStateFlow()
 
+  fun updateUserRole(newRole: UserRole) {
+    val current = _userProfile.value
+    _userProfile.value = current.copy(role = newRole)
+  }
+
   fun logReasoningStep(step: ReasoningGraphStep) {
     val current = _activeReasoningGraph.value
     _activeReasoningGraph.value = current.copy(
       steps = current.steps + step,
       totalInvestigationSeconds = current.totalInvestigationSeconds + step.timeOffsetSeconds
     )
+  }
+
+  fun recordInvestigationAction(stepLabel: String, nodeType: String, description: String, isOptimal: Boolean = true) {
+    val current = _activeReasoningGraph.value
+    val newStep = ReasoningGraphStep(
+      stepId = "s_${UUID.randomUUID().toString().take(6)}",
+      nodeLabel = stepLabel,
+      nodeType = nodeType,
+      actionDescription = description,
+      timeOffsetSeconds = 15,
+      isOptimalStep = isOptimal
+    )
+    _activeReasoningGraph.value = current.copy(
+      steps = current.steps + newStep,
+      totalInvestigationSeconds = current.totalInvestigationSeconds + 15
+    )
+  }
+
+  fun recordMistake(patternName: String, category: String, description: String, diagnosedIncident: String) {
+    val current = _mistakeDnaRecords.value
+    val existing = current.find { it.patternName.equals(patternName, ignoreCase = true) }
+    if (existing != null) {
+      _mistakeDnaRecords.value = current.map {
+        if (it.id == existing.id) it.copy(occurrences = it.occurrences + 1) else it
+      }
+    } else {
+      val newRecord = MistakeDnaRecord(
+        id = "dna_${UUID.randomUUID().toString().take(6)}",
+        patternName = patternName,
+        category = category,
+        occurrences = 1,
+        severity = "Moderate",
+        description = description,
+        diagnosedIncident = diagnosedIncident,
+        correctiveRemediation = "Review related SOC incident scenario"
+      )
+      _mistakeDnaRecords.value = current + newRecord
+    }
   }
 
   // 3. Mistake DNA & Cognitive Bias Passport
@@ -2670,4 +2713,595 @@ echo "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbg
       mitreMapping = "MITRE ATT&CK for Cloud"
     )
   )
+
+  // ==========================================
+  // 19. AUTONOMOUS ADVERSARY "SHADOW AGENT" ENGINE
+  // ==========================================
+  private val _shadowState = MutableStateFlow(
+    ShadowAdversaryState(
+      scenarioId = "scen_shadow_zero_day_01",
+      threatActorName = "APT-29 (Cosmic Lynx Swarm)",
+      currentPhase = AdversaryMutationPhase.INITIAL_RECON,
+      compromiseLevelPercent = 38,
+      activeAdversaryIp = "185.220.101.5",
+      targetedHost = "PROD-DC01.corp.aegora.internal",
+      mutationHistory = listOf(
+        "Adversary initiated TCP SYN Port Sweep on port 445 (SMB) & 88 (Kerberos)",
+        "Adversary attempted Spray against Service Accounts (srv_backup, srv_sql)"
+      ),
+      telemetryStream = listOf(
+        "[SYSMON-1] Process creation: whoami.exe /all (PID: 4921) on PROD-DC01",
+        "[ZEEK-DNS] High entropy query: 4a8f9c.tunnel.c2.aegora.io TXT record",
+        "[AUTH-4625] Anomaly: 48 failed logon attempts for administrator in 12s",
+        "[EDR-ALERT] Memory injection attempt detected in lsass.exe process space"
+      ),
+      tactics = listOf(
+        MitreTacticStep("TA0001", "Initial Access", "T1078", "Valid Accounts Spray", isCurrentActive = false, isMitigated = true),
+        MitreTacticStep("TA0002", "Execution", "T1059.001", "PowerShell Encoded Script", isCurrentActive = true, isMitigated = false),
+        MitreTacticStep("TA0003", "Persistence", "T1053.005", "Scheduled Task / WMI", isCurrentActive = false, isMitigated = false),
+        MitreTacticStep("TA0004", "Privilege Escalation", "T1068", "Exploitation for Privilege", isCurrentActive = false, isMitigated = false),
+        MitreTacticStep("TA0005", "Defense Evasion", "T1574.002", "DLL Side-Loading", isCurrentActive = false, isMitigated = false),
+        MitreTacticStep("TA0008", "Lateral Movement", "T1021.002", "SMB/Windows Admin Shares", isCurrentActive = false, isMitigated = false),
+        MitreTacticStep("TA0010", "Exfiltration", "T1048.003", "Exfiltration Over DNS Tunnel", isCurrentActive = false, isMitigated = false)
+      ),
+      deployedCanaries = listOf(
+        DeceptionCanaryToken(
+          id = "canary_aws_01",
+          name = "AWS_SECRET_ACCESS_KEY Canary Token",
+          type = "AWS IAM Secret",
+          deployedHost = "PROD-DC01",
+          isTripped = true,
+          tripTimestamp = "2 mins ago",
+          adversaryIp = "185.220.101.5"
+        ),
+        DeceptionCanaryToken(
+          id = "canary_spn_02",
+          name = "Decoy Kerberos SPN (MSSQLSvc/db01)",
+          type = "Kerberos SPN",
+          deployedHost = "SQL-PROD-02",
+          isTripped = false
+        )
+      )
+    )
+  )
+  val shadowState: StateFlow<ShadowAdversaryState> = _shadowState.asStateFlow()
+
+  fun plantCanaryToken(name: String, type: String, host: String) {
+    val current = _shadowState.value
+    val newToken = DeceptionCanaryToken(
+      id = "canary_${UUID.randomUUID().toString().take(6)}",
+      name = name,
+      type = type,
+      deployedHost = host,
+      isTripped = false
+    )
+    _shadowState.value = current.copy(
+      deployedCanaries = current.deployedCanaries + newToken,
+      telemetryStream = listOf("[DECEPTION-ENGINE] Successfully armed Canary Token ($name) on $host") + current.telemetryStream
+    )
+  }
+
+  fun executeContainmentCommand(command: String): String {
+    val current = _shadowState.value
+    val cmd = command.trim()
+    recordInvestigationAction("CLI Command", "CONTAINMENT_ACTION", "Executed: $cmd", true)
+
+    return when {
+      cmd.startsWith("isolate-host") -> {
+        val newHistory = current.mutationHistory + "DEFENDER ACTION: Host Isolated via EDR API." +
+            "⚡ ADVERSARY MUTATION: AI pivots from Direct Network Access to DLL Side-Loading on Staged Worker Node!"
+        val updatedTactics = current.tactics.map {
+          if (it.techniqueId == "T1059.001") it.copy(isCurrentActive = false, isMitigated = true)
+          else if (it.techniqueId == "T1574.002") it.copy(isCurrentActive = true)
+          else it
+        }
+        _shadowState.value = current.copy(
+          currentPhase = AdversaryMutationPhase.DLL_HIJACK,
+          compromiseLevelPercent = (current.compromiseLevelPercent - 15).coerceAtLeast(10),
+          mutationHistory = newHistory,
+          tactics = updatedTactics,
+          telemetryStream = listOf(
+            "[CONTAINMENT] Host isolated. Inbound/Outbound TCP reset.",
+            "[SHADOW-AI-ADAPT] Adversary mutated tactic: Hooked local app dll (version.dll) via memory injection!"
+          ) + current.telemetryStream
+        )
+        "✓ Host isolated. [ALERT]: Shadow AI detected packet cutoff and mutated to Phase 3 (DLL Side-Loading & Memory Injection)!"
+      }
+      cmd.startsWith("revoke-session") -> {
+        _shadowState.value = current.copy(
+          compromiseLevelPercent = (current.compromiseLevelPercent - 20).coerceAtLeast(5),
+          telemetryStream = listOf(
+            "[IDENTITY] Kerberos TGT & OAuth sessions purged for compromised user.",
+            "[SHADOW-AI] Adversary access token invalidated."
+          ) + current.telemetryStream
+        )
+        "✓ All active sessions revoked and Kerberos tickets flushed."
+      }
+      cmd.startsWith("deploy-canary") -> {
+        plantCanaryToken("Synthetic Admin Canary", "Active Directory Service Credential", "PROD-DC01")
+        "✓ Synthetic Canary Token armed. Telemetry hook listening for automated harvesting."
+      }
+      cmd.startsWith("flush-dns") -> {
+        _shadowState.value = current.copy(
+          telemetryStream = listOf("[DNS-CACHE] Local resolver cache flushed. Sinkhole routing applied.") + current.telemetryStream
+        )
+        "✓ DNS cache cleared and malicious C2 domains routed to internal sinkhole."
+      }
+      cmd.startsWith("contain-full") || cmd.startsWith("quarantine") -> {
+        _shadowState.value = current.copy(
+          isContained = true,
+          compromiseLevelPercent = 0,
+          currentPhase = AdversaryMutationPhase.INITIAL_RECON,
+          telemetryStream = listOf("[STATUS] Complete enterprise kill-chain severed. Threat actor neutralized.") + current.telemetryStream
+        )
+        "✓ ZERO-TRUST ENCLAVE ENFORCED. Shadow Adversary kill-chain successfully severed!"
+      }
+      else -> {
+        _shadowState.value = current.copy(
+          telemetryStream = listOf("[CLI] Executed diagnostic query: $cmd") + current.telemetryStream
+        )
+        "Executed: $cmd (Telemetry logged to investigation buffer)"
+      }
+    }
+  }
+
+  // ==========================================
+  // 20. INCIDENT TIME-MACHINE & SPLIT-TIMELINE FORKING
+  // ==========================================
+  private val _timelineBranches = MutableStateFlow(
+    listOf(
+      TimelineBranch(
+        branchId = "branch_alpha",
+        branchName = "Timeline Alpha: Immediate Network Isolation",
+        strategyLabel = "Containment First (Surgical Lock)",
+        description = "Immediately pull the network plug on PROD-DC01 and core subnet. Halts data exfiltration instantly but causes enterprise downtime for 8,000 employees.",
+        actionsTaken = listOf(
+          "T+00:02 - EDR Network Isolation of Active Directory Cluster",
+          "T+00:05 - Terminate all active VPN tunnels & BGP routes",
+          "T+00:12 - Hard reboot domain controllers into Directory Services Restore Mode"
+        ),
+        metrics = TimelineDiffMetrics(
+          operationalDowntimeHours = 6.5f,
+          exfiltrationBlastRadiusMb = 12,
+          reputationalImpactScore = 24,
+          estimatedComplianceFineUsd = 0,
+          containmentConfidencePercent = 98
+        ),
+        isSelected = true
+      ),
+      TimelineBranch(
+        branchId = "branch_beta",
+        branchName = "Timeline Beta: Canary Decoy & Traffic Mirroring",
+        strategyLabel = "Intelligence Gathering (Active Honey-mesh)",
+        description = "Keep subnet active under deep packet mirroring. Deploy canary database credentials to trace the threat actor's entire infrastructure and C2 command nodes before terminating.",
+        actionsTaken = listOf(
+          "T+00:02 - Enable Full Packet Capture (PCAP) on TAP/SPAN port",
+          "T+00:06 - Seed Canary AWS IAM Key into bash_history",
+          "T+00:15 - Adversary uses Canary Key -> Reveals secondary C2 proxy in Frankfurt"
+        ),
+        metrics = TimelineDiffMetrics(
+          operationalDowntimeHours = 0.5f,
+          exfiltrationBlastRadiusMb = 480,
+          reputationalImpactScore = 65,
+          estimatedComplianceFineUsd = 150000,
+          containmentConfidencePercent = 75
+        ),
+        isSelected = false
+      )
+    )
+  )
+  val timelineBranches: StateFlow<List<TimelineBranch>> = _timelineBranches.asStateFlow()
+
+  val timelineScrubPoints = listOf(
+    TimelineIncidentScrubPoint(
+      timestampSeconds = 0,
+      timeLabel = "00:00:00",
+      systemEvent = "Initial Phishing Ingress",
+      packetHexSummary = "48 83 ec 28 48 8b 05 ... GET /invoice.pdf.exe",
+      isRootCauseTrigger = true,
+      forensicFinding = "Weaponized macro downloaded stage-1 dropper via PowerShell curl"
+    ),
+    TimelineIncidentScrubPoint(
+      timestampSeconds = 45,
+      timeLabel = "00:00:45",
+      systemEvent = "LSASS Memory Dump",
+      packetHexSummary = "55 48 89 e5 48 83 ec ... MiniDumpWriteDump(lsass.exe)",
+      isRootCauseTrigger = false,
+      forensicFinding = "Harvested NTLM hashes for srv_backup and domain admin accounts"
+    ),
+    TimelineIncidentScrubPoint(
+      timestampSeconds = 120,
+      timeLabel = "00:02:00",
+      systemEvent = "Lateral SMB Relay Execution",
+      packetHexSummary = "fe 53 4d 42 40 00 ... SMB2_TREE_CONNECT (ADMIN$)",
+      isRootCauseTrigger = false,
+      forensicFinding = "Authenticated to PROD-DC01 using stolen Kerberos ticket (Overpass-the-Hash)"
+    ),
+    TimelineIncidentScrubPoint(
+      timestampSeconds = 240,
+      timeLabel = "00:04:00",
+      systemEvent = "DNS C2 Beacon & Ransomware Staging",
+      packetHexSummary = "00 01 01 00 00 01 ... TXT c2-beacon.aegora.io",
+      isRootCauseTrigger = false,
+      forensicFinding = "Staged LockBit 3.0 encryptor binary in C:\\Windows\\Temp\\svc_update.exe"
+    )
+  )
+
+  fun selectTimelineBranch(branchId: String) {
+    _timelineBranches.value = _timelineBranches.value.map {
+      it.copy(isSelected = it.branchId == branchId)
+    }
+  }
+
+  // ==========================================
+  // 21. BIOMETRIC STRESS & ACOUSTIC THREAT SONIFICATION
+  // ==========================================
+  private val _bioStressReading = MutableStateFlow(
+    BioStressReading(
+      simulatedBpm = 82,
+      touchVelocityPxPerSec = 142.5f,
+      tapHesitationMs = 420,
+      composureIndexScore = 91,
+      cognitiveOverloadWarning = false,
+      triageCadenceStatus = "ANALYTICAL & MEASURED"
+    )
+  )
+  val bioStressReading: StateFlow<BioStressReading> = _bioStressReading.asStateFlow()
+
+  fun recordInteractionKinetics(velocity: Float, hesitationMs: Long) {
+    val current = _bioStressReading.value
+    val newBpm = (70 + (velocity / 20).toInt() + (hesitationMs / 100).toInt()).coerceIn(60, 150)
+    val isOverload = newBpm > 115 || hesitationMs > 1800
+    val composure = (100 - (newBpm - 70) * 0.8f - (hesitationMs / 80)).toInt().coerceIn(10, 99)
+    val status = when {
+      composure >= 85 -> "ANALYTICAL & MEASURED"
+      composure >= 65 -> "ELEVATED ALERTNESS"
+      else -> "PANIC / COGNITIVE OVERLOAD"
+    }
+
+    _bioStressReading.value = current.copy(
+      simulatedBpm = newBpm,
+      touchVelocityPxPerSec = velocity,
+      tapHesitationMs = hesitationMs,
+      composureIndexScore = composure,
+      cognitiveOverloadWarning = isOverload,
+      triageCadenceStatus = status
+    )
+  }
+
+  val acousticProfiles = listOf(
+    AcousticThreatProfile(
+      id = "ac_01",
+      name = "Baseline Enterprise Traffic",
+      trafficType = "Legitimate HTTPS & Microservices",
+      wavePattern = "STEADY_SIN_WAVE",
+      frequencyKhz = 1.2f,
+      audioDescription = "Harmonic ambient white noise with steady, low-variance amplitude oscillations.",
+      diagnosticSignature = "Normal TCP handshakes, constant 443 stream with negligible jitter"
+    ),
+    AcousticThreatProfile(
+      id = "ac_02",
+      name = "Periodic C2 Heartbeat Beacon",
+      trafficType = "Cobalt Strike / Sliver Beaconing",
+      wavePattern = "PULSING_C2_HEARTBEAT",
+      frequencyKhz = 3.8f,
+      audioDescription = "Rhythmic, periodic acoustic pulses at precise 60s intervals (low-jitter beacon signature).",
+      diagnosticSignature = "Fixed delta-T packet spacing (sleep=60, jitter=0%) bypassing simple firewall threshold"
+    ),
+    AcousticThreatProfile(
+      id = "ac_03",
+      name = "DNS Exfiltration Chirp",
+      trafficType = "Covert DNS Tunnel (TXT records)",
+      wavePattern = "CHIRPING_DNS_TUNNEL",
+      frequencyKhz = 7.4f,
+      audioDescription = "High-frequency acoustic chirps and stuttering bursts corresponding to Base64 TXT chunks.",
+      diagnosticSignature = "Subdomain entropy > 4.8 with average query length of 180 bytes per burst"
+    ),
+    AcousticThreatProfile(
+      id = "ac_04",
+      name = "DDoS SYN Flood Surge",
+      trafficType = "Volumetric Botnet Saturation",
+      wavePattern = "HIGH_FREQ_SYN_SURGE",
+      frequencyKhz = 14.2f,
+      audioDescription = "Accelerating, screeching broadband sonic saturation overwhelming receiver channels.",
+      diagnosticSignature = "600k pkts/sec SYN packets without ACK responses exhausting TCP backlog queues"
+    )
+  )
+
+  // ==========================================
+  // 22. VOICE INCIDENT WAR ROOM & CRISIS ESCALATION
+  // ==========================================
+  private val _warRoomPersonas = MutableStateFlow(
+    listOf(
+      WarRoomPersona(
+        id = "p_ciso",
+        name = "Elena Rostova",
+        title = "Chief Information Security Officer",
+        role = WarRoomPersonaRole.CISO,
+        avatarIcon = "Security",
+        activeQuote = "\"Operator, the board wants containment status NOW. Do we pull the datacenter off the wire or can you isolate the C2 beacon?\"",
+        stressLevel = 88
+      ),
+      WarRoomPersona(
+        id = "p_legal",
+        name = "Marcus Vance, Esq.",
+        title = "General Counsel & Regulatory Lead",
+        role = WarRoomPersonaRole.LEGAL_COUNSEL,
+        avatarIcon = "Gavel",
+        activeQuote = "\"If personal customer records crossed that perimeter, the GDPR 72-hour notification clock and SEC Form 8-K timer have already started!\"",
+        stressLevel = 74
+      ),
+      WarRoomPersona(
+        id = "p_pr",
+        name = "Sophia Chen",
+        title = "Head of Global Corporate PR",
+        role = WarRoomPersonaRole.PR_COMMUNICATIONS,
+        avatarIcon = "Campaign",
+        activeQuote = "\"Reuters and BleepingComputer just DM'd me. Threat actors claim they hold 4TB of our source code. Do I issue a holding statement?\"",
+        stressLevel = 92
+      ),
+      WarRoomPersona(
+        id = "p_extortionist",
+        name = "CYBER_SYNDICATE_BLACK",
+        title = "Ransomware Extortion Actor",
+        role = WarRoomPersonaRole.EXTORTIONIST,
+        avatarIcon = "Warning",
+        activeQuote = "\"Your Active Directory is locked with ChaCha20. Send 45 BTC to 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa within 4 hours or data goes to Tor.\"",
+        stressLevel = 100
+      )
+    )
+  )
+  val warRoomPersonas: StateFlow<List<WarRoomPersona>> = _warRoomPersonas.asStateFlow()
+
+  private val _warRoomDials = MutableStateFlow(
+    WarRoomTriageDials(
+      timeRemainingSeconds = 240,
+      operationalDowntimePercent = 42,
+      reputationalRiskPercent = 68,
+      exfiltrationBlastRadiusPercent = 35,
+      regulatoryFineExposurePercent = 50
+    )
+  )
+  val warRoomDials: StateFlow<WarRoomTriageDials> = _warRoomDials.asStateFlow()
+
+  // ==========================================
+  // 23. ZERO-DAY DECONSTRUCTOR & DETECTION ENGINEERING
+  // ==========================================
+  val zeroDayExploits = listOf(
+    ZeroDayExploitModel(
+      cveId = "CVE-2024-3094",
+      title = "XZ Utils Embedded SSH Backdoor",
+      cvssScore = 10.0f,
+      attackVector = "Supply Chain / Memory Hook",
+      affectedComponent = "liblzma / OpenSSH daemon",
+      memoryStackFlow = listOf(
+        "1. Build script injects obfuscated M4 macro into configure step",
+        "2. Liblzma DSO loads before libcrypto via glibc IFUNC resolver",
+        "3. Backdoor intercepts RSA_public_decrypt function pointer",
+        "4. Injects arbitrary payload execution prior to SSH signature check"
+      ),
+      exploitProofSnippet = "// Hooking IFUNC pointer table:\nvoid* __wrap_RSA_public_decrypt(...) {\n    if (verify_magic_ed448_signature(payload)) {\n        return execute_stage2_payload(rdi);\n    }\n    return real_RSA_public_decrypt(...);\n}",
+      sigmaRuleTemplate = "title: XZ Utils Backdoor IFUNC Hijack\nlogsource:\n  category: process_creation\n  product: linux\ndetection:\n  selection:\n    Image|endswith: '/sshd'\n    CommandLine|contains: 'liblzma'\n  condition: selection\nlevel: critical",
+      yaraRuleTemplate = "rule Backdoor_XZ_Utils_liblzma {\n  strings:\n    " + "$" + "magic = { 48 8d 3d ?? ?? ?? ?? 48 89 c6 48 89 d7 }\n    " + "$" + "sub = \"_get_cpuid\"\n  condition:\n    uint32(0) == 0x464c457f and all of them\n}",
+      mitigationStrategy = "Downgrade xz-utils to 5.4.x, verify package checksums against upstream source repository."
+    ),
+    ZeroDayExploitModel(
+      cveId = "CVE-2023-34362",
+      title = "MOVEit Transfer Pre-Auth SQL Injection",
+      cvssScore = 9.8f,
+      attackVector = "Web Protocol / SQL Injection",
+      affectedComponent = "moveitisapi.dll",
+      memoryStackFlow = listOf(
+        "1. Attacker sends forged X-siLock-Session-Info HTTP header",
+        "2. Unsanitized session headers deserialized directly into SQL query",
+        "3. SQLi grants authenticated session token for guest user",
+        "4. Weaponized human2.aspx webshell written to webroot"
+      ),
+      exploitProofSnippet = "POST /moveitisapi/moveitisapi.dll?action=m2 HTTP/1.1\nHost: target.corp\nX-siLock-Session-Info: {'SessionUser':'admin' UNION SELECT 1, 'human2.aspx'--}\n\n[Payload: WebShell dropped]",
+      sigmaRuleTemplate = "title: MOVEit Transfer Webshell Creation\nlogsource:\n  category: file_event\n  product: windows\ndetection:\n  selection:\n    TargetFilename|endswith: '\\human2.aspx'\n  condition: selection\nlevel: critical",
+      yaraRuleTemplate = "rule Webshell_MOVEit_human2 {\n  strings:\n    " + "$" + "pass = \"X-siLock-Step\"\n    " + "$" + "cmd = \"Response.BinaryWrite\"\n  condition:\n    all of them\n}",
+      mitigationStrategy = "Apply Progress software security patch, delete untrusted .aspx files in C:\\MOVEitTransfer\\wwwroot."
+    )
+  )
+
+  // ==========================================
+  // 24. GLOBAL CYBER RADAR & TOURNAMENT LEAGUE
+  // ==========================================
+  val globalRadarItems = listOf(
+    GlobalRadarItem(
+      id = "rad_01",
+      title = "DEF CON 34 Live Arena & War Games",
+      category = "DEF CON Livecast",
+      organizer = "DEF CON Communications",
+      dateOrTimeLeft = "LIVE NOW",
+      prizeOrPoints = "Black Badge + 5,000 XP",
+      liveStatus = "LIVE NOW",
+      deepLinkTarget = "arena_defcon"
+    ),
+    GlobalRadarItem(
+      id = "rad_02",
+      title = "Black Hat USA: Advanced Memory Corruption Briefings",
+      category = "Black Hat Briefing",
+      organizer = "Informa Tech",
+      dateOrTimeLeft = "Tomorrow at 09:00 PST",
+      prizeOrPoints = "Keynote Stream",
+      liveStatus = "UPCOMING",
+      deepLinkTarget = "briefing_blackhat"
+    ),
+    GlobalRadarItem(
+      id = "rad_03",
+      title = "PicoCTF & Collegiate Cyber Defense Match",
+      category = "World CTF Match",
+      organizer = "Carnegie Mellon University",
+      dateOrTimeLeft = "3h 42m Remaining",
+      prizeOrPoints = "$25,000 Bounty Pool",
+      liveStatus = "LIVE NOW",
+      deepLinkTarget = "ctf_collegiate"
+    ),
+    GlobalRadarItem(
+      id = "rad_04",
+      title = "Critical Zero-Day Bounty: Hypervisor VM Escape",
+      category = "Live Bug Bounty",
+      organizer = "HackerOne / Zerodium",
+      dateOrTimeLeft = "Open Submissions",
+      prizeOrPoints = "$250,000 Bounty",
+      liveStatus = "ACTIVE BOUNTY",
+      deepLinkTarget = "bounty_vm_escape"
+    )
+  )
+
+  val cyberLeagueTeams = listOf(
+    CyberLeagueTeam(
+      rank = 1,
+      teamName = "Aegora Red Cell Elite",
+      tier = "Enterprise SOC Squad",
+      organization = "Aegora Cyber Defense Lab",
+      attackPoints = 4820,
+      defensePoints = 5190,
+      totalScore = 10010,
+      verificationBadge = "LEGENDARY"
+    ),
+    CyberLeagueTeam(
+      rank = 2,
+      teamName = "MIT Quantum Pwners",
+      tier = "University Cohort",
+      organization = "MIT CyberSec Society",
+      attackPoints = 4610,
+      defensePoints = 4920,
+      totalScore = 9530,
+      verificationBadge = "VERIFIED EDU"
+    ),
+    CyberLeagueTeam(
+      rank = 3,
+      teamName = "DARPA Swarm Defenders",
+      tier = "Enterprise SOC Squad",
+      organization = "National Defense Cyber Taskforce",
+      attackPoints = 4200,
+      defensePoints = 5050,
+      totalScore = 9250,
+      verificationBadge = "GOV VERIFIED"
+    ),
+    CyberLeagueTeam(
+      rank = 4,
+      teamName = "Operative_Valkyrie",
+      tier = "Solo Operative",
+      organization = "Independent Security Researcher",
+      attackPoints = 4450,
+      defensePoints = 4120,
+      totalScore = 8570,
+      verificationBadge = "PRO OPERATIVE"
+    )
+  )
+
+  // ==========================================
+  // 25. AUTONOMOUS RED-VS-BLUE SWARM ARENA
+  // ==========================================
+  private val _swarmBattleState = MutableStateFlow(
+    SwarmArenaCombatState(
+      battleId = "swarm_b_09",
+      redSwarmName = "Chimera AI Red Swarm",
+      blueSwarmName = "Aegora Blue Sentinel Swarm",
+      enterpriseCompromisePercent = 45,
+      activeSwarmRound = 3,
+      recentCombatLogs = listOf(
+        "⚡ [RED SWARM] Executed Token Impersonation on srv_sql (PID: 8812)",
+        "🛡️ [BLUE SENTINEL] Auto-deployed Honey-Token on Shared Kerberos Cache",
+        "⚡ [RED SWARM] Harvested Honey-Token! Alarm tripped across entire subnet.",
+        "🛡️ [BLUE SENTINEL] Micro-segmented Subnet 192.168.4.0/24 with eBPF filter"
+      ),
+      commanderActionsAvailable = listOf(
+        "Inject Strict Kerberos Armoring",
+        "Deploy Canary AWS Keys",
+        "Enforce eBPF Kernel Syscall Filter",
+        "Quarantine Domain Controller Subnet"
+      ),
+      isVictoryAchieved = false
+    )
+  )
+  val swarmBattleState: StateFlow<SwarmArenaCombatState> = _swarmBattleState.asStateFlow()
+
+  fun injectSwarmDirective(directive: String) {
+    val current = _swarmBattleState.value
+    val newCompromise = (current.enterpriseCompromisePercent - 18).coerceAtLeast(0)
+    val victory = newCompromise == 0
+    val newLogs = listOf(
+      "👑 [HUMAN COMMANDER] Injected Directive: \"$directive\"",
+      "🛡️ [BLUE SENTINEL] Applied heuristic rule. Red Swarm lateral pivot severed!"
+    ) + current.recentCombatLogs
+
+    _swarmBattleState.value = current.copy(
+      enterpriseCompromisePercent = newCompromise,
+      activeSwarmRound = current.activeSwarmRound + 1,
+      recentCombatLogs = newLogs.take(10),
+      isVictoryAchieved = victory
+    )
+  }
+
+  // ==========================================
+  // 26. UNIVERSAL CROSS-DEVICE ARCHITECTURE STATE
+  // ==========================================
+  private val _performanceMode = MutableStateFlow(PerformanceMode.FULL_VISUAL)
+  val performanceMode: StateFlow<PerformanceMode> = _performanceMode.asStateFlow()
+
+  private val _networkSyncStatus = MutableStateFlow(NetworkSyncStatus.SYNCED)
+  val networkSyncStatus: StateFlow<NetworkSyncStatus> = _networkSyncStatus.asStateFlow()
+
+  private val _crossDeviceSession = MutableStateFlow(
+    CrossDeviceSessionState(
+      activeSessionId = "sess_v11_9942",
+      lastActivityTitle = "Investigation #4821 — Golden Ticket Ransomware",
+      lastActivityCategory = "Live SOC Incident Range",
+      lastActivityProgress = "Step 3/5: Kerberoasting Anomaly Triage",
+      lastActiveTimestamp = "Synchronized 2 min ago",
+      originDeviceName = "MacBook Pro / Desktop Station",
+      targetScreenTag = "live_soc_range",
+      uncommittedNotesCount = 2,
+      isConflictPresent = false,
+      syncStatus = NetworkSyncStatus.SYNCED
+    )
+  )
+  val crossDeviceSession: StateFlow<CrossDeviceSessionState> = _crossDeviceSession.asStateFlow()
+
+  fun setPerformanceMode(mode: PerformanceMode) {
+    _performanceMode.value = mode
+  }
+
+  fun setNetworkSyncStatus(status: NetworkSyncStatus) {
+    _networkSyncStatus.value = status
+    _crossDeviceSession.value = _crossDeviceSession.value.copy(syncStatus = status)
+  }
+
+  fun triggerManualSync() {
+    _networkSyncStatus.value = NetworkSyncStatus.SYNCING
+    // Simulated safe instant cloud sync
+    _networkSyncStatus.value = NetworkSyncStatus.SYNCED
+    _crossDeviceSession.value = _crossDeviceSession.value.copy(
+      lastActiveTimestamp = "Just now",
+      syncStatus = NetworkSyncStatus.SYNCED,
+      isConflictPresent = false
+    )
+  }
+
+  fun resolveCrossDeviceConflict(useRemote: Boolean) {
+    _crossDeviceSession.value = _crossDeviceSession.value.copy(
+      isConflictPresent = false,
+      syncStatus = NetworkSyncStatus.SYNCED,
+      lastActiveTimestamp = "Resolved just now"
+    )
+    _networkSyncStatus.value = NetworkSyncStatus.SYNCED
+  }
+
+  fun recordCrossDeviceActivity(title: String, category: String, progress: String, screenTag: String) {
+    _crossDeviceSession.value = _crossDeviceSession.value.copy(
+      lastActivityTitle = title,
+      lastActivityCategory = category,
+      lastActivityProgress = progress,
+      lastActiveTimestamp = "Active right now",
+      originDeviceName = "Current Device",
+      targetScreenTag = screenTag,
+      syncStatus = _networkSyncStatus.value
+    )
+  }
 }
+
+

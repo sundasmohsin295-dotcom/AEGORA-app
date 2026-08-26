@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">AEGORA</string>
+    <string name="widget_skill_decay_radar_label">Skill Decay Radar</string>
+    <string name="widget_skill_decay_radar_desc">Monitors real-time cyber skill retention, decay forecasts, and CTF streak status in obsidian cyber style.</string>
 </resources>

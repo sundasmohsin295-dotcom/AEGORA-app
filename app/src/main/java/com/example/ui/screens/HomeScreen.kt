@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -42,11 +43,24 @@ fun HomeScreen(
   onNavigateToVault: () -> Unit = {},
   onNavigateToCommunity: () -> Unit = {},
   onNavigateToUniversity: () -> Unit = {},
+  onNavigateToShadowRange: () -> Unit = {},
+  onNavigateToTimelineFork: () -> Unit = {},
+  onNavigateToBioStress: () -> Unit = {},
+  onNavigateToCrisisWarRoom: () -> Unit = {},
+  onNavigateToZeroDayLab: () -> Unit = {},
+  onNavigateToGlobalRadar: () -> Unit = {},
+  onNavigateToSwarmArena: () -> Unit = {},
+  onNavigateToBinaryDisassembler: () -> Unit = {},
+  onNavigateToCyberTerminal: () -> Unit = {},
+  onNavigateToLiveSocRange: () -> Unit = {},
+  onNavigateToThreatAcoustic: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val userProfile by AegoraRepository.userProfile.collectAsState()
   val dailyMission by AegoraRepository.dailyMission.collectAsState()
   val reviewQueue by AegoraRepository.reviewQueue.collectAsState()
+  val skillDecays by AegoraRepository.skillDecayForecasts.collectAsState()
+  val sessionState by AegoraRepository.crossDeviceSession.collectAsState()
   val dueReviewCount = reviewQueue.count { it.isDue }
 
   var showRewardModal by remember { mutableStateOf(false) }
@@ -76,6 +90,26 @@ fun HomeScreen(
     contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
+    // 0. Universal Cross-Device Continue Hero
+    item {
+      com.example.ui.adaptive.UniversalContinueHero(
+        sessionState = sessionState,
+        onContinueAction = { screenTag ->
+          when (screenTag) {
+            "live_soc_range" -> onNavigateToLiveSocRange()
+            "binary_disassembler" -> onNavigateToBinaryDisassembler()
+            "shadow_range" -> onNavigateToShadowRange()
+            "threat_acoustic" -> onNavigateToThreatAcoustic()
+            "crisis_war_room" -> onNavigateToCrisisWarRoom()
+            "zero_day_lab" -> onNavigateToZeroDayLab()
+            "swarm_arena" -> onNavigateToSwarmArena()
+            "cyber_terminal" -> onNavigateToCyberTerminal()
+            else -> onNavigateToLabs()
+          }
+        }
+      )
+    }
+
     // 1. Hero Command Center Banner (Non-Standard Chamfered Geometry & Endowed Progress)
     item {
       Surface(
@@ -310,6 +344,131 @@ fun HomeScreen(
       }
     }
 
+    // 2b. Skill Decay Radar (Forgetting Forecast)
+    item {
+      CyberCard(
+        borderColor = CyberAmber.copy(alpha = 0.4f),
+        backgroundColor = CyberSurface,
+        shapeRadius = 20.dp
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+              modifier = Modifier
+                .size(42.dp)
+                .clip(HexagonShape)
+                .background(CyberAmber.copy(alpha = 0.15f))
+                .border(1.dp, CyberAmber, HexagonShape),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = CyberAmber, modifier = Modifier.size(22.dp))
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+              Text(
+                text = "SKILL DECAY FORECAST & RETENTION",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold,
+                  letterSpacing = 1.sp,
+                  fontSize = 9.sp
+                ),
+                color = CyberAmber
+              )
+              Text(
+                text = "Predictive Memory Degradation",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimaryDark
+              )
+            }
+          }
+
+          Surface(
+            shape = RoundedCornerShape(4.dp),
+            color = CyberAmber.copy(alpha = 0.15f),
+            border = BorderStroke(1.dp, CyberAmber.copy(alpha = 0.5f))
+          ) {
+            Text(
+              text = "EBBINGHAUS AI",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold
+              ),
+              color = CyberAmber,
+              modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+            )
+          }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val highestRiskSkill = skillDecays.find { it.riskLevel == "HIGH" } ?: skillDecays.first()
+        Surface(
+          shape = RoundedCornerShape(12.dp),
+          color = CyberSurfaceElevated,
+          border = BorderStroke(1.dp, CyberBorderSubtle)
+        ) {
+          Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(
+                text = highestRiskSkill.skillName,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimaryDark
+              )
+              Text(
+                text = "${highestRiskSkill.currentHealth}% Retention",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold
+                ),
+                color = if (highestRiskSkill.currentHealth < 60) CyberCrimson else CyberAmber
+              )
+            }
+
+            Text(
+              text = "Projected decay: ${highestRiskSkill.currentHealth}% → ${highestRiskSkill.projected30Days}% in 30 days without reinforcement.",
+              style = MaterialTheme.typography.labelSmall,
+              color = TextSecondaryDark
+            )
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(
+                text = "⚡ Drill: ${highestRiskSkill.recommendedDiagnosticTitle}",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontSize = 10.sp
+                ),
+                color = CyberCyan,
+                modifier = Modifier.weight(1f)
+              )
+              Button(
+                onClick = onNavigateToLabs,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier.height(32.dp)
+              ) {
+                Text("Start Drill", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+              }
+            }
+          }
+        }
+      }
+    }
+
     // 3. Tactile 'Hold-to-Hack' Active Daily Mission (Skewed Parallelogram Shape)
     item {
       CyberMissionCard(
@@ -507,7 +666,253 @@ fun HomeScreen(
       }
     }
 
-    // 6. Sequential Terminal & AppSec Ladders Hub (Parallelogram Cut)
+    // 6. Next-Gen Sovereign Cyber-Intelligence Innovations
+    item {
+      CyberSectionHeader(
+        title = "Sovereign Intelligence & Cyber Range",
+        subtitle = "Zero-day engines & autonomous simulations",
+        actionText = "Radar Hub",
+        onActionClick = onNavigateToGlobalRadar
+      )
+
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Shadow Agent Range
+        Surface(
+          shape = ChamferedCutCornerShape,
+          color = CyberSurface,
+          border = androidx.compose.foundation.BorderStroke(1.2.dp, NeonPink.copy(alpha = 0.6f)),
+          modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNavigateToShadowRange() }
+            .testTag("home_shadow_agent_card")
+        ) {
+          Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Box(
+              modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(NeonPink.copy(alpha = 0.15f)),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(Icons.Default.SecurityUpdateWarning, contentDescription = null, tint = NeonPink, modifier = Modifier.size(22.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = "AUTONOMOUS ADVERSARY // SHADOW RANGE",
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                color = NeonPink
+              )
+              Text("Dynamic Zero-Day Chains & Deception Grid", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = NeonPink)
+          }
+        }
+
+        // Timeline Fork & Time Machine
+        Surface(
+          shape = ChamferedCutCornerShape,
+          color = CyberSurface,
+          border = androidx.compose.foundation.BorderStroke(1.2.dp, CyberCyan.copy(alpha = 0.6f)),
+          modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNavigateToTimelineFork() }
+            .testTag("home_timeline_fork_card")
+        ) {
+          Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Box(
+              modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(CyberCyan.copy(alpha = 0.15f)),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(Icons.Default.AltRoute, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(22.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = "INCIDENT TIME-MACHINE & FORKING",
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                color = CyberCyan
+              )
+              Text("Dual-Timeline Hypothesis & Blast Diff", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CyberCyan)
+          }
+        }
+
+        // Crisis War Room & Executive Escalation
+        Surface(
+          shape = ChamferedCutCornerShape,
+          color = CyberSurface,
+          border = androidx.compose.foundation.BorderStroke(1.2.dp, CyberAmber.copy(alpha = 0.6f)),
+          modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNavigateToCrisisWarRoom() }
+            .testTag("home_crisis_war_room_card")
+        ) {
+          Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Box(
+              modifier = Modifier
+                .size(42.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(CyberAmber.copy(alpha = 0.15f)),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = CyberAmber, modifier = Modifier.size(22.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = "VOICE WAR ROOM & CRISIS SIMULATOR",
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                color = CyberAmber
+              )
+              Text("Multi-Agent CISO/Legal/CEO Escalation", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CyberAmber)
+          }
+        }
+
+        // Row of 2: Zero-Day Studio & Bio Stress HUD
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = CyberSurface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, CyberEmerald.copy(alpha = 0.5f)),
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(12.dp))
+              .clickable { onNavigateToZeroDayLab() }
+              .testTag("home_zero_day_lab_card")
+          ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+              Icon(Icons.Default.BugReport, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(20.dp))
+              Spacer(modifier = Modifier.height(6.dp))
+              Text("ZERO-DAY LAB", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = CyberEmerald)
+              Text("Sigma/YARA Studio", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
+            }
+          }
+
+          Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = CyberSurface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, CyberViolet.copy(alpha = 0.5f)),
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(12.dp))
+              .clickable { onNavigateToBioStress() }
+              .testTag("home_bio_stress_card")
+          ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+              Icon(Icons.Default.MonitorHeart, contentDescription = null, tint = CyberViolet, modifier = Modifier.size(20.dp))
+              Spacer(modifier = Modifier.height(6.dp))
+              Text("BIO STRESS HUD", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = CyberViolet)
+              Text("Composure Tracker", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
+            }
+          }
+        }
+
+        // Row of 2: Binary Disassembler & Tactical CLI Terminal
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = CyberSurface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, NeonCyan.copy(alpha = 0.6f)),
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(12.dp))
+              .clickable { onNavigateToBinaryDisassembler() }
+              .testTag("home_disassembler_card")
+          ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+              Icon(Icons.Default.Code, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(20.dp))
+              Spacer(modifier = Modifier.height(6.dp))
+              Text("DISASSEMBLER & CFG", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = NeonCyan)
+              Text("x86-64 Hex Dissector", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
+            }
+          }
+
+          Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = CyberSurface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, NeonGreen.copy(alpha = 0.6f)),
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(12.dp))
+              .clickable { onNavigateToCyberTerminal() }
+              .testTag("home_terminal_card")
+          ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+              Icon(Icons.Default.Terminal, contentDescription = null, tint = NeonGreen, modifier = Modifier.size(20.dp))
+              Spacer(modifier = Modifier.height(6.dp))
+              Text("TACTICAL TERMINAL", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = NeonGreen)
+              Text("eBPF Sandboxed CLI", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
+            }
+          }
+        }
+
+        // Row of 2: Live SOC Range & Threat Acoustic Sonification
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = CyberSurface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, NeonCrimson.copy(alpha = 0.6f)),
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(12.dp))
+              .clickable { onNavigateToLiveSocRange() }
+              .testTag("home_soc_range_card")
+          ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+              Icon(Icons.Default.SecurityUpdateWarning, contentDescription = null, tint = NeonCrimson, modifier = Modifier.size(20.dp))
+              Spacer(modifier = Modifier.height(6.dp))
+              Text("LIVE SOC RANGE", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = NeonCrimson)
+              Text("One-Tap SIEM Triage", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
+            }
+          }
+
+          Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = CyberSurface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, NeonViolet.copy(alpha = 0.6f)),
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(12.dp))
+              .clickable { onNavigateToThreatAcoustic() }
+              .testTag("home_threat_acoustic_card")
+          ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+              Icon(Icons.Default.GraphicEq, contentDescription = null, tint = NeonViolet, modifier = Modifier.size(20.dp))
+              Spacer(modifier = Modifier.height(6.dp))
+              Text("SONIC RADAR", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = NeonViolet)
+              Text("Waveform Triage Drill", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
+            }
+          }
+        }
+      }
+    }
+
+    // 7. Sequential Terminal & AppSec Ladders Hub (Parallelogram Cut)
     item {
       Surface(
         shape = ChamferedCutCornerShape,

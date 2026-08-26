@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="160"
+    android:viewportHeight="160">
+    <!-- Background -->
+    <path
+        android:fillColor="#0A0A0E"
+        android:pathData="M16,0h128a16,16 0 0 1 16,16v128a16,16 0 0 1 -16,16h-128a16,16 0 0 1 -16,-16v-128a16,16 0 0 1 16,-16z"/>
+    <!-- Outer Border -->
+    <path
+        android:strokeColor="#00F0FF"
+        android:strokeWidth="1.5"
+        android:pathData="M16,2h128a14,14 0 0 1 14,14v128a14,14 0 0 1 -14,14h-128a14,14 0 0 1 -14,-14v-128a14,14 0 0 1 14,-14z"/>
+    <!-- Center Radar Symbol -->
+    <path
+        android:fillColor="#00F0FF"
+        android:pathData="M80,30C52.4,30 30,52.4 30,80s22.4,50 50,50s50,-22.4 50,-50S107.6,30 80,30zM80,120c-22.1,0 -40,-17.9 -40,-40s17.9,-40 40,-40s40,17.9 40,40S102.1,120 80,120z"/>
+    <path
+        android:fillColor="#00FF41"
+        android:pathData="M80,55c-13.8,0 -25,11.2 -25,25s11.2,25 25,25s25,-11.2 25,-25S93.8,55 80,55z"/>
+</vector>

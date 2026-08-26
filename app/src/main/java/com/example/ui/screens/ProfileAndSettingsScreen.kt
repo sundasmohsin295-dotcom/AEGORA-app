@@ -35,6 +35,8 @@ fun ProfileAndSettingsScreen(
   onNavigateToVault: () -> Unit,
   onNavigateToCommunity: () -> Unit,
   onNavigateToUniversityAdmin: () -> Unit,
+  onNavigateToAuth: () -> Unit = {},
+  onNavigateToCognitiveProfile: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val userProfile by AegoraRepository.userProfile.collectAsState()
@@ -122,6 +124,64 @@ fun ProfileAndSettingsScreen(
 
       item {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          // Zero-Trust Security Sentinel
+          CyberCard(
+            borderColor = CyberCyan.copy(alpha = 0.5f),
+            backgroundColor = VibrantBlueContainer.copy(alpha = 0.4f),
+            shapeRadius = 18.dp,
+            onClick = onNavigateToAuth
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(44.dp)
+                  .clip(RoundedCornerShape(12.dp))
+                  .background(CyberCyan.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(Icons.Default.VpnKey, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(24.dp))
+              }
+              Spacer(modifier = Modifier.width(12.dp))
+              Column(modifier = Modifier.weight(1f)) {
+                Text("Zero-Trust Sentinel & Passkeys", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
+                Text("Hardware TEE enclave diagnostics & biometric attestation", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
+              }
+              Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CyberCyan)
+            }
+          }
+
+          // Cognitive Intelligence Profile
+          CyberCard(
+            borderColor = CyberViolet.copy(alpha = 0.5f),
+            backgroundColor = VibrantPurpleContainer.copy(alpha = 0.4f),
+            shapeRadius = 18.dp,
+            onClick = onNavigateToCognitiveProfile
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(44.dp)
+                  .clip(RoundedCornerShape(12.dp))
+                  .background(CyberViolet.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(Icons.Default.Psychology, contentDescription = null, tint = CyberViolet, modifier = Modifier.size(24.dp))
+              }
+              Spacer(modifier = Modifier.width(12.dp))
+              Column(modifier = Modifier.weight(1f)) {
+                Text("Cognitive Intelligence Profile", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
+                Text("Mistake DNA, bias analysis & reasoning graphs", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
+              }
+              Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CyberViolet)
+            }
+          }
+
           // Knowledge Vault
           CyberCard(
             borderColor = CyberBorderSubtle,

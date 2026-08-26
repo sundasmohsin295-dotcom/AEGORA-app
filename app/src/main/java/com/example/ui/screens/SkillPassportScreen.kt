@@ -35,6 +35,7 @@ import com.example.ui.theme.*
 fun SkillPassportScreen(
   onNavigateToCareers: () -> Unit,
   onNavigateToProjects: () -> Unit,
+  onNavigateToCognitiveProfile: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val userProfile by AegoraRepository.userProfile.collectAsState()
@@ -42,6 +43,8 @@ fun SkillPassportScreen(
   val simulatedLedger by AegoraRepository.simulatedExperience.collectAsState()
   val mitreCoverages = AegoraRepository.mitreTacticCoverages
   var showShareDialog by remember { mutableStateOf(false) }
+  var showDossierDialog by remember { mutableStateOf(false) }
+  var copiedToClipboard by remember { mutableStateOf(false) }
 
   LazyColumn(
     modifier = modifier
@@ -91,11 +94,19 @@ fun SkillPassportScreen(
             }
           }
 
-          IconButton(
-            onClick = { showShareDialog = true },
-            modifier = Modifier.testTag("passport_share_btn")
-          ) {
-            Icon(Icons.Default.Share, contentDescription = "Share Passport", tint = CyberCyan)
+          Row {
+            IconButton(
+              onClick = { showDossierDialog = true },
+              modifier = Modifier.testTag("export_talent_dossier_btn")
+            ) {
+              Icon(Icons.Default.Description, contentDescription = "Export Dossier", tint = CyberEmerald)
+            }
+            IconButton(
+              onClick = { showShareDialog = true },
+              modifier = Modifier.testTag("passport_share_btn")
+            ) {
+              Icon(Icons.Default.Share, contentDescription = "Share Passport", tint = CyberCyan)
+            }
           }
         }
 
@@ -136,10 +147,97 @@ fun SkillPassportScreen(
             Icon(Icons.Default.Lock, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-              text = "Cryptographically signed by AEGORA Verification Authority. Evidence items verified via SHA-256 artifact hashes.",
-              style = MaterialTheme.typography.labelSmall,
+              text = "Cryptographically signed by AEGORA Verification Authority. SHA-256 Ledger: 0x8F92...B14A",
+              style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
               color = TextSecondaryDark
             )
+          }
+        }
+      }
+    }
+
+    // 1b. Recruiter Export & Cognitive Profile Launch Bar
+    item {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        Button(
+          onClick = { showDossierDialog = true },
+          colors = ButtonDefaults.buttonColors(containerColor = CyberEmerald),
+          shape = RoundedCornerShape(10.dp),
+          modifier = Modifier.weight(1f)
+        ) {
+          Icon(Icons.Default.AssignmentInd, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
+          Spacer(modifier = Modifier.width(6.dp))
+          Text("Export Dossier", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        }
+
+        Button(
+          onClick = onNavigateToCognitiveProfile,
+          colors = ButtonDefaults.buttonColors(containerColor = CyberViolet),
+          shape = RoundedCornerShape(10.dp),
+          modifier = Modifier.weight(1f)
+        ) {
+          Icon(Icons.Default.Psychology, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+          Spacer(modifier = Modifier.width(6.dp))
+          Text("Cognitive Profile", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        }
+      }
+    }
+
+    // 1c. Enterprise Readiness Scorecard
+    item {
+      CyberCard(
+        borderColor = CyberCyan.copy(alpha = 0.4f),
+        backgroundColor = CyberSurface
+      ) {
+        Text(
+          text = "ENTERPRISE READINESS SCORECARD",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+          ),
+          color = CyberCyan
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = CyberSurfaceElevated,
+            border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorderSubtle),
+            modifier = Modifier.weight(1f)
+          ) {
+            Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+              Text("4.2 min", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace), color = CyberEmerald)
+              Text("Detection Velocity", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = TextSecondaryDark)
+            }
+          }
+          Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = CyberSurfaceElevated,
+            border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorderSubtle),
+            modifier = Modifier.weight(1f)
+          ) {
+            Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+              Text("94.2%", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace), color = CyberCyan)
+              Text("Triage Precision", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = TextSecondaryDark)
+            }
+          }
+          Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = CyberSurfaceElevated,
+            border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorderSubtle),
+            modifier = Modifier.weight(1f)
+          ) {
+            Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+              Text("3.1%", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace), color = CyberAmber)
+              Text("False-Pos Ratio", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = TextSecondaryDark)
+            }
           }
         }
       }
@@ -322,6 +420,86 @@ fun SkillPassportScreen(
       },
       dismissButton = {
         TextButton(onClick = { showShareDialog = false }) {
+          Text("Close", color = TextSecondaryDark)
+        }
+      },
+      containerColor = CyberSurface
+    )
+  }
+
+  if (showDossierDialog) {
+    AlertDialog(
+      onDismissRequest = {
+        showDossierDialog = false
+        copiedToClipboard = false
+      },
+      title = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Icon(Icons.Default.Verified, contentDescription = null, tint = CyberEmerald)
+          Spacer(modifier = Modifier.width(8.dp))
+          Text("Verifiable Recruiter Dossier", color = TextPrimaryDark, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+        }
+      },
+      text = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Text(
+            "ATS-Formatted Proof-of-Skill Summary:",
+            style = MaterialTheme.typography.labelSmall,
+            color = TextSecondaryDark
+          )
+
+          Surface(
+            shape = RoundedCornerShape(6.dp),
+            color = CodeBackground,
+            border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorderSubtle)
+          ) {
+            Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+              Text(
+                "OPERATOR: ${userProfile.name} (${userProfile.callsign})",
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                color = CyberCyan
+              )
+              Text(
+                "PASSPORT ID: ${userProfile.passportId} | READINESS: ${userProfile.jobReadinessScore}%",
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                color = CyberEmerald
+              )
+              Text(
+                "LEDGER HASH: SHA256:0x8F92...B14A (AEGORA AUTHENTICATED)",
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 9.sp),
+                color = TextSecondaryDark
+              )
+              HorizontalDivider(color = CyberBorderSubtle, modifier = Modifier.padding(vertical = 2.dp))
+              Text(
+                "• Completed ${userProfile.completedLabsCount} Enterprise SOC & DFIR Labs\n• Detection Velocity: 4.2m Avg | Triage Precision: 94.2%\n• MITRE ATT&CK Coverage: 14 TTPs across Execution, Persistence & C2\n• Certified in NIST SP 800-61 Incident Handling",
+                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 10.sp),
+                color = CodeGreen
+              )
+            }
+          }
+
+          if (copiedToClipboard) {
+            Text(
+              "✓ Dossier copied to clipboard ready for ATS/Recruiter!",
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+              color = CyberEmerald
+            )
+          }
+        }
+      },
+      confirmButton = {
+        Button(
+          onClick = { copiedToClipboard = true },
+          colors = ButtonDefaults.buttonColors(containerColor = CyberEmerald)
+        ) {
+          Text(if (copiedToClipboard) "Copied!" else "Copy ATS Dossier", color = Color.Black, fontWeight = FontWeight.Bold)
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = {
+          showDossierDialog = false
+          copiedToClipboard = false
+        }) {
           Text("Close", color = TextSecondaryDark)
         }
       },

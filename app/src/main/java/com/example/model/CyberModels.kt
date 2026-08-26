@@ -776,3 +776,210 @@ data class SpecializedDomainOverview(
   val coveredModulesCount: Int,
   val mitreMapping: String
 )
+
+// 19. Autonomous Adversary "Shadow Agent" & Deception Grid
+enum class AdversaryMutationPhase(val displayName: String, val colorHex: Long) {
+  INITIAL_RECON("Phase 1: Recon & Spray", 0xFF00F0FF),
+  ENDPOINT_PIVOT("Phase 2: Lateral Pivot", 0xFFFFB800),
+  DLL_HIJACK("Phase 3: DLL Side-Loading & Memory Injection", 0xFFFF80BF),
+  WMI_PERSISTENCE("Phase 4: WMI/Task Persistence", 0xFF8B5CF6),
+  DATA_EXFILTRATION("Phase 5: DNS Tunneling Exfiltration", 0xFFFF003C)
+}
+
+data class DeceptionCanaryToken(
+  val id: String,
+  val name: String,
+  val type: String, // "AWS IAM Secret", "Kerberos SPN", "Synthetic DB Admin Credential", "Decoy S3 Canary File"
+  val deployedHost: String,
+  val isTripped: Boolean,
+  val tripTimestamp: String? = null,
+  val adversaryIp: String? = null
+)
+
+data class MitreTacticStep(
+  val tacticCode: String,
+  val tacticName: String,
+  val techniqueId: String,
+  val techniqueName: String,
+  val isCurrentActive: Boolean,
+  val isMitigated: Boolean
+)
+
+data class ShadowAdversaryState(
+  val scenarioId: String,
+  val threatActorName: String,
+  val currentPhase: AdversaryMutationPhase,
+  val compromiseLevelPercent: Int,
+  val activeAdversaryIp: String,
+  val targetedHost: String,
+  val mutationHistory: List<String>,
+  val telemetryStream: List<String>,
+  val tactics: List<MitreTacticStep>,
+  val deployedCanaries: List<DeceptionCanaryToken>,
+  val isContained: Boolean = false
+)
+
+// 20. Incident Time-Machine & Split-Timeline Forking
+data class TimelineDiffMetrics(
+  val operationalDowntimeHours: Float,
+  val exfiltrationBlastRadiusMb: Int,
+  val reputationalImpactScore: Int, // 0-100
+  val estimatedComplianceFineUsd: Long,
+  val containmentConfidencePercent: Int
+)
+
+data class TimelineBranch(
+  val branchId: String,
+  val branchName: String,
+  val strategyLabel: String,
+  val description: String,
+  val actionsTaken: List<String>,
+  val metrics: TimelineDiffMetrics,
+  val isSelected: Boolean = false
+)
+
+data class TimelineIncidentScrubPoint(
+  val timestampSeconds: Int,
+  val timeLabel: String,
+  val systemEvent: String,
+  val packetHexSummary: String,
+  val isRootCauseTrigger: Boolean = false,
+  val forensicFinding: String
+)
+
+// 21. Biometric Stress & Acoustic Threat Sonification
+data class BioStressReading(
+  val simulatedBpm: Int,
+  val touchVelocityPxPerSec: Float,
+  val tapHesitationMs: Long,
+  val composureIndexScore: Int, // 0-100%
+  val cognitiveOverloadWarning: Boolean,
+  val triageCadenceStatus: String
+)
+
+data class AcousticThreatProfile(
+  val id: String,
+  val name: String,
+  val trafficType: String,
+  val wavePattern: String, // "STEADY_SIN_WAVE", "PULSING_C2_HEARTBEAT", "HIGH_FREQ_SYN_SURGE", "CHIRPING_DNS_TUNNEL"
+  val frequencyKhz: Float,
+  val audioDescription: String,
+  val diagnosticSignature: String
+)
+
+// 22. Voice Incident War Room & Executive Escalation
+enum class WarRoomPersonaRole(val roleName: String, val defaultVoiceTone: String) {
+  CISO("Chief Information Security Officer", "Direct & Urgency-Driven"),
+  LEGAL_COUNSEL("General Counsel / Legal", "Compliance & Liability Focused"),
+  PR_COMMUNICATIONS("Head of Communications / PR", "Reputational Risk & Media"),
+  CEO("Chief Executive Officer", "Business Continuity & Board Pressure"),
+  EXTORTIONIST("Ransomware Threat Syndicate", "Menacing Ransom Demand")
+}
+
+data class WarRoomPersona(
+  val id: String,
+  val name: String,
+  val title: String,
+  val role: WarRoomPersonaRole,
+  val avatarIcon: String,
+  val activeQuote: String,
+  val stressLevel: Int // 0-100
+)
+
+data class WarRoomTriageDials(
+  val timeRemainingSeconds: Int,
+  val operationalDowntimePercent: Int,
+  val reputationalRiskPercent: Int,
+  val exfiltrationBlastRadiusPercent: Int,
+  val regulatoryFineExposurePercent: Int
+)
+
+// 23. Zero-Day Deconstructor & Detection Engineering Studio
+data class ZeroDayExploitModel(
+  val cveId: String,
+  val title: String,
+  val cvssScore: Float,
+  val attackVector: String,
+  val affectedComponent: String,
+  val memoryStackFlow: List<String>,
+  val exploitProofSnippet: String,
+  val sigmaRuleTemplate: String,
+  val yaraRuleTemplate: String,
+  val mitigationStrategy: String
+)
+
+// 24. Global Cyber Radar & CTF Tournament League
+data class GlobalRadarItem(
+  val id: String,
+  val title: String,
+  val category: String, // "DEF CON Livecast", "Black Hat Briefing", "World CTF Match", "Live Bug Bounty", "Zero-Day Advisory"
+  val organizer: String,
+  val dateOrTimeLeft: String,
+  val prizeOrPoints: String,
+  val liveStatus: String, // "LIVE NOW", "UPCOMING", "ACTIVE BOUNTY"
+  val deepLinkTarget: String
+)
+
+data class CyberLeagueTeam(
+  val rank: Int,
+  val teamName: String,
+  val tier: String, // "Solo Operative", "University Cohort", "Enterprise SOC Squad"
+  val organization: String,
+  val attackPoints: Int,
+  val defensePoints: Int,
+  val totalScore: Int,
+  val verificationBadge: String
+)
+
+// 25. Autonomous Red-vs-Blue Swarm Arena
+data class SwarmArenaCombatState(
+  val battleId: String,
+  val redSwarmName: String,
+  val blueSwarmName: String,
+  val enterpriseCompromisePercent: Int, // 0 to 100
+  val activeSwarmRound: Int,
+  val recentCombatLogs: List<String>,
+  val commanderActionsAvailable: List<String>,
+  val isVictoryAchieved: Boolean = false
+)
+
+// ========================================================
+// 26. UNIVERSAL CROSS-DEVICE ARCHITECTURE (V11 ENGINE)
+// ========================================================
+
+enum class BreakpointClass(val label: String, val minWidthDp: Int, val maxWidthDp: Int) {
+  COMPACT("Compact Phone", 0, 599),
+  MEDIUM("Foldable / Tablet", 600, 839),
+  EXPANDED("Laptop / Chromebook", 840, 1199),
+  LARGE("Desktop Monitor", 1200, 1599),
+  ULTRAWIDE("Ultra-Wide Command Station", 1600, 9999)
+}
+
+enum class PerformanceMode(val label: String, val subtitle: String) {
+  FULL_VISUAL("Full Cyber 2096", "Hardware shaders, neon bloom, orbital particles & dynamic waveforms"),
+  BALANCED("Balanced Mode", "Standard framerate with glassmorphism & optimized glow effects"),
+  PERFORMANCE("Light Performance", "Zero particle overhead, high-contrast dark theme, ultra-low battery drain"),
+  REDUCED_MOTION("Reduced Motion", "Instantaneous state transitions, static diagrams, WCAG compliant")
+}
+
+enum class NetworkSyncStatus(val label: String, val badgeText: String) {
+  SYNCED("Cloud Synchronized", "SYNCED"),
+  SYNCING("Synchronizing Cyber Twin...", "SYNCING"),
+  OFFLINE("Offline Local Cache Active", "OFFLINE"),
+  SYNC_ERROR("Sync Conflict Detected", "SYNC ERROR")
+}
+
+data class CrossDeviceSessionState(
+  val activeSessionId: String = "sess_v11_9942",
+  val lastActivityTitle: String = "Investigation #4821 — Golden Ticket Ransomware",
+  val lastActivityCategory: String = "Live SOC Incident Range",
+  val lastActivityProgress: String = "Step 3/5: Kerberoasting Anomaly Triage",
+  val lastActiveTimestamp: String = "Synchronized 2 min ago",
+  val originDeviceName: String = "MacBook Pro / Desktop Station",
+  val targetScreenTag: String = "live_soc_range",
+  val uncommittedNotesCount: Int = 2,
+  val isConflictPresent: Boolean = false,
+  val syncStatus: NetworkSyncStatus = NetworkSyncStatus.SYNCED
+)
+
+

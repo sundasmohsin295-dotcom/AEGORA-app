@@ -21,15 +21,22 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.model.NetworkSyncStatus
+import com.example.model.PerformanceMode
 import com.example.model.UserProfile
+import com.example.ui.adaptive.NetworkSyncStatusCapsule
 import com.example.ui.theme.*
 
 @Composable
 fun AegoraTopBar(
   userProfile: UserProfile,
+  syncStatus: NetworkSyncStatus = NetworkSyncStatus.SYNCED,
+  performanceMode: PerformanceMode = PerformanceMode.FULL_VISUAL,
   onSearchClick: () -> Unit,
   onNotificationClick: () -> Unit,
   onProfileClick: () -> Unit,
+  onSyncClick: () -> Unit = {},
+  onPerformanceClick: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   Surface(
@@ -42,7 +49,7 @@ fun AegoraTopBar(
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 12.dp),
+        .padding(horizontal = 16.dp, vertical = 10.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -103,11 +110,19 @@ fun AegoraTopBar(
         }
       }
 
-      // Right: Stats & Actions
+      // Right: Stats, Sync status, Performance & Actions
       Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
       ) {
+        // Network Sync Status Capsule
+        NetworkSyncStatusCapsule(
+          status = syncStatus,
+          onTriggerSync = onSyncClick,
+          onOpenSyncDetails = onSyncClick,
+          modifier = Modifier.testTag("topbar_sync_status")
+        )
+
         // Streak Chip
         Surface(
           shape = RoundedCornerShape(16.dp),
@@ -136,32 +151,19 @@ fun AegoraTopBar(
           }
         }
 
-        // XP Chip
-        Surface(
-          shape = RoundedCornerShape(16.dp),
-          color = CyberSurfaceElevated,
-          border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.5f))
+        // Performance Mode Toggle button
+        IconButton(
+          onClick = onPerformanceClick,
+          modifier = Modifier
+            .size(36.dp)
+            .testTag("topbar_performance_button")
         ) {
-          Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Icon(
-              imageVector = Icons.Default.Bolt,
-              contentDescription = "XP",
-              tint = CyberCyan,
-              modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(2.dp))
-            Text(
-              text = "${userProfile.xp}",
-              style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace
-              ),
-              color = CyberCyan
-            )
-          }
+          Icon(
+            imageVector = Icons.Default.Speed,
+            contentDescription = "Performance Mode",
+            tint = if (performanceMode == PerformanceMode.FULL_VISUAL) NeonCyan else TerminalAmber,
+            modifier = Modifier.size(18.dp)
+          )
         }
 
         // Universal Search Button
@@ -203,4 +205,5 @@ fun AegoraTopBar(
     }
   }
 }
+
 

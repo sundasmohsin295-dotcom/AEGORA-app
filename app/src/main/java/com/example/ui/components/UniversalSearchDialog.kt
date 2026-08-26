@@ -32,7 +32,17 @@ fun UniversalSearchDialog(
   onNavigateToCareer: () -> Unit,
   onNavigateToVault: () -> Unit = {},
   onNavigateToCommunity: () -> Unit = {},
-  onNavigateToUniversity: () -> Unit = {}
+  onNavigateToUniversity: () -> Unit = {},
+  onNavigateToShadowRange: () -> Unit = {},
+  onNavigateToTimelineFork: () -> Unit = {},
+  onNavigateToBioStress: () -> Unit = {},
+  onNavigateToCrisisWarRoom: () -> Unit = {},
+  onNavigateToZeroDayLab: () -> Unit = {},
+  onNavigateToGlobalRadar: () -> Unit = {},
+  onNavigateToBinaryDisassembler: () -> Unit = {},
+  onNavigateToCyberTerminal: () -> Unit = {},
+  onNavigateToLiveSocRange: () -> Unit = {},
+  onNavigateToThreatAcoustic: () -> Unit = {}
 ) {
   var searchQuery by remember { mutableStateOf("") }
 
@@ -91,6 +101,71 @@ fun UniversalSearchDialog(
           modifier = Modifier.fillMaxWidth()
         ) {
           if (searchQuery.isBlank()) {
+            item {
+              SearchItemRow(
+                icon = Icons.Default.SecurityUpdateWarning,
+                title = "Autonomous Shadow Range",
+                category = "Dynamic Zero-Day Chains & CLI",
+                chipColor = NeonPink.copy(alpha = 0.2f),
+                chipTextColor = NeonPink,
+                onClick = {
+                  onDismiss()
+                  onNavigateToShadowRange()
+                }
+              )
+            }
+            item {
+              SearchItemRow(
+                icon = Icons.Default.AltRoute,
+                title = "Incident Time-Machine & Forking",
+                category = "Dual-Timeline Hypothesis Diff",
+                chipColor = CyberCyan.copy(alpha = 0.2f),
+                chipTextColor = CyberCyan,
+                onClick = {
+                  onDismiss()
+                  onNavigateToTimelineFork()
+                }
+              )
+            }
+            item {
+              SearchItemRow(
+                icon = Icons.Default.RecordVoiceOver,
+                title = "Voice Incident War Room",
+                category = "Executive Multi-Agent Triage",
+                chipColor = CyberAmber.copy(alpha = 0.2f),
+                chipTextColor = CyberAmber,
+                onClick = {
+                  onDismiss()
+                  onNavigateToCrisisWarRoom()
+                }
+              )
+            }
+            item {
+              SearchItemRow(
+                icon = Icons.Default.BugReport,
+                title = "Zero-Day Deconstructor & YARA Studio",
+                category = "Detection Engineering",
+                chipColor = CyberEmerald.copy(alpha = 0.2f),
+                chipTextColor = CyberEmerald,
+                onClick = {
+                  onDismiss()
+                  onNavigateToZeroDayLab()
+                }
+              )
+            }
+            item {
+              SearchItemRow(
+                icon = Icons.Default.Public,
+                title = "Global Cyber Radar & Tournaments",
+                category = "DEF CON / Red-vs-Blue Swarm",
+                chipColor = CyberViolet.copy(alpha = 0.2f),
+                chipTextColor = CyberViolet,
+                onClick = {
+                  onDismiss()
+                  onNavigateToGlobalRadar()
+                }
+              )
+            }
             item {
               SearchItemRow(
                 icon = Icons.Default.Bookmark,
@@ -186,6 +261,66 @@ fun UniversalSearchDialog(
                   onClick = {
                     onDismiss()
                     onNavigateToUniversity()
+                  }
+                )
+              }
+            }
+            if ("disassembler".contains(q) || "cfg".contains(q) || "hex".contains(q) || "binary".contains(q) || "asm".contains(q)) {
+              item {
+                SearchItemRow(
+                  icon = Icons.Default.Code,
+                  title = "Binary Disassembler & CFG Visualizer",
+                  category = "Tactical Tool",
+                  chipColor = VibrantCyanContainer,
+                  chipTextColor = VibrantCyanOnContainer,
+                  onClick = {
+                    onDismiss()
+                    onNavigateToBinaryDisassembler()
+                  }
+                )
+              }
+            }
+            if ("terminal".contains(q) || "cli".contains(q) || "shell".contains(q) || "nmap".contains(q) || "ebpf".contains(q)) {
+              item {
+                SearchItemRow(
+                  icon = Icons.Default.Terminal,
+                  title = "Tactical CLI Terminal (Sandboxed)",
+                  category = "Tactical Tool",
+                  chipColor = VibrantEmeraldContainer,
+                  chipTextColor = VibrantEmeraldOnContainer,
+                  onClick = {
+                    onDismiss()
+                    onNavigateToCyberTerminal()
+                  }
+                )
+              }
+            }
+            if ("soc".contains(q) || "alert".contains(q) || "triage".contains(q) || "siem".contains(q) || "edr".contains(q)) {
+              item {
+                SearchItemRow(
+                  icon = Icons.Default.SecurityUpdateWarning,
+                  title = "Live SOC Incident Range",
+                  category = "Defense Arena",
+                  chipColor = VibrantPinkContainer,
+                  chipTextColor = VibrantPinkOnContainer,
+                  onClick = {
+                    onDismiss()
+                    onNavigateToLiveSocRange()
+                  }
+                )
+              }
+            }
+            if ("sonic".contains(q) || "acoustic".contains(q) || "waveform".contains(q) || "audio".contains(q) || "sound".contains(q)) {
+              item {
+                SearchItemRow(
+                  icon = Icons.Default.GraphicEq,
+                  title = "Threat Sonification Radar & Drill",
+                  category = "Audio Telemetry",
+                  chipColor = VibrantPurpleContainer,
+                  chipTextColor = VibrantPurpleOnContainer,
+                  onClick = {
+                    onDismiss()
+                    onNavigateToThreatAcoustic()
                   }
                 )
               }
