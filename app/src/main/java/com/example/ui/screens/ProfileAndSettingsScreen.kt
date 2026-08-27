@@ -37,6 +37,7 @@ fun ProfileAndSettingsScreen(
   onNavigateToUniversityAdmin: () -> Unit,
   onNavigateToAuth: () -> Unit = {},
   onNavigateToCognitiveProfile: () -> Unit = {},
+  onNavigateToSecurityCenter: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val userProfile by AegoraRepository.userProfile.collectAsState()
@@ -124,6 +125,35 @@ fun ProfileAndSettingsScreen(
 
       item {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          // AEGORA Zero-Trust Security Center
+          CyberCard(
+            borderColor = CyberEmerald.copy(alpha = 0.6f),
+            backgroundColor = VibrantBlueContainer.copy(alpha = 0.5f),
+            shapeRadius = 18.dp,
+            onClick = onNavigateToSecurityCenter
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(44.dp)
+                  .clip(RoundedCornerShape(12.dp))
+                  .background(CyberEmerald.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(Icons.Default.Security, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(24.dp))
+              }
+              Spacer(modifier = Modifier.width(12.dp))
+              Column(modifier = Modifier.weight(1f)) {
+                Text("AEGORA Security Center", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
+                Text("Passkeys, active sessions, risk engine & threat defense simulator", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
+              }
+              Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CyberEmerald)
+            }
+          }
+
           // Zero-Trust Security Sentinel
           CyberCard(
             borderColor = CyberCyan.copy(alpha = 0.5f),

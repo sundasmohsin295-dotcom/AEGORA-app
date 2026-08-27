@@ -56,6 +56,9 @@ fun HomeScreen(
   onNavigateToThreatAcoustic: () -> Unit = {},
   onNavigateToResourceUniverse: () -> Unit = {},
   onNavigateToCyberExpertEngine: () -> Unit = {},
+  onNavigateToWorkplaceSimulator: () -> Unit = {},
+  onNavigateToSecurityCenter: () -> Unit = {},
+  onNavigateToAuth: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val userProfile by AegoraRepository.userProfile.collectAsState()
@@ -333,6 +336,156 @@ fun HomeScreen(
           Spacer(modifier = Modifier.height(8.dp))
           Text(
             text = "Track capability over completion, resolve root-cause prerequisite gaps with 1-click diagnostic drills, and test real-world judgment under uncertainty.",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondaryDark
+          )
+        }
+      }
+    }
+
+    // 1c. PROFESSIONAL WORKPLACE EXPERIENCE ENGINE (First Day on the Job, Live Shift, Manager Slack, Reasoning Graph)
+    item {
+      Surface(
+        shape = ChamferedCutCornerShape,
+        color = CyberSurfaceElevated,
+        border = BorderStroke(1.2.dp, CyberEmerald),
+        modifier = Modifier
+          .fillMaxWidth()
+          .clickable { onNavigateToWorkplaceSimulator() }
+          .testTag("home_workplace_simulator_card")
+      ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Box(
+                modifier = Modifier
+                  .size(42.dp)
+                  .clip(HexagonShape)
+                  .background(CyberEmerald.copy(alpha = 0.2f))
+                  .border(1.2.dp, CyberEmerald, HexagonShape),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(Icons.Default.WorkHistory, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(24.dp))
+              }
+              Spacer(modifier = Modifier.width(12.dp))
+              Column {
+                Text(
+                  text = "PROFESSIONAL WORK EXPERIENCE SIMULATOR",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp
+                  ),
+                  color = CyberEmerald
+                )
+                Text(
+                  text = "Live Shifts • Tickets • Slack • Consequence Tree",
+                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                  color = TextPrimaryDark
+                )
+              }
+            }
+
+            Surface(
+              shape = RoundedCornerShape(6.dp),
+              color = CyberEmerald.copy(alpha = 0.15f),
+              border = BorderStroke(1.dp, CyberEmerald.copy(alpha = 0.4f))
+            ) {
+              Text(
+                text = "SHIFT ACTIVE",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 10.sp
+                ),
+                color = CyberEmerald,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+              )
+            }
+          }
+
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+            text = "Experience authentic cybersecurity work in living virtual enterprises. Investigate multi-source telemetry, brief AI managers, manage business downtime trade-offs, and construct forensic reasoning graphs.",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondaryDark
+          )
+        }
+      }
+    }
+
+    // 1d. AEGORA ZERO-TRUST SECURITY CENTER & PASSKEY IDENTITY GATEWAY
+    item {
+      Surface(
+        shape = ChamferedCutCornerShape,
+        color = CyberSurfaceElevated,
+        border = BorderStroke(1.2.dp, NeonCyan),
+        modifier = Modifier
+          .fillMaxWidth()
+          .clickable { onNavigateToSecurityCenter() }
+          .testTag("home_security_center_card")
+      ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Box(
+                modifier = Modifier
+                  .size(42.dp)
+                  .clip(HexagonShape)
+                  .background(NeonCyan.copy(alpha = 0.2f))
+                  .border(1.2.dp, NeonCyan, HexagonShape),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(Icons.Default.Security, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(24.dp))
+              }
+              Spacer(modifier = Modifier.width(12.dp))
+              Column {
+                Text(
+                  text = "ZERO-TRUST SECURITY CENTER",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp
+                  ),
+                  color = NeonCyan
+                )
+                Text(
+                  text = "Passkeys • Risk Engine • Attack Sim",
+                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                  color = TextPrimaryDark
+                )
+              }
+            }
+
+            Surface(
+              shape = RoundedCornerShape(6.dp),
+              color = CyberEmerald.copy(alpha = 0.15f),
+              border = BorderStroke(1.dp, CyberEmerald.copy(alpha = 0.4f))
+            ) {
+              Text(
+                text = "POSTURE 92%",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 10.sp
+                ),
+                color = CyberEmerald,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+              )
+            }
+          }
+
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+            text = "Production-grade Zero-Trust Identity management: FIDO2 Passkeys, hardware-backed Keystore attestation, Adaptive Risk telemetry, and interactive attack defense simulations.",
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondaryDark
           )

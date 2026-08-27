@@ -53,6 +53,8 @@ sealed class ScreenDestination {
   data object KnowledgeVault : ScreenDestination()
   data object ResourceUniverse : ScreenDestination()
   data object CyberExpertEngine : ScreenDestination()
+  data object WorkplaceSimulator : ScreenDestination()
+  data object SecurityCenter : ScreenDestination()
   data object Community : ScreenDestination()
   data object UniversityAdmin : ScreenDestination()
 }
@@ -170,6 +172,20 @@ fun AegoraApp() {
           )
         }
 
+        is ScreenDestination.WorkplaceSimulator -> {
+          WorkplaceSimulatorScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToLab = { _ ->
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.LABS
+            },
+            onAskAi = { _, _ ->
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.AI_MENTOR
+            }
+          )
+        }
+
         is ScreenDestination.Community -> {
           CommunityScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub }
@@ -179,6 +195,13 @@ fun AegoraApp() {
         is ScreenDestination.UniversityAdmin -> {
           UniversityAndAdminScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.SecurityCenter -> {
+          SecurityCenterScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToAuth = { currentDestination = ScreenDestination.CyberAuth }
           )
         }
 
@@ -274,7 +297,8 @@ fun AegoraApp() {
             onNavigateToCommunity = { currentDestination = ScreenDestination.Community },
             onNavigateToUniversityAdmin = { currentDestination = ScreenDestination.UniversityAdmin },
             onNavigateToAuth = { currentDestination = ScreenDestination.CyberAuth },
-            onNavigateToCognitiveProfile = { currentDestination = ScreenDestination.CognitiveProfile }
+            onNavigateToCognitiveProfile = { currentDestination = ScreenDestination.CognitiveProfile },
+            onNavigateToSecurityCenter = { currentDestination = ScreenDestination.SecurityCenter }
           )
         }
 
@@ -458,6 +482,15 @@ fun AegoraApp() {
                           },
                           onNavigateToCyberExpertEngine = {
                             currentDestination = ScreenDestination.CyberExpertEngine
+                          },
+                          onNavigateToWorkplaceSimulator = {
+                            currentDestination = ScreenDestination.WorkplaceSimulator
+                          },
+                          onNavigateToSecurityCenter = {
+                            currentDestination = ScreenDestination.SecurityCenter
+                          },
+                          onNavigateToAuth = {
+                            currentDestination = ScreenDestination.CyberAuth
                           }
                         )
                       }
