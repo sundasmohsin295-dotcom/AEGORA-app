@@ -1,6 +1,7 @@
 package com.example.ui.adaptive
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -182,6 +184,26 @@ fun NetworkSyncStatusCapsule(
   onOpenSyncDetails: () -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val infiniteTransition = rememberInfiniteTransition(label = "network_sync_animation")
+  val rotation by infiniteTransition.animateFloat(
+    initialValue = 0f,
+    targetValue = 360f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(1200, easing = LinearEasing),
+      repeatMode = RepeatMode.Restart
+    ),
+    label = "sync_rotation"
+  )
+  val pulseAlpha by infiniteTransition.animateFloat(
+    initialValue = 0.6f,
+    targetValue = 1.0f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(800, easing = FastOutSlowInEasing),
+      repeatMode = RepeatMode.Reverse
+    ),
+    label = "offline_pulse"
+  )
+
   val (bgColor, borderColor, textColor, icon) = when (status) {
     NetworkSyncStatus.SYNCED -> Quadruple(
       Color(0xFF00241B),
@@ -191,19 +213,19 @@ fun NetworkSyncStatusCapsule(
     )
     NetworkSyncStatus.SYNCING -> Quadruple(
       Color(0xFF002B3D),
-      NeonCyan.copy(alpha = 0.6f),
+      NeonCyan.copy(alpha = 0.8f),
       NeonCyan,
       Icons.Default.Sync
     )
     NetworkSyncStatus.OFFLINE -> Quadruple(
       Color(0xFF332000),
-      TerminalAmber.copy(alpha = 0.6f),
+      TerminalAmber.copy(alpha = pulseAlpha),
       TerminalAmber,
       Icons.Default.CloudOff
     )
     NetworkSyncStatus.SYNC_ERROR -> Quadruple(
       Color(0xFF3B0014),
-      NeonCrimson.copy(alpha = 0.6f),
+      NeonCrimson.copy(alpha = 0.8f),
       NeonCrimson,
       Icons.Default.Warning
     )
@@ -216,6 +238,7 @@ fun NetworkSyncStatusCapsule(
     modifier = modifier
       .clip(RoundedCornerShape(12.dp))
       .clickable { onOpenSyncDetails() }
+      .testTag("network_sync_capsule")
   ) {
     Row(
       modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -225,7 +248,9 @@ fun NetworkSyncStatusCapsule(
         imageVector = icon,
         contentDescription = status.label,
         tint = textColor,
-        modifier = Modifier.size(14.dp)
+        modifier = Modifier
+          .size(14.dp)
+          .then(if (status == NetworkSyncStatus.SYNCING) Modifier.rotate(rotation) else Modifier)
       )
       Spacer(modifier = Modifier.width(4.dp))
       Text(

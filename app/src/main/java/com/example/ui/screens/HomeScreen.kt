@@ -54,6 +54,8 @@ fun HomeScreen(
   onNavigateToCyberTerminal: () -> Unit = {},
   onNavigateToLiveSocRange: () -> Unit = {},
   onNavigateToThreatAcoustic: () -> Unit = {},
+  onNavigateToResourceUniverse: () -> Unit = {},
+  onNavigateToCyberExpertEngine: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val userProfile by AegoraRepository.userProfile.collectAsState()
@@ -259,6 +261,81 @@ fun HomeScreen(
               }
             }
           }
+        }
+      }
+    }
+
+    // 1b. AEGORA Cyber Expert Engine Master Launcher (10-Tier Ladder & Personal Cyber Twin)
+    item {
+      Surface(
+        shape = ChamferedCutCornerShape,
+        color = CyberSurface,
+        border = BorderStroke(1.2.dp, NeonCyan),
+        modifier = Modifier
+          .fillMaxWidth()
+          .clickable { onNavigateToCyberExpertEngine() }
+          .testTag("home_cyber_expert_engine_card")
+      ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Box(
+                modifier = Modifier
+                  .size(42.dp)
+                  .clip(HexagonShape)
+                  .background(NeonCyan.copy(alpha = 0.2f))
+                  .border(1.2.dp, NeonCyan, HexagonShape),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(Icons.Default.MilitaryTech, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(24.dp))
+              }
+              Spacer(modifier = Modifier.width(12.dp))
+              Column {
+                Text(
+                  text = "CYBER EXPERT DEVELOPMENT ENGINE",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp
+                  ),
+                  color = NeonCyan
+                )
+                Text(
+                  text = "10-Tier Ladder • Cyber Twin • Judgment Simulator",
+                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                  color = TextPrimaryDark
+                )
+              }
+            }
+
+            Surface(
+              shape = RoundedCornerShape(6.dp),
+              color = CyberEmerald.copy(alpha = 0.15f),
+              border = BorderStroke(1.dp, CyberEmerald.copy(alpha = 0.4f))
+            ) {
+              Text(
+                text = "TIER L3 → L4",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 10.sp
+                ),
+                color = CyberEmerald,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+              )
+            }
+          }
+
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+            text = "Track capability over completion, resolve root-cause prerequisite gaps with 1-click diagnostic drills, and test real-world judgment under uncertainty.",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondaryDark
+          )
         }
       }
     }
@@ -969,7 +1046,67 @@ fun HomeScreen(
       }
     }
 
-    // 7. Quick Access Shortcuts
+    // 7. Resource Knowledge Universe Hub (V13 Engine)
+    item {
+      Surface(
+        shape = ChamferedCutCornerShape,
+        color = CyberSurface,
+        border = BorderStroke(1.2.dp, NeonCyan.copy(alpha = 0.7f)),
+        modifier = Modifier
+          .fillMaxWidth()
+          .clickable { onNavigateToResourceUniverse() }
+          .testTag("home_resource_universe_card")
+      ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Box(
+                modifier = Modifier
+                  .size(42.dp)
+                  .clip(HexagonShape)
+                  .background(NeonCyan.copy(alpha = 0.18f))
+                  .border(1.2.dp, NeonCyan, HexagonShape),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(Icons.Default.MenuBook, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(22.dp))
+              }
+              Spacer(modifier = Modifier.width(12.dp))
+              Column {
+                Text(
+                  text = "RESOURCE INTELLIGENCE UNIVERSE",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp
+                  ),
+                  color = NeonCyan
+                )
+                Text(
+                  text = "Authoritative Books, RFCs, Papers & Standards",
+                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                  color = TextPrimaryDark
+                )
+              }
+            }
+
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = NeonCyan)
+          }
+
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+            text = "Explore NIST SP 800-61, MITRE ATT&CK, PortSwigger WAHH, and IETF RFCs connected to your career path with transparent quality scores.",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondaryDark
+          )
+        }
+      }
+    }
+
+    // 8. Quick Access Shortcuts
     item {
       Row(
         modifier = Modifier.fillMaxWidth(),

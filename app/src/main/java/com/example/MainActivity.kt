@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.network.NetworkMonitorService
 import com.example.ui.AegoraApp
 import com.example.ui.theme.AegoraTheme
 
@@ -15,6 +16,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
+    NetworkMonitorService.initialize(applicationContext)
     setContent {
       AegoraTheme {
         Surface(

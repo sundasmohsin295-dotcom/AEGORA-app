@@ -17,9 +17,12 @@ import androidx.compose.ui.unit.dp
 import com.example.data.AegoraRepository
 import com.example.model.BreakpointClass
 import com.example.ui.adaptive.*
+import com.example.ui.components.AdaptiveNetworkBanner
 import com.example.ui.components.AegoraBottomNav
 import com.example.ui.components.AegoraNavTab
 import com.example.ui.components.AegoraTopBar
+import com.example.ui.components.BannerPosition
+import com.example.ui.components.NetworkStatusBar
 import com.example.ui.components.UniversalSearchDialog
 import com.example.ui.screens.*
 import com.example.ui.theme.*
@@ -48,6 +51,8 @@ sealed class ScreenDestination {
   data object EventsAndMap : ScreenDestination()
   data object ProfileSettings : ScreenDestination()
   data object KnowledgeVault : ScreenDestination()
+  data object ResourceUniverse : ScreenDestination()
+  data object CyberExpertEngine : ScreenDestination()
   data object Community : ScreenDestination()
   data object UniversityAdmin : ScreenDestination()
 }
@@ -129,6 +134,38 @@ fun AegoraApp() {
             onNavigateBack = { currentDestination = ScreenDestination.MainHub },
             onNavigateToLesson = { lessonId ->
               currentDestination = ScreenDestination.LessonDetail(lessonId)
+            }
+          )
+        }
+
+        is ScreenDestination.ResourceUniverse -> {
+          ResourceUniverseScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToLab = { _ ->
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.LABS
+            },
+            onAskAiAboutResource = { _, _ ->
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.AI_MENTOR
+            }
+          )
+        }
+
+        is ScreenDestination.CyberExpertEngine -> {
+          CyberExpertEngineScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToLab = { _ ->
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.LABS
+            },
+            onNavigateToLesson = {
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.JOURNEY
+            },
+            onAskAi = { _, _ ->
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.AI_MENTOR
             }
           )
         }
@@ -340,12 +377,25 @@ fun AegoraApp() {
                     .padding(innerPadding),
                   contentAlignment = Alignment.TopCenter
                 ) {
-                  Box(
+                  Column(
                     modifier = Modifier
                       .fillMaxSize()
                       .widthIn(max = if (showRightIntelPanel) 1100.dp else 1280.dp)
                   ) {
-                    when (currentTab) {
+                    // Adaptive Network Banner for Offline / Syncing notice (Respects safe insets & responsive width)
+                    AdaptiveNetworkBanner(
+                      syncStatus = syncStatus,
+                      position = BannerPosition.TOP,
+                      onActionClick = { showSyncDialog = true },
+                      respectSafeAreaInsets = false
+                    )
+
+                    Box(
+                      modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                    ) {
+                      when (currentTab) {
                       AegoraNavTab.RADAR -> {
                         HomeScreen(
                           onNavigateToJourney = { currentTab = AegoraNavTab.JOURNEY },
@@ -402,6 +452,12 @@ fun AegoraApp() {
                           },
                           onNavigateToThreatAcoustic = {
                             currentDestination = ScreenDestination.ThreatAcoustic
+                          },
+                          onNavigateToResourceUniverse = {
+                            currentDestination = ScreenDestination.ResourceUniverse
+                          },
+                          onNavigateToCyberExpertEngine = {
+                            currentDestination = ScreenDestination.CyberExpertEngine
                           }
                         )
                       }
@@ -449,6 +505,7 @@ fun AegoraApp() {
                   }
                 }
               }
+            }
 
               // 4. Desktop Right Contextual Intelligence Panel (Large & Ultra-wide)
               if (showRightIntelPanel) {
