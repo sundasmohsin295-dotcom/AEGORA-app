@@ -55,6 +55,14 @@ sealed class ScreenDestination {
   data object CyberExpertEngine : ScreenDestination()
   data object WorkplaceSimulator : ScreenDestination()
   data object SecurityCenter : ScreenDestination()
+  data object MultiModalFusion : ScreenDestination()
+  data object CyberLearningGenome : ScreenDestination()
+  data object PurpleTeamArena : ScreenDestination()
+  data object SocShiftSimulator : ScreenDestination()
+  data object VoiceSocAndMultiverse : ScreenDestination()
+  data object IntelligenceConnective : ScreenDestination()
+  data object CyberRealityEngine : ScreenDestination()
+  data object CyberOperatingSystem : ScreenDestination()
   data object Community : ScreenDestination()
   data object UniversityAdmin : ScreenDestination()
 }
@@ -222,6 +230,52 @@ fun AegoraApp() {
           )
         }
 
+        is ScreenDestination.CyberLearningGenome -> {
+          CyberLearningGenomeScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToIntervention = { _ ->
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.LABS
+            }
+          )
+        }
+
+        is ScreenDestination.PurpleTeamArena -> {
+          PurpleTeamArenaScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.SocShiftSimulator -> {
+          SocShiftSimulatorScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.VoiceSocAndMultiverse -> {
+          VoiceSocAndMultiverseScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.IntelligenceConnective -> {
+          IntelligenceConnectiveScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.CyberRealityEngine -> {
+          CyberRealityScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.CyberOperatingSystem -> {
+          CyberOperatingSystemScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
         is ScreenDestination.ShadowRange -> {
           ShadowRangeScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub }
@@ -286,6 +340,16 @@ fun AegoraApp() {
         is ScreenDestination.ThreatAcoustic -> {
           ThreatAcousticScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.MultiModalFusion -> {
+          MultiModalFusionScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onAskAi = { _ ->
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.AI_MENTOR
+            }
           )
         }
 
@@ -491,6 +555,30 @@ fun AegoraApp() {
                           },
                           onNavigateToAuth = {
                             currentDestination = ScreenDestination.CyberAuth
+                          },
+                          onNavigateToMultiModalFusion = {
+                            currentDestination = ScreenDestination.MultiModalFusion
+                          },
+                          onNavigateToGenome = {
+                            currentDestination = ScreenDestination.CyberLearningGenome
+                          },
+                          onNavigateToPurpleArena = {
+                            currentDestination = ScreenDestination.PurpleTeamArena
+                          },
+                          onNavigateToSocShiftSimulator = {
+                            currentDestination = ScreenDestination.SocShiftSimulator
+                          },
+                          onNavigateToVoiceSocAndMultiverse = {
+                            currentDestination = ScreenDestination.VoiceSocAndMultiverse
+                          },
+                          onNavigateToIntelligenceConnective = {
+                            currentDestination = ScreenDestination.IntelligenceConnective
+                          },
+                          onNavigateToCyberReality = {
+                            currentDestination = ScreenDestination.CyberRealityEngine
+                          },
+                          onNavigateToCyberOperatingSystem = {
+                            currentDestination = ScreenDestination.CyberOperatingSystem
                           }
                         )
                       }
@@ -608,6 +696,9 @@ fun AegoraApp() {
           },
           onNavigateToThreatAcoustic = {
             currentDestination = ScreenDestination.ThreatAcoustic
+          },
+          onNavigateToMultiModalFusion = {
+            currentDestination = ScreenDestination.MultiModalFusion
           }
         )
       }

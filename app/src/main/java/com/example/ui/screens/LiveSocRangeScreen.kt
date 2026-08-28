@@ -31,8 +31,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.AegoraRepository
+import com.example.data.GeminiMentorService
+import com.example.model.GeneratedScenarioRecord
 import com.example.ui.components.CyberCard
 import com.example.ui.theme.*
+import kotlinx.coroutines.launch
 
 data class SocAlertItem(
   val id: String,
@@ -53,6 +57,7 @@ fun LiveSocRangeScreen(
   modifier: Modifier = Modifier
 ) {
   val haptic = LocalHapticFeedback.current
+  val coroutineScope = rememberCoroutineScope()
 
   var containmentScore by remember { mutableFloatStateOf(85f) }
   var blastRadiusPercent by remember { mutableFloatStateOf(12f) }
@@ -60,6 +65,10 @@ fun LiveSocRangeScreen(
   var activeAlertIndex by remember { mutableIntStateOf(0) }
   var lastActionFeedback by remember { mutableStateOf<String?>(null) }
   var isNotificationScaffoldGranted by remember { mutableStateOf(false) }
+  var isGeneratingVariant by remember { mutableStateOf(false) }
+  var showAuditLedgerDialog by remember { mutableStateOf(false) }
+
+  val auditLog by AegoraRepository.generatedScenariosLog.collectAsState()
 
   val incomingAlerts = remember {
     mutableStateListOf(
@@ -108,6 +117,33 @@ fun LiveSocRangeScreen(
         mitreTactic = "T1071.004 - Application Layer Protocol: DNS"
       )
     )
+  }
+
+  fun generateNewVariant() {
+    coroutineScope.launch {
+      isGeneratingVariant = true
+      val generated = GeminiMentorService.generateLiveScenarioVariant(
+        baseTacticName = "Process Injection & Reflective DLL",
+        mitreCode = "T1055.001",
+        difficulty = "Intermediate"
+      )
+      AegoraRepository.recordGeneratedScenario(generated)
+      incomingAlerts.add(
+        SocAlertItem(
+          id = "AI-GEN-${(1000..9999).random()}",
+          timestamp = generated.attackTimestampUtc,
+          sourceIp = generated.dynamicIocs.firstOrNull() ?: "185.220.101.99",
+          destHost = generated.targetHostname,
+          severity = "HIGH",
+          ruleName = generated.generatedTitle,
+          rawLog = generated.rawLogPayload,
+          isMalicious = true,
+          mitreTactic = "${generated.targetMitreTactic} - ${generated.baseConceptTitle}"
+        )
+      )
+      isGeneratingVariant = false
+      lastActionFeedback = "⚡ Generated & Rubric Verified Scenario Added to Triage Queue!"
+    }
   }
 
   val currentAlert = incomingAlerts.getOrNull(activeAlertIndex)
@@ -170,6 +206,36 @@ fun LiveSocRangeScreen(
           }
         },
         actions = {
+          IconButton(
+            onClick = { showAuditLedgerDialog = true },
+            modifier = Modifier.testTag("soc_audit_ledger_btn")
+          ) {
+            Icon(
+              Icons.Default.FactCheck,
+              contentDescription = "Rubric Audit Ledger",
+              tint = CyberCyan
+            )
+          }
+
+          IconButton(
+            onClick = { if (!isGeneratingVariant) generateNewVariant() },
+            modifier = Modifier.testTag("soc_mutate_variant_btn")
+          ) {
+            if (isGeneratingVariant) {
+              CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                color = CyberAmber,
+                strokeWidth = 2.dp
+              )
+            } else {
+              Icon(
+                Icons.Default.AutoAwesome,
+                contentDescription = "Mutate Scenario Variant",
+                tint = CyberAmber
+              )
+            }
+          }
+
           IconButton(onClick = { isNotificationScaffoldGranted = !isNotificationScaffoldGranted }) {
             Icon(
               if (isNotificationScaffoldGranted) Icons.Default.NotificationsActive else Icons.Default.NotificationsNone,
@@ -183,6 +249,97 @@ fun LiveSocRangeScreen(
     },
     containerColor = CyberBlack
   ) { innerPadding ->
+    if (showAuditLedgerDialog) {
+      AlertDialog(
+        onDismissRequest = { showAuditLedgerDialog = false },
+        title = {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.FactCheck, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+              "SCENARIO GENERATION RUBRIC AUDIT",
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
+              color = CyberCyan
+            )
+          }
+        },
+        text = {
+          LazyColumn(
+            modifier = Modifier
+              .fillMaxWidth()
+              .heightIn(max = 400.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+          ) {
+            item {
+              Text(
+                "Every generative scenario is vetted against Aegora's 4-point verification rubric before being served to the user:",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondaryDark
+              )
+            }
+
+            items(auditLog.size) { index ->
+              val item = auditLog[index]
+              Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = CyberSurfaceElevated,
+                border = androidx.compose.foundation.BorderStroke(1.dp, if (item.rubric.isApprovedForLearner) CyberEmerald.copy(alpha = 0.5f) else CyberAmber)
+              ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                  ) {
+                    Text(
+                      text = item.generatedTitle,
+                      style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                      color = TextPrimaryDark,
+                      modifier = Modifier.weight(1f)
+                    )
+                    Surface(
+                      shape = RoundedCornerShape(4.dp),
+                      color = CyberEmerald.copy(alpha = 0.2f)
+                    ) {
+                      Text(
+                        text = "Solvability: ${item.rubric.solvabilityConfidencePercent}%",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                        color = CyberEmerald,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                      )
+                    }
+                  }
+
+                  Spacer(modifier = Modifier.height(4.dp))
+                  Text(
+                    text = "MITRE: ${item.targetMitreTactic} • Target: ${item.targetHostname}",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontFamily = FontFamily.Monospace),
+                    color = CyberCyan
+                  )
+
+                  Spacer(modifier = Modifier.height(6.dp))
+                  Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    RubricCheckBadge("MITRE Valid", item.rubric.mitreAlignmentPassed)
+                    RubricCheckBadge("Solvability", item.rubric.solvabilityConfidencePercent >= 80)
+                    RubricCheckBadge("Chronology", item.rubric.chronologicalIntegrityPassed)
+                    RubricCheckBadge("Clarity", item.rubric.benignVsMaliciousClarityScore >= 75)
+                  }
+                }
+              }
+            }
+          }
+        },
+        confirmButton = {
+          Button(
+            onClick = { showAuditLedgerDialog = false },
+            colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
+          ) {
+            Text("Close Ledger", color = Color.Black, fontWeight = FontWeight.Bold)
+          }
+        },
+        containerColor = CyberDarkSlate
+      )
+    }
+
     Column(
       modifier = modifier
         .fillMaxSize()
@@ -480,6 +637,37 @@ fun LiveSocRangeScreen(
           Text("Dismiss", color = TextPrimaryDark, fontSize = 11.sp)
         }
       }
+    }
+  }
+}
+
+@Composable
+private fun RubricCheckBadge(label: String, passed: Boolean) {
+  Surface(
+    shape = RoundedCornerShape(4.dp),
+    color = if (passed) CyberEmerald.copy(alpha = 0.15f) else NeonCrimson.copy(alpha = 0.15f),
+    border = androidx.compose.foundation.BorderStroke(0.5.dp, if (passed) CyberEmerald else NeonCrimson)
+  ) {
+    Row(
+      modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Icon(
+        imageVector = if (passed) Icons.Default.Check else Icons.Default.Close,
+        contentDescription = null,
+        tint = if (passed) CyberEmerald else NeonCrimson,
+        modifier = Modifier.size(10.dp)
+      )
+      Spacer(modifier = Modifier.width(3.dp))
+      Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall.copy(
+          fontSize = 8.5.sp,
+          fontWeight = FontWeight.Bold,
+          fontFamily = FontFamily.Monospace
+        ),
+        color = if (passed) CyberEmerald else NeonCrimson
+      )
     }
   }
 }

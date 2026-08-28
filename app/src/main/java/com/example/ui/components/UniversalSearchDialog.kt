@@ -42,7 +42,8 @@ fun UniversalSearchDialog(
   onNavigateToBinaryDisassembler: () -> Unit = {},
   onNavigateToCyberTerminal: () -> Unit = {},
   onNavigateToLiveSocRange: () -> Unit = {},
-  onNavigateToThreatAcoustic: () -> Unit = {}
+  onNavigateToThreatAcoustic: () -> Unit = {},
+  onNavigateToMultiModalFusion: () -> Unit = {}
 ) {
   var searchQuery by remember { mutableStateOf("") }
 
@@ -163,6 +164,19 @@ fun UniversalSearchDialog(
                 onClick = {
                   onDismiss()
                   onNavigateToGlobalRadar()
+                }
+              )
+            }
+            item {
+              SearchItemRow(
+                icon = Icons.Default.GraphicEq,
+                title = "Multimodal Fusion Engine",
+                category = "Synchronized Voice & Topology Graph",
+                chipColor = CyberCyan.copy(alpha = 0.2f),
+                chipTextColor = CyberCyan,
+                onClick = {
+                  onDismiss()
+                  onNavigateToMultiModalFusion()
                 }
               )
             }

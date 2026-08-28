@@ -42,8 +42,10 @@ import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 
+// MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
 /**
- * AEGORA SECURE ACCESS — Production-grade Zero-Trust Identity Gateway.
+ * AEGORA SECURE ACCESS — Simulated Zero-Trust Identity Gateway.
+ * (For real production security requirements and status audit, see SECURITY_STATUS.md)
  * Features:
  * - Passkey-first authentication (FIDO2 / WebAuthn biometric attestation)
  * - Hardware Security Key NFC/USB integration
@@ -52,6 +54,7 @@ import kotlin.math.sin
  * - Adaptive Identity Risk Engine telemetry verification
  * - Dynamic security mesh, identity rings, and encrypted visual stream
  */
+// MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CyberAuthScreen(

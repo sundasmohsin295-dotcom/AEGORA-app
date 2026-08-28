@@ -1,7 +1,9 @@
 package com.example.model
 
+// MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
 /**
  * Authentication Method supported by AEGORA Zero-Trust Architecture.
+ * (For real production security status audit, see SECURITY_STATUS.md)
  */
 enum class AuthMethod(val displayName: String, val securityTier: String, val isHardwareBacked: Boolean) {
   PASSKEY("Passkey (Biometric / Screen Lock)", "Tier 1 - Phishing-Resistant FIDO2", true),

@@ -31,11 +31,12 @@ import com.example.model.SkillDomain
 import com.example.ui.components.CyberCard
 import com.example.ui.components.CyberSectionHeader
 import com.example.ui.components.EvidenceBadge
+import com.example.ui.components.LivingSkillConstellationCanvas
 import com.example.ui.components.SkillProgressBar
 import com.example.ui.theme.*
 
 enum class SkillGraphViewTab {
-  LEARNING_GENOME, SKILL_NODES, DECAY_FORECAST
+  LIVING_CONSTELLATION, LEARNING_GENOME, SKILL_NODES, DECAY_FORECAST
 }
 
 @Composable
@@ -46,7 +47,8 @@ fun SkillGraphScreen(
   val domains = AegoraRepository.skillDomains
   val genome by AegoraRepository.learningGenome.collectAsState()
   val decayForecasts by AegoraRepository.skillDecayForecasts.collectAsState()
-  var selectedTab by remember { mutableStateOf(SkillGraphViewTab.LEARNING_GENOME) }
+  val constellationNodes by AegoraRepository.constellationNodes.collectAsState()
+  var selectedTab by remember { mutableStateOf(SkillGraphViewTab.LIVING_CONSTELLATION) }
   var selectedDomainId by remember { mutableStateOf(domains.first().id) }
   val activeDomain = domains.find { it.id == selectedDomainId } ?: domains.first()
 
@@ -71,13 +73,13 @@ fun SkillGraphScreen(
         ) {
           Column(modifier = Modifier.weight(1f)) {
             Text(
-              text = "LAYER 1 & 2 INTELLIGENCE",
+              text = "LIVING INTELLIGENCE LAYER",
               style = MaterialTheme.typography.labelSmall,
               color = CyberCyan
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-              text = "Cyber Learning Genome & Skill Matrix",
+              text = "Living Skill Constellation & Genome",
               style = MaterialTheme.typography.headlineLarge,
               color = TextPrimaryDark
             )
@@ -90,12 +92,12 @@ fun SkillGraphScreen(
               .border(1.dp, CyberCyan, CircleShape),
             contentAlignment = Alignment.Center
           ) {
-            Icon(Icons.Default.Fingerprint, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.AllInclusive, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(24.dp))
           }
         }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-          text = "Aegora continuously maps how you learn, how you investigate, what causes analytical mistakes, and when knowledge will begin decaying.",
+          text = "Aegora's generative 3D skill constellation is computed live from your real telemetry. Nodes visibly dim as skills decay and brighten with spaced practice.",
           style = MaterialTheme.typography.bodyMedium,
           color = TextSecondaryDark
         )
@@ -106,7 +108,7 @@ fun SkillGraphScreen(
     item {
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
       ) {
         SkillGraphViewTab.entries.forEach { tab ->
           val isSelected = tab == selectedTab
@@ -120,18 +122,29 @@ fun SkillGraphScreen(
           ) {
             Text(
               text = when (tab) {
+                SkillGraphViewTab.LIVING_CONSTELLATION -> "🌌 3D Space"
                 SkillGraphViewTab.LEARNING_GENOME -> "🧬 Genome"
-                SkillGraphViewTab.SKILL_NODES -> "🌐 Skill Tree"
-                SkillGraphViewTab.DECAY_FORECAST -> "📉 Decay Radar"
+                SkillGraphViewTab.SKILL_NODES -> "🌐 Tree"
+                SkillGraphViewTab.DECAY_FORECAST -> "📉 Decay"
               },
-              style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
               color = if (isSelected) CyberCyan else TextSecondaryDark,
               modifier = Modifier
-                .padding(vertical = 10.dp)
+                .padding(vertical = 8.dp)
                 .wrapContentWidth(Alignment.CenterHorizontally)
             )
           }
         }
+      }
+    }
+
+    // TAB 0: LIVING 3D CONSTELLATION
+    if (selectedTab == SkillGraphViewTab.LIVING_CONSTELLATION) {
+      item {
+        LivingSkillConstellationCanvas(
+          nodes = constellationNodes,
+          onLaunchDiagnostic = { skillId -> onNavigateToPractice(skillId) }
+        )
       }
     }
 

@@ -385,6 +385,7 @@ object ZeroTrustSecurityRepository {
   )
   val attackScenarios: StateFlow<List<EducationalAttackScenario>> = _attackScenarios.asStateFlow()
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   // Authentication Actions
   fun authenticateWithPasskey(isBiometricSuccess: Boolean): Boolean {
     if (isBiometricSuccess) {
@@ -401,6 +402,7 @@ object ZeroTrustSecurityRepository {
     return false
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   fun authenticateWithHardwareKey(): Boolean {
     _isAuthenticated.value = true
     _currentAuthMethod.value = AuthMethod.HARDWARE_SECURITY_KEY
@@ -413,6 +415,7 @@ object ZeroTrustSecurityRepository {
     return true
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   fun authenticateWithGoogle(): Boolean {
     _isAuthenticated.value = true
     _currentAuthMethod.value = AuthMethod.GOOGLE_OAUTH
@@ -425,6 +428,7 @@ object ZeroTrustSecurityRepository {
     return true
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   fun authenticateWithPassword(email: String, pass: String): Pair<Boolean, String> {
     if (email.isBlank() || pass.length < 8) {
       return Pair(false, "Invalid credentials format or insufficient complexity.")
@@ -440,6 +444,7 @@ object ZeroTrustSecurityRepository {
     return Pair(true, "Authentication successful.")
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   fun logout() {
     _isAuthenticated.value = false
     logSecurityEvent(
@@ -450,6 +455,7 @@ object ZeroTrustSecurityRepository {
     )
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   // Passkey Operations
   fun registerNewPasskey(name: String, isHardwareBacked: Boolean) {
     val newPasskey = PasskeyCredential(
@@ -471,6 +477,7 @@ object ZeroTrustSecurityRepository {
     )
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   fun revokePasskey(passkeyId: String) {
     _passkeys.value = _passkeys.value.filterNot { it.id == passkeyId }
     logSecurityEvent(
@@ -481,6 +488,7 @@ object ZeroTrustSecurityRepository {
     )
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   // Session & Device Operations
   fun terminateSession(sessionId: String) {
     _activeSessions.value = _activeSessions.value.filterNot { it.sessionId == sessionId }
@@ -492,6 +500,7 @@ object ZeroTrustSecurityRepository {
     )
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   fun terminateAllOtherSessions() {
     _activeSessions.value = _activeSessions.value.filter { it.isCurrentSession }
     logSecurityEvent(
@@ -502,6 +511,7 @@ object ZeroTrustSecurityRepository {
     )
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   fun removeDevice(deviceId: String) {
     _registeredDevices.value = _registeredDevices.value.filterNot { it.id == deviceId }
     logSecurityEvent(
@@ -512,6 +522,7 @@ object ZeroTrustSecurityRepository {
     )
   }
 
+  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   fun generateNewRecoveryCodes() {
     val newCodes = (1..8).map {
       val p1 = (1000..9999).random()

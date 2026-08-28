@@ -34,8 +34,10 @@ import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+// MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
 /**
  * AEGORA ZERO-TRUST SECURITY CENTER & IDENTITY CONTROL HUB.
+ * (For real production security requirements and status audit, see SECURITY_STATUS.md)
  * Provides:
  * 1. Real Security Posture Score & Control Audits
  * 2. Passkey & FIDO2 Credential Manager
@@ -46,6 +48,7 @@ import kotlinx.coroutines.launch
  * 7. "Can You Protect AEGORA?" Educational Attack Simulator
  * 8. Step-Up Authentication Enforcement
  */
+// MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SecurityCenterScreen(

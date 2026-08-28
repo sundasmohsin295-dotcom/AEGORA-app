@@ -15,12 +15,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AegoraRepository
+import com.example.model.TopicHistoricalMemory
 import com.example.ui.components.CodeTerminalView
 import com.example.ui.components.CyberCard
 import com.example.ui.components.CyberSectionHeader
@@ -39,6 +42,7 @@ fun LessonDetailScreen(
 
   val bookmarkedIds by AegoraRepository.bookmarkedLessonIds.collectAsState()
   val isBookmarked = bookmarkedIds.contains(lesson.id)
+  val historicalMemories by AegoraRepository.topicHistoricalMemories.collectAsState()
 
   var showSimplifiedAnalogy by remember { mutableStateOf(false) }
   var showDeepDive by remember { mutableStateOf(false) }
@@ -46,6 +50,8 @@ fun LessonDetailScreen(
   var showAddNoteDialog by remember { mutableStateOf(false) }
   var noteSnippetToSave by remember { mutableStateOf("") }
   var noteContentInput by remember { mutableStateOf("") }
+
+  val relevantMemory: TopicHistoricalMemory? = historicalMemories.values.firstOrNull()
 
   Scaffold(
     topBar = {
@@ -160,6 +166,89 @@ fun LessonDetailScreen(
       contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+      // 0. Cross-Session Memory Retrospective Card
+      relevantMemory?.let { mem ->
+        item {
+          Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = CyberSurfaceElevated,
+            border = BorderStroke(1.dp, CyberViolet.copy(alpha = 0.6f)),
+            modifier = Modifier.fillMaxWidth().testTag("cross_session_memory_card")
+          ) {
+            Column(
+              modifier = Modifier
+                .background(
+                  Brush.horizontalGradient(
+                    listOf(CyberViolet.copy(alpha = 0.15f), CyberSurfaceElevated)
+                  )
+                )
+                .padding(14.dp)
+            ) {
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  Icon(Icons.Default.HistoryEdu, contentDescription = null, tint = CyberViolet, modifier = Modifier.size(18.dp))
+                  Spacer(modifier = Modifier.width(8.dp))
+                  Text(
+                    text = "CROSS-SESSION RETROSPECTIVE MEMORY",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                      fontFamily = FontFamily.Monospace,
+                      fontWeight = FontWeight.Bold,
+                      fontSize = 9.5.sp
+                    ),
+                    color = CyberViolet
+                  )
+                }
+                Surface(
+                  shape = RoundedCornerShape(4.dp),
+                  color = CyberSurface,
+                  border = BorderStroke(0.5.dp, CyberBorder)
+                ) {
+                  Text(
+                    text = "Score: ${mem.priorScore}%",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                    color = if (mem.priorScore >= 80) CyberEmerald else CyberAmber,
+                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                  )
+                }
+              }
+
+              Spacer(modifier = Modifier.height(6.dp))
+              Text(
+                text = mem.proactiveGuidanceMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextPrimaryDark
+              )
+
+              if (mem.pastMistakeNoted != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                  shape = RoundedCornerShape(6.dp),
+                  color = CyberSurface,
+                  border = BorderStroke(0.5.dp, CyberCyan.copy(alpha = 0.4f))
+                ) {
+                  Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Icon(Icons.Default.Lightbulb, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                      text = "Historical Focus: ${mem.pastMistakeNoted}",
+                      style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                      color = CyberCyan
+                    )
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
       // 1. Core Architecture Card
       item {
         CyberCard(

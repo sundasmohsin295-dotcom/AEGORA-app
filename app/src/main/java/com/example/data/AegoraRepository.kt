@@ -3302,6 +3302,1173 @@ echo "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbg
       syncStatus = _networkSyncStatus.value
     )
   }
+
+  // =========================================================================
+  // LIVING INTELLIGENCE LAYER: 7 FUTURE CAPABILITIES (REAL DATA ENFORCEMENT)
+  // =========================================================================
+
+  // 1. Living Skill Constellation Live State
+  private val _constellationNodes = MutableStateFlow(
+    listOf(
+      ConstellationNode(
+        skillId = "skill_net_01",
+        skillName = "TCP/IP & Packet Anatomy",
+        domain = "Core Networking",
+        retentionPercent = 92,
+        masteryPercent = 88,
+        decayRiskLevel = "LOW",
+        lastPracticedDaysAgo = 2,
+        normalizedX = -0.55f,
+        normalizedY = -0.45f,
+        normalizedZ = 0.2f,
+        connectedSkillIds = listOf("skill_net_02", "skill_sys_01"),
+        recommendedDiagnosticTitle = "Wireshark PCAP Filter Drill"
+      ),
+      ConstellationNode(
+        skillId = "skill_net_02",
+        skillName = "DNS Tunneling & Poisoning",
+        domain = "Core Networking",
+        retentionPercent = 78,
+        masteryPercent = 72,
+        decayRiskLevel = "MEDIUM",
+        lastPracticedDaysAgo = 8,
+        normalizedX = -0.2f,
+        normalizedY = -0.65f,
+        normalizedZ = -0.1f,
+        connectedSkillIds = listOf("skill_net_01", "skill_soc_02"),
+        recommendedDiagnosticTitle = "DNS Tunneling IOC Extraction"
+      ),
+      ConstellationNode(
+        skillId = "skill_sys_01",
+        skillName = "Linux CLI Forensics",
+        domain = "Systems Telemetry",
+        retentionPercent = 48,
+        masteryPercent = 65,
+        decayRiskLevel = "CRITICAL",
+        lastPracticedDaysAgo = 19,
+        normalizedX = -0.6f,
+        normalizedY = 0.25f,
+        normalizedZ = -0.4f,
+        connectedSkillIds = listOf("skill_net_01", "skill_soc_01"),
+        recommendedDiagnosticTitle = "auth.log & auditd CLI Triage"
+      ),
+      ConstellationNode(
+        skillId = "skill_sys_02",
+        skillName = "Windows Event IDs",
+        domain = "Systems Telemetry",
+        retentionPercent = 62,
+        masteryPercent = 70,
+        decayRiskLevel = "HIGH",
+        lastPracticedDaysAgo = 14,
+        normalizedX = -0.25f,
+        normalizedY = 0.45f,
+        normalizedZ = 0.3f,
+        connectedSkillIds = listOf("skill_sys_01", "skill_soc_01", "skill_ad_01"),
+        recommendedDiagnosticTitle = "Event 4624/4625 Anomaly Matrix"
+      ),
+      ConstellationNode(
+        skillId = "skill_soc_01",
+        skillName = "Sysmon & EDR Telemetry",
+        domain = "SOC Defense",
+        retentionPercent = 84,
+        masteryPercent = 81,
+        decayRiskLevel = "LOW",
+        lastPracticedDaysAgo = 3,
+        normalizedX = 0.15f,
+        normalizedY = 0.1f,
+        normalizedZ = 0.5f,
+        connectedSkillIds = listOf("skill_sys_02", "skill_soc_02", "skill_hunt_01"),
+        recommendedDiagnosticTitle = "Process Injection & Sysmon 10"
+      ),
+      ConstellationNode(
+        skillId = "skill_soc_02",
+        skillName = "SIEM Log Correlation",
+        domain = "SOC Defense",
+        retentionPercent = 58,
+        masteryPercent = 68,
+        decayRiskLevel = "HIGH",
+        lastPracticedDaysAgo = 16,
+        normalizedX = 0.45f,
+        normalizedY = -0.3f,
+        normalizedZ = -0.2f,
+        connectedSkillIds = listOf("skill_soc_01", "skill_hunt_01"),
+        recommendedDiagnosticTitle = "Multi-Source Timestamp Alignment"
+      ),
+      ConstellationNode(
+        skillId = "skill_ad_01",
+        skillName = "Kerberoasting & AD Defense",
+        domain = "Identity Security",
+        retentionPercent = 51,
+        masteryPercent = 60,
+        decayRiskLevel = "CRITICAL",
+        lastPracticedDaysAgo = 21,
+        normalizedX = 0.35f,
+        normalizedY = 0.6f,
+        normalizedZ = -0.5f,
+        connectedSkillIds = listOf("skill_sys_02", "skill_soc_01"),
+        recommendedDiagnosticTitle = "Event 4769 RC4 Downgrade Triage"
+      ),
+      ConstellationNode(
+        skillId = "skill_hunt_01",
+        skillName = "Hypothesis Threat Hunting",
+        domain = "Proactive Defense",
+        retentionPercent = 73,
+        masteryPercent = 75,
+        decayRiskLevel = "MEDIUM",
+        lastPracticedDaysAgo = 7,
+        normalizedX = 0.7f,
+        normalizedY = 0.15f,
+        normalizedZ = 0.1f,
+        connectedSkillIds = listOf("skill_soc_02", "skill_soc_01"),
+        recommendedDiagnosticTitle = "Adversary TTP Hunting in Splunk"
+      )
+    )
+  )
+  val constellationNodes: StateFlow<List<ConstellationNode>> = _constellationNodes.asStateFlow()
+
+  fun recordSkillPracticed(skillId: String, newRetention: Int = 95) {
+    _constellationNodes.value = _constellationNodes.value.map { node ->
+      if (node.skillId == skillId) {
+        node.copy(
+          retentionPercent = newRetention,
+          decayRiskLevel = "LOW",
+          lastPracticedDaysAgo = 0,
+          masteryPercent = (node.masteryPercent + 4).coerceAtMost(100)
+        )
+      } else node
+    }
+  }
+
+  // 2. Ambient Co-Pilot Persistent State
+  private val _activeAmbientObservation = MutableStateFlow<AmbientObservation?>(
+    AmbientObservation(
+      id = "obs_init_01",
+      screenContext = "home_radar",
+      observationText = "Linux CLI Forensics retention dropped to 48% (19 days inactive). Master this to unlock your Month 1 Milestone.",
+      groundingSource = "Skill Decay Forecast: Linux Forensics",
+      suggestedPrompt = "Help me review Linux auth.log triage commands"
+    )
+  )
+  val activeAmbientObservation: StateFlow<AmbientObservation?> = _activeAmbientObservation.asStateFlow()
+
+  fun setAmbientObservation(observation: AmbientObservation?) {
+    _activeAmbientObservation.value = observation
+  }
+
+  fun dismissAmbientObservation() {
+    _activeAmbientObservation.value = null
+  }
+
+  // 3. Grounded Predictive Next-Action Engine
+  private val _predictiveNextActions = MutableStateFlow(
+    listOf(
+      PredictiveNextAction(
+        id = "act_01",
+        title = "Diagnostic Review: Linux CLI Forensics",
+        category = "Decay Prevention",
+        destinationTag = "lesson_detail",
+        urgencyScore = 96,
+        primaryReason = "Retention dropped to 48% (below 60% baseline). It is a prerequisite for your active Phase 1 Linux Log Triage project.",
+        reasoningTags = listOf("Decay Risk: Critical", "Phase 1 Prerequisite", "Target: SOC Analyst"),
+        estimatedMins = 8,
+        xpReward = 120,
+        telemetryMetric = "Retention: 48% (Threshold: 60%)"
+      ),
+      PredictiveNextAction(
+        id = "act_02",
+        title = "Multi-Source Timestamp Alignment",
+        category = "Mistake Remediation",
+        destinationTag = "live_soc_range",
+        urgencyScore = 88,
+        primaryReason = "Your Learning Genome flagged 'Investigation Correlation & Timestamp Triage' as your #1 operational bottleneck.",
+        reasoningTags = listOf("Genome Bottleneck", "Cognitive Focus", "MITRE T1059"),
+        estimatedMins = 15,
+        xpReward = 200,
+        telemetryMetric = "Correlation Accuracy: 58%"
+      ),
+      PredictiveNextAction(
+        id = "act_03",
+        title = "Kerberoasting RC4 Anomaly Drill",
+        category = "Identity Defense",
+        destinationTag = "lab_simulator",
+        urgencyScore = 82,
+        primaryReason = "Unpracticed for 21 days with 51% retention. Required for enterprise Active Directory defense readiness.",
+        reasoningTags = listOf("Decay Risk: Critical", "Identity Gap"),
+        estimatedMins = 12,
+        xpReward = 180,
+        telemetryMetric = "Retention: 51% (Threshold: 60%)"
+      ),
+      PredictiveNextAction(
+        id = "act_04",
+        title = "Daily Spaced Repetition Queue (3 Cards)",
+        category = "Spaced Review",
+        destinationTag = "knowledge_vault",
+        urgencyScore = 75,
+        primaryReason = "3 high-priority flashcards are due today (TCP handshake flags, Sysmon Event IDs, and DNS tunneling).",
+        reasoningTags = listOf("Spaced Interval Due", "Streak Protection"),
+        estimatedMins = 5,
+        xpReward = 80,
+        telemetryMetric = "3 Cards Due"
+      )
+    )
+  )
+  val predictiveNextActions: StateFlow<List<PredictiveNextAction>> = _predictiveNextActions.asStateFlow()
+
+  // 4. Multi-Modal Fusion Session State
+  private val _multiModalFusionSession = MutableStateFlow(
+    MultiModalFusionSession(
+      sessionId = "fusion_sess_01",
+      scenarioTitle = "Multi-Modal Triage: APT29 Reflective DLL & Kerberoast",
+      attackChainSummary = "Adversary established Initial Access via spear-phishing macro on Workstation-04 and is attempting Kerberoast ticket requests against Domain Controller DC01.",
+      targetRole = "SOC Analyst L2",
+      isLiveAudioActive = false,
+      activeTranscript = listOf(
+        Pair("AEGORA SOC Lead (AI)", "Analyst, we are seeing anomalous Kerberos ticket requests on DC01. Look at the on-screen process tree and telemetry nodes."),
+        Pair("Alex Vance (You)", "Checking now. The parent process is winword.exe launching powershell.exe with an encoded command.")
+      ),
+      evidenceNodes = listOf(
+        FusionEvidenceNode(
+          id = "fev_01",
+          label = "Sysmon Event ID 1: WINWORD -> PowerShell",
+          category = "PROCESS_TREE",
+          details = "PID 4812 spawned powershell.exe -Enc JABj... from winword.exe",
+          timestampUtc = "02:14:02 UTC",
+          isFlaggedSuspicious = true,
+          isCurrentlyDiscussedInAudio = true,
+          visualCoordinates = Pair(0.2f, 0.3f)
+        ),
+        FusionEvidenceNode(
+          id = "fev_02",
+          label = "Outbound TCP 185.220.101.5:443",
+          category = "NETWORK_FLOW",
+          details = "Established HTTPS connection to known Tor Exit / C2 node",
+          timestampUtc = "02:14:08 UTC",
+          isFlaggedSuspicious = true,
+          isCurrentlyDiscussedInAudio = false,
+          visualCoordinates = Pair(0.6f, 0.25f)
+        ),
+        FusionEvidenceNode(
+          id = "fev_03",
+          label = "Event 4769: Kerberos Ticket (RC4 0x17)",
+          category = "AUTH_EVENT",
+          details = "SPN MSSQLSvc/sql01.corp requested with legacy RC4 cipher",
+          timestampUtc = "02:14:19 UTC",
+          isFlaggedSuspicious = true,
+          isCurrentlyDiscussedInAudio = true,
+          visualCoordinates = Pair(0.5f, 0.7f)
+        ),
+        FusionEvidenceNode(
+          id = "fev_04",
+          label = "Memory Artifact: Reflective Loader",
+          category = "MEMORY_ARTIFACT",
+          details = "PAGE_EXECUTE_READWRITE memory allocation in spoolsv.exe space",
+          timestampUtc = "02:14:35 UTC",
+          isFlaggedSuspicious = true,
+          isCurrentlyDiscussedInAudio = false,
+          visualCoordinates = Pair(0.8f, 0.65f)
+        )
+      ),
+      selectedNodeId = "fev_01"
+    )
+  )
+  val multiModalFusionSession: StateFlow<MultiModalFusionSession> = _multiModalFusionSession.asStateFlow()
+
+  fun selectFusionEvidenceNode(nodeId: String) {
+    _multiModalFusionSession.value = _multiModalFusionSession.value.copy(
+      selectedNodeId = nodeId,
+      evidenceNodes = _multiModalFusionSession.value.evidenceNodes.map { node ->
+        node.copy(isCurrentlyDiscussedInAudio = node.id == nodeId)
+      }
+    )
+  }
+
+  fun toggleLiveAudio(isActive: Boolean) {
+    _multiModalFusionSession.value = _multiModalFusionSession.value.copy(isLiveAudioActive = isActive)
+  }
+
+  fun addFusionTranscriptTurn(speaker: String, text: String, highlightedNodeId: String? = null) {
+    val current = _multiModalFusionSession.value
+    val newTranscript = current.activeTranscript + Pair(speaker, text)
+    val updatedNodes = current.evidenceNodes.map { node ->
+      node.copy(isCurrentlyDiscussedInAudio = node.id == highlightedNodeId)
+    }
+    _multiModalFusionSession.value = current.copy(
+      activeTranscript = newTranscript,
+      evidenceNodes = updatedNodes,
+      selectedNodeId = highlightedNodeId ?: current.selectedNodeId
+    )
+  }
+
+  // 5. Generative Scenario Variants Scale & Audit History
+  private val _generatedScenariosLog = MutableStateFlow(
+    listOf(
+      GeneratedScenarioRecord(
+        id = "gen_001",
+        baseConceptTitle = "PowerShell Encoded Command",
+        generatedTitle = "Adversary Variant: Base64 Reflective Loader in Finance",
+        targetMitreTactic = "T1059.001",
+        dynamicIocs = listOf("185.220.101.99", "SHA256: 4f53cda18...", "User: fin_clerk_02"),
+        targetHostname = "srv-payroll-03.corp",
+        attackTimestampUtc = "03:41:19 UTC",
+        rawLogPayload = "powershell.exe -w hidden -enc SQBFAFgAIAAoAE4AZQB3... Host: srv-payroll-03.corp",
+        rubric = ScenarioRubricEvaluation(
+          mitreAlignmentPassed = true,
+          solvabilityConfidencePercent = 96,
+          chronologicalIntegrityPassed = true,
+          benignVsMaliciousClarityScore = 92,
+          reviewerNotes = "Clear process parentage and identifiable IOC trail."
+        ),
+        generatedAt = "20 mins ago"
+      ),
+      GeneratedScenarioRecord(
+        id = "gen_002",
+        baseConceptTitle = "Kerberoast SPN Request",
+        generatedTitle = "Adversary Variant: Legacy RC4 Ticket Extraction on DC-Backup",
+        targetMitreTactic = "T1558.003",
+        dynamicIocs = listOf("192.168.1.188", "SPN: MSSQLSvc/db-cluster", "Enc: 0x17"),
+        targetHostname = "dc-backup.corp.internal",
+        attackTimestampUtc = "03:44:05 UTC",
+        rubric = ScenarioRubricEvaluation(
+          mitreAlignmentPassed = true,
+          solvabilityConfidencePercent = 93,
+          chronologicalIntegrityPassed = true,
+          benignVsMaliciousClarityScore = 95,
+          reviewerNotes = "Event 4769 parameters verified against Kerberos specifications."
+        ),
+        rawLogPayload = "Event 4769: A Kerberos service ticket was requested. Service Name: MSSQLSvc/db-cluster Ticket Options: 0x40810000 Ticket Encryption Type: 0x17",
+        generatedAt = "1 hour ago"
+      )
+    )
+  )
+  val generatedScenariosLog: StateFlow<List<GeneratedScenarioRecord>> = _generatedScenariosLog.asStateFlow()
+
+  fun recordGeneratedScenario(record: GeneratedScenarioRecord) {
+    _generatedScenariosLog.value = listOf(record) + _generatedScenariosLog.value
+  }
+
+  // 6. Flow & Behavioral Pacing Engine
+  private val _behavioralPacing = MutableStateFlow(
+    BehavioralPacingSuggestion(
+      sessionDurationMins = 38,
+      recentMistakeCount = 2,
+      consecutiveTriageCount = 6,
+      shouldSuggestPacing = true,
+      questionPrompt = "Noticed a couple of tough triage correlations in this session. Want a lighter 10-minute flashcard review or a quick pause?",
+      suggestedActionTitle = "Switch to 10m Spaced Flashcards",
+      suggestedActionTag = "knowledge_vault"
+    )
+  )
+  val behavioralPacing: StateFlow<BehavioralPacingSuggestion> = _behavioralPacing.asStateFlow()
+
+  fun dismissBehavioralPacing() {
+    _behavioralPacing.value = _behavioralPacing.value.copy(shouldSuggestPacing = false)
+  }
+
+  // 7. Cross-Session Memory Registry
+  private val _topicHistoricalMemories = MutableStateFlow(
+    mapOf(
+      "top_103" to TopicHistoricalMemory(
+        topicId = "top_103",
+        topicName = "Linux CLI Forensics & /var/log Triage",
+        lastStudiedDate = "19 days ago",
+        daysSinceLastAttempt = 19,
+        priorScore = 65,
+        pastMistakeNoted = "Flagged timestamp correlation late & missed /var/log/audit/audit.log",
+        proactiveGuidanceMessage = "Welcome back to Linux Triage. In your previous session, you flagged the timestamp correlation late. Today, inspect auth.log timestamps before executing grep filters."
+      ),
+      "top_104" to TopicHistoricalMemory(
+        topicId = "top_104",
+        topicName = "Windows Event IDs & Security Architecture",
+        lastStudiedDate = "14 days ago",
+        daysSinceLastAttempt = 14,
+        priorScore = 70,
+        pastMistakeNoted = "Confused Event ID 4624 Logon Type 3 (Network) with Type 10 (RDP)",
+        proactiveGuidanceMessage = "Welcome back. In your last run, you mixed up Logon Type 3 (Network SMB) and Type 10 (RemoteInteractive RDP). Keep that distinction sharp today!"
+      ),
+      "top_201" to TopicHistoricalMemory(
+        topicId = "top_201",
+        topicName = "Sysmon Deployment & Event ID Mapping",
+        lastStudiedDate = "3 days ago",
+        daysSinceLastAttempt = 3,
+        priorScore = 84,
+        pastMistakeNoted = null,
+        proactiveGuidanceMessage = "Great progress on Sysmon! You scored 84% on Event ID 1 & 3 rules 3 days ago. Ready to advance to Event ID 7 DLL side-loading?"
+      )
+    )
+  )
+  val topicHistoricalMemories: StateFlow<Map<String, TopicHistoricalMemory>> = _topicHistoricalMemories.asStateFlow()
+
+  fun getHistoricalMemoryForTopic(topicId: String): TopicHistoricalMemory? {
+    return _topicHistoricalMemories.value[topicId]
+  }
+
+  // ============================================================================
+  // AEGORA v7.0 CYBER ECOSYSTEM DATA FLOWS
+  // ============================================================================
+
+  // 1. Cyber Learning Genome 2.0 State
+  private val _cyberLearningGenomeV7 = MutableStateFlow(
+    CyberLearningGenomeV7(
+      callsign = "VANCE-SOC",
+      dimensions = listOf(
+        GenomeDimensionNode("dim_know", "Core Knowledge & Standards", 78, 24, "HIGH", DimensionTrend.STEADY_GROWTH, 82, emptyList(), "Complete RFC 8446 TLS 1.3 Key Exchange Deep Dive", "2 days ago", "10-Item Diagnostic"),
+        GenomeDimensionNode("dim_pract", "Practical Hands-On Triage", 71, 19, "HIGH", DimensionTrend.STEADY_GROWTH, 75, listOf("TCP Windowing & Flags"), "Live SOC Triage: 3 Multi-Host Intrusions", "Yesterday", "Live SOC Evaluation"),
+        GenomeDimensionNode("dim_invest", "Forensic Investigation Depth", 64, 14, "MEDIUM", DimensionTrend.AT_RISK_DECAY, 68, listOf("Sysmon Event ID 7 DLL Injection"), "Execute 2 Blind Unlabeled Investigations", "4 days ago", "Unscripted PCAP Rebuild"),
+        GenomeDimensionNode("dim_reason", "Hypothesis & Causal Reasoning", 73, 17, "HIGH", DimensionTrend.STEADY_GROWTH, 78, emptyList(), "Counterfactual Reasoning Scenario", "3 days ago", "Alternative Hypothesis Drill"),
+        GenomeDimensionNode("dim_decide", "Decision Making Under Pressure", 61, 11, "MEDIUM", DimensionTrend.BLOCKED_BY_PREREQ, 62, listOf("Host Isolation Blast Radius Policy"), "Crisis War Room Session with 15m Timer", "5 days ago", "Manager Handoff Review"),
+        GenomeDimensionNode("dim_comm", "Stakeholder Communication", 82, 16, "HIGH", DimensionTrend.RAPIDLY_ASCENDING, 89, emptyList(), "CISO & Legal Briefing Translation", "Yesterday", "Executive Summary Scorecard"),
+        GenomeDimensionNode("dim_trans", "Cross-Domain Transfer", 58, 8, "PROVISIONAL", DimensionTrend.AT_RISK_DECAY, 54, listOf("Kubernetes Audit Log Structure"), "Transfer Test: Windows Event ID 4688 to K8s Exec Logs", "7 days ago", "Novel Transfer Challenge"),
+        GenomeDimensionNode("dim_retent", "Spaced Retention & Memory", 69, 32, "HIGH", DimensionTrend.STEADY_GROWTH, 71, emptyList(), "15-Minute Spaced Flashcard Review", "Today", "Ebbinghaus Review Run")
+      ),
+      learningVelocity = "HIGH",
+      currentPrimaryBottleneck = "Cross-Domain Log Correlation (Windows Event Logs -> Cloud Kubernetes Audit Logs)",
+      confidenceCalibration = "WELL_CALIBRATED",
+      evidenceIntegrityScore = 94,
+      nextTargetInterventions = listOf(
+        "3 Correlation Investigations (Sysmon ID 1 + ID 3 + Windows 4688)",
+        "1 Blind Investigation without threat labels",
+        "1 Novel Transfer Challenge (Cloud Kubernetes Triage)"
+      )
+    )
+  )
+  val cyberLearningGenomeV7: StateFlow<CyberLearningGenomeV7> = _cyberLearningGenomeV7.asStateFlow()
+
+  // 2. Investigation Fingerprint & Training Reference Model
+  private val _investigationFingerprint = MutableStateFlow(
+    InvestigationFingerprintReport(
+      reportId = "ifp_2026_091",
+      metrics = listOf(
+        InvestigationFingerprintMetric("Evidence-First Investigation", 82, 85, "METHODOLOGY", "Strong preference to verify raw pcap before guessing"),
+        InvestigationFingerprintMetric("Timeline & Temporal Analysis", 71, 80, "METHODOLOGY", "Consistently builds chronological sequence of events"),
+        InvestigationFingerprintMetric("Cross-Source IOC Correlation", 63, 78, "TOOL_FLUENCY", "Tends to analyze endpoint logs before correlating with firewall"),
+        InvestigationFingerprintMetric("Context & Baseline Checking", 48, 75, "METHODOLOGY", "Occasionally skips verifying if user is expected admin on host"),
+        InvestigationFingerprintMetric("Hypothesis Falsification Testing", 77, 82, "COGNITIVE_BIAS", "Actively tests alternative explanations before closing alert")
+      ),
+      prematureClosureRisk = "MEDIUM",
+      evidenceFirstRatio = 82,
+      timelineUsageRatio = 71,
+      iocCorrelationRatio = 63,
+      contextValidationRatio = 48,
+      hypothesisTestingRatio = 77,
+      recommendedRemediationDrill = "Execute Context Baseline Validation Drill (Verify asset ownership & normal working hours before containment)"
+    )
+  )
+  val investigationFingerprint: StateFlow<InvestigationFingerprintReport> = _investigationFingerprint.asStateFlow()
+
+  // 3. Knowledge Transfer Engine Tests
+  private val _knowledgeTransferTests = MutableStateFlow(
+    listOf(
+      KnowledgeTransferTest(
+        id = "trans_001",
+        sourceConceptTitle = "Windows Event ID 4688 (Process Creation with Command Line)",
+        transferScenarioTitle = "Kubernetes Pod Container Command Execution (audit.k8s.io)",
+        domainContext = "Cloud Native Infrastructure / EKS Cluster",
+        transferPrompt = "You have identified an attacker running 'whoami && curl pastebin' via Windows CMD in Lab 03. How does this exact same command injection intent manifest in Kubernetes API server audit logs for a pod exec request?",
+        measuredDimensions = listOf("Recall", "Application", "Transfer", "Generalization"),
+        currentStatus = TransferStatus.DEMONSTRATED,
+        evaluationFeedback = "Accurately recognized 'pods/exec' subresource verb and 'command' query parameters in K8s JSON audit payload.",
+        remediationDrill = "Practice AWS CloudTrail assume-role transfer test next."
+      ),
+      KnowledgeTransferTest(
+        id = "trans_002",
+        sourceConceptTitle = "TCP SYN Flood & Half-Open Handshake Exhaustion",
+        transferScenarioTitle = "HTTP/2 Rapid Reset Attack (CVE-2023-44487)",
+        domainContext = "Application Layer DDoS / Web Server Architecture",
+        transferPrompt = "Explain how the resource exhaustion mechanics of a Layer 4 TCP SYN flood translate to the multiplexed stream cancellation behavior of HTTP/2 RST_STREAM frames.",
+        measuredDimensions = listOf("Underlying Protocol Reasoning", "Resource Bound Analysis", "Defensive Mitigations"),
+        currentStatus = TransferStatus.PARTIAL,
+        evaluationFeedback = "Understands stream exhaustion, but missed server-side request concurrency tracking limit nuance.",
+        remediationDrill = "Review RFC 7540 HTTP/2 Stream States & NGINX keepalive timeout controls."
+      )
+    )
+  )
+  val knowledgeTransferTests: StateFlow<List<KnowledgeTransferTest>> = _knowledgeTransferTests.asStateFlow()
+
+  // 4. Concept Collision Matrix 2.0
+  private val _conceptCollisionPairs = MutableStateFlow(
+    listOf(
+      ConceptCollisionPair(
+        id = "col_001",
+        conceptA = "SIEM (Security Information & Event Mgmt)",
+        conceptB = "SOAR (Security Orchestration, Automation & Response)",
+        confusionRatePercent = 64,
+        coreDistinction = "SIEM aggregates, indexes, and correlates telemetry for detection; SOAR executes automated playbooks and API actions for containment.",
+        practicalTrapExample = "Thinking Splunk Enterprise Core automatically isolates infected endpoints without Phantom/SOAR integration.",
+        microDrillTitle = "Classify 10 Architecture Components as SIEM Ingest vs SOAR Playbook",
+        isResolved = false
+      ),
+      ConceptCollisionPair(
+        id = "col_002",
+        conceptA = "Authentication (Who are you?)",
+        conceptB = "Authorization (What are you allowed to do?)",
+        confusionRatePercent = 38,
+        coreDistinction = "Authentication verifies identity via credentials/FIDO2; Authorization evaluates permissions and RBAC/ABAC policies.",
+        practicalTrapExample = "Treating a valid JWT signature as proof the user is authorized to delete a database tenant.",
+        microDrillTitle = "Identify 5 Vulnerabilities as Broken Auth (CWE-287) vs Broken Access Control (CWE-862)",
+        isResolved = true
+      ),
+      ConceptCollisionPair(
+        id = "col_003",
+        conceptA = "Hashing (One-way deterministic digest)",
+        conceptB = "Encryption (Two-way reversible confidentiality)",
+        confusionRatePercent = 29,
+        coreDistinction = "Hashing cannot be reversed back to plain text; Encryption uses cryptographic keys to decrypt ciphertext.",
+        practicalTrapExample = "Claiming passwords should be 'encrypted with AES' rather than hashed with Argon2id and salt.",
+        microDrillTitle = "Match 8 Cryptographic Primitives to Hash, Symmetric Cipher, or Asymmetric Signature",
+        isResolved = true
+      )
+    )
+  )
+  val conceptCollisionPairs: StateFlow<List<ConceptCollisionPair>> = _conceptCollisionPairs.asStateFlow()
+
+  // 5. Reverse Job Roadmap State
+  private val _reverseJobRoadmap = MutableStateFlow(
+    ReverseJobRoadmapResult(
+      jobTitle = "SOC Analyst (Level 1) — Cyber Defense Operations",
+      targetCompanyOrSector = "Enterprise Financial Services / Managed MSSP",
+      rawDescriptionSample = "Seeking Junior SOC Analyst. Required: SIEM (Splunk/Sentinel), TCP/IP packet analysis, Windows Event Log investigation (Event IDs 4624, 4688, 4720), EDR telemetry (CrowdStrike/Defender), basic Python scripting for triage automation.",
+      extractedSkills = listOf(
+        JobSkillMatch("SIEM Alert Triage (Splunk/Wazuh)", true, 84, "Required", 1),
+        JobSkillMatch("TCP/IP & Wireshark PCAP Filtering", true, 78, "Required", 2),
+        JobSkillMatch("Windows Event Logs & Sysmon", true, 72, "Required", 3),
+        JobSkillMatch("EDR Investigation & Host Isolation", false, 48, "Required", 4),
+        JobSkillMatch("Python Scripting for Log Parsing", false, 35, "Preferred", 5),
+        JobSkillMatch("Phishing Email Header Analysis", true, 88, "Required", 6)
+      ),
+      aegoraTrainingMatchScore = 71,
+      shortestEvidenceGapPlan = listOf(
+        "Priority 1: Complete EDR Live Host Isolation Lab (Estimated: 45 mins)",
+        "Priority 2: Python Regex Automation Script for Apache Access Logs (Estimated: 30 mins)",
+        "Priority 3: Publish Skill Passport verified credential for Windows Forensics"
+      ),
+      recommendedNextProject = "Automated PCAP & Sysmon Log Correlation Pipeline in Python"
+    )
+  )
+  val reverseJobRoadmap: StateFlow<ReverseJobRoadmapResult> = _reverseJobRoadmap.asStateFlow()
+
+  // 6. Stakeholder Translation Engine
+  private val _stakeholderTranslations = MutableStateFlow(
+    listOf(
+      StakeholderTranslationSubmission(
+        audience = StakeholderAudience.SOC_PEER,
+        learnerSummaryText = "Host WIN-FIN-04 infected via malicious macro in invoice.doc. Spawned powershell.exe -enc connecting to C2 IP 198.51.100.44:8443. SHA-256 hash verified. Endpoint isolated in EDR.",
+        accuracyScore = 95,
+        clarityScore = 92,
+        businessImpactScore = 70,
+        jargonControlScore = 96,
+        actionabilityScore = 94,
+        feedbackCritique = "Excellent technical precision. Exact C2 indicators and hashes provided cleanly."
+      ),
+      StakeholderTranslationSubmission(
+        audience = StakeholderAudience.CISO,
+        learnerSummaryText = "Single workstation in Finance was compromised via phishing. Workstation was immediately isolated within 8 minutes of alert. Zero evidence of lateral movement to payroll DB. Regulatory reporting not triggered.",
+        accuracyScore = 90,
+        clarityScore = 94,
+        businessImpactScore = 92,
+        jargonControlScore = 88,
+        actionabilityScore = 90,
+        feedbackCritique = "Outstanding executive summary. Answers blast radius, containment timing, and regulatory impact without drowning in raw hashes."
+      )
+    )
+  )
+  val stakeholderTranslations: StateFlow<List<StakeholderTranslationSubmission>> = _stakeholderTranslations.asStateFlow()
+
+  // 7. Cyber Intelligence Explainer Items
+  private val _cyberIntelligenceExplainers = MutableStateFlow(
+    listOf(
+      CyberIntelligenceExplainerItem(
+        id = "cve_2026_01",
+        cveOrThreatTitle = "CVE-2024-3094: XZ Utils Backdoor & SSH Authentication Bypass",
+        sourceTier = IntelligenceSourceTier.OFFICIAL_ADVISORY,
+        publicationDate = "2024-03-29 (Updated Reference)",
+        retrievedTimestamp = "2026-08-27 12:00 UTC",
+        confidenceScore = 99,
+        whatHappened = "Sophisticated multi-year supply chain backdoor injected into upstream xz/liblzma tarballs, targeting OpenSSH server authentication during RSA decryption.",
+        whoIsAffected = "Linux distributions shipping vulnerable xz-utils versions 5.6.0 and 5.6.1 with patched OpenSSH linking to liblzma.",
+        whyItMatters = "Allows unauthorized remote code execution and SSH authentication bypass by providing a crafted signature certificate matching attacker private key.",
+        technicalRootCause = "Malicious M4 macro in build-to-pkg script injected compiled binary payload directly into liblzma Makefile during release tarball creation.",
+        attackPathBreakdown = "Supply Chain -> Upstream Git Commit -> Obfuscated Test Payload -> Tarball Extraction -> liblzma build -> OpenSSH linkage -> RSA verification hijack.",
+        detectionSigmaRule = "Sigma: Check library checksums of liblzma.so.5.6.0 & detect unexpected child processes of sshd.",
+        mitigationAndPatch = "Downgrade xz-utils to 5.4.x stable or upgrade to vendor remediated releases immediately.",
+        relatedMitreTechniques = listOf("T1195.001 - Supply Chain Compromise", "T1556 - Modify Authentication Process"),
+        relatedAegoraSkills = listOf("Linux Forensics", "Binary Disassembly", "Supply Chain Hardening"),
+        practiceLabRoute = "binary_disassembler",
+        officialSourceLink = "https://nvd.nist.gov/vuln/detail/CVE-2024-3094"
+      )
+    )
+  )
+  val cyberIntelligenceExplainers: StateFlow<List<CyberIntelligenceExplainerItem>> = _cyberIntelligenceExplainers.asStateFlow()
+
+  // ============================================================================
+  // AEGORA v8.0 AUTONOMOUS CYBER LEARNING & CAREER ECOSYSTEM DATA FLOWS
+  // ============================================================================
+
+  // 1. Cyber Twin 2.0 State with dynamic evidence trail
+  private val _cyberTwinV8 = MutableStateFlow(
+    CyberTwinV8State(
+      callsign = "VANCE-SOC",
+      targetCareerRole = "SOC Analyst (Level 1) — Cyber Defense",
+      overallCareerReadinessPercent = 69,
+      readinessStatus = "DEVELOPING",
+      primaryBlocker = "Incident Communication under Executive Pressure",
+      learningVelocity = "ACCELERATING",
+      confidenceCalibrationState = "WELL_CALIBRATED (±4%)",
+      evidenceIntegrityScore = 96,
+      vectors = listOf(
+        CompetencyEvidenceVector(
+          dimensionKey = "KNOWLEDGE",
+          title = "Cybersecurity Knowledge & Protocol Theory",
+          score = 82,
+          benchmarkTarget = 80,
+          confidenceRating = "HIGH_EVIDENCE",
+          whyScoreExists = "Mastered RFC 8446 TLS 1.3, TCP 3-Way Handshake, and Sysmon Schema across 28 validated quiz items.",
+          proofCount = 28,
+          recentEvidenceSources = listOf("Quiz 101", "RFC Protocol Lab", "Zero Trust Auth Engine"),
+          trendDescription = "Ascending (+5% this week)",
+          targetIntervention = "Review Post-Quantum Cryptography Primitives"
+        ),
+        CompetencyEvidenceVector(
+          dimensionKey = "PRACTICAL",
+          title = "Hands-On Tool & CLI Proficiency",
+          score = 71,
+          benchmarkTarget = 75,
+          confidenceRating = "HIGH_EVIDENCE",
+          whyScoreExists = "Demonstrated Wireshark BPF filtering and Linux log extraction across 14 interactive terminal sessions.",
+          proofCount = 14,
+          recentEvidenceSources = listOf("Wireshark PCAP Drill", "Linux Terminal Ladder"),
+          trendDescription = "Steady (+2%)",
+          targetIntervention = "Complete Zeek / Suricata Rule Crafting Lab"
+        ),
+        CompetencyEvidenceVector(
+          dimensionKey = "INVESTIGATION",
+          title = "Forensic Investigation & Triage Rigor",
+          score = 76,
+          benchmarkTarget = 80,
+          confidenceRating = "HIGH_EVIDENCE",
+          whyScoreExists = "Reconstructed 9 multi-stage malware intrusions using Sysmon Event ID 1 & 3 parent-child correlation.",
+          proofCount = 9,
+          recentEvidenceSources = listOf("Live SOC Range Lab 04", "Shadow Range"),
+          trendDescription = "Ascending (+4%)",
+          targetIntervention = "Execute Blind PCAP Carving Drill"
+        ),
+        CompetencyEvidenceVector(
+          dimensionKey = "REASONING",
+          title = "Hypothesis Falsification & Causal Thinking",
+          score = 68,
+          benchmarkTarget = 75,
+          confidenceRating = "PROVISIONAL",
+          whyScoreExists = "Falsified 4 alternative benign explanations before closing incident, but occasionally falls into premature closure.",
+          proofCount = 7,
+          recentEvidenceSources = listOf("Reasoning Graph Lab", "Concept Collision Matrix"),
+          trendDescription = "Calibrating",
+          targetIntervention = "Execute Counterfactual Reasoning Scenario"
+        ),
+        CompetencyEvidenceVector(
+          dimensionKey = "DECISION_MAKING",
+          title = "Decision Making Under Pressure & Uncertainty",
+          score = 74,
+          benchmarkTarget = 75,
+          confidenceRating = "HIGH_EVIDENCE",
+          whyScoreExists = "Contained simulated ransomware outbreak in under 12 minutes with 0 false host isolations.",
+          proofCount = 11,
+          recentEvidenceSources = listOf("Crisis War Room #2", "Workplace Experience Simulator"),
+          trendDescription = "Ascending (+7%)",
+          targetIntervention = "Simulate High-Concurrency SOC Shift"
+        ),
+        CompetencyEvidenceVector(
+          dimensionKey = "COMMUNICATION",
+          title = "Stakeholder Translation & Executive Clarity",
+          score = 61,
+          benchmarkTarget = 75,
+          confidenceRating = "PROVISIONAL",
+          whyScoreExists = "Technical peer notes are excellent, but executive briefs still contain excessive raw hash jargon.",
+          proofCount = 6,
+          recentEvidenceSources = listOf("CISO Briefing Matrix", "Stakeholder Translation"),
+          trendDescription = "Identified Blocker",
+          targetIntervention = "Complete Voice Crisis Call to CFO"
+        ),
+        CompetencyEvidenceVector(
+          dimensionKey = "RETENTION",
+          title = "Spaced Memory & Decay Resistance",
+          score = 79,
+          benchmarkTarget = 80,
+          confidenceRating = "HIGH_EVIDENCE",
+          whyScoreExists = "Maintained 79% retention over 45-day Ebbinghaus curve across 52 spaced repetition flashcards.",
+          proofCount = 52,
+          recentEvidenceSources = listOf("Spaced Flashcard Engine", "Skill Decay Radar"),
+          trendDescription = "Stable",
+          targetIntervention = "5-Minute DNS Tunneling Resurrection"
+        ),
+        CompetencyEvidenceVector(
+          dimensionKey = "CAREER_READINESS",
+          title = "Employer Competency & Portfolio Proof",
+          score = 69,
+          benchmarkTarget = 85,
+          confidenceRating = "HIGH_EVIDENCE",
+          whyScoreExists = "Meets 4 of 6 core prerequisites for Junior SOC Analyst role on verified evidence passport.",
+          proofCount = 18,
+          recentEvidenceSources = listOf("Skill Passport", "Employer Simulation Lab"),
+          trendDescription = "Advancing toward 85% benchmark",
+          targetIntervention = "Finish Incident Response Portfolio Writeup"
+        )
+      ),
+      lastGenomeSyncTimestamp = "Real-time Verified"
+    )
+  )
+  val cyberTwinV8: StateFlow<CyberTwinV8State> = _cyberTwinV8.asStateFlow()
+
+  // 2. Today's Mission & Next Best Action
+  private val _todaysMissionV8 = MutableStateFlow(
+    TodaysMissionV8(
+      dateLabel = "TODAY'S ADAPTIVE MISSION",
+      greeting = "Good morning, Vance. Here is your evidence-targeted plan.",
+      learnerCallsign = "VANCE-SOC",
+      targetCareer = "SOC Analyst (Level 1)",
+      primaryAction = MissionItem(
+        id = "mis_pri_1",
+        estimatedMinutes = 20,
+        title = "Investigate Multi-Stage C2 Beacon in Live SOC",
+        subtitle = "Targets Primary Blocker: Correlate Sysmon ID 3 & Suricata Alert",
+        activityType = MissionActivityType.INVESTIGATION,
+        targetSkill = "EDR Telemetry Correlation",
+        navigationRoute = "soc_range"
+      ),
+      optionalActions = listOf(
+        MissionItem(
+          id = "mis_opt_1",
+          estimatedMinutes = 5,
+          title = "5-Min Resurrection: DNS Tunneling Detection",
+          subtitle = "Retention decayed to 54% over 41 days",
+          activityType = MissionActivityType.RECOVERY,
+          targetSkill = "DNS Protocol Forensics",
+          navigationRoute = "skill_decay"
+        ),
+        MissionItem(
+          id = "mis_opt_2",
+          estimatedMinutes = 15,
+          title = "Purple Team Arena: 'Self vs Self' Breach Duel",
+          subtitle = "Stage red attack, then switch sides to see if you catch yourself",
+          activityType = MissionActivityType.PURPLE_TEAM,
+          targetSkill = "Adversary TTP Emulation",
+          navigationRoute = "purple_arena"
+        ),
+        MissionItem(
+          id = "mis_opt_3",
+          estimatedMinutes = 10,
+          title = "Voice SOC Drill: Brief the Panicked CFO",
+          subtitle = "Explain payroll server isolation without technical jargon",
+          activityType = MissionActivityType.VOICE_DRILL,
+          targetSkill = "Executive Crisis Communication",
+          navigationRoute = "voice_drill"
+        )
+      ),
+      rationaleFromMentor = "Based on your Cyber Twin state, your technical investigation is strong (76%), but stakeholder communication (61%) and decayed DNS retention (54%) are your shortest-path levers to achieving 85% SOC Readiness."
+    )
+  )
+  val todaysMissionV8: StateFlow<TodaysMissionV8> = _todaysMissionV8.asStateFlow()
+
+  // 3. Purple Team Arena ("Self vs Self") State
+  private val _purpleTeamArenaState = MutableStateFlow(
+    PurpleTeamArenaState(
+      duelId = "duel_2026_88",
+      scenarioTitle = "Operation GhostShadow: Ingress to C2 Beaconing",
+      activePhase = PurpleDuelPhase.RED_TEAM_PLAN,
+      redSelectedTtp = "T1059.001 - PowerShell Obfuscated Ingress",
+      redC2Technique = "T1071.001 - HTTPS Web Beacon over Port 8443 with Jitter",
+      redPersistenceMethod = "T1547.001 - Registry Run Key Startup Hijack",
+      redStealthScore = 88,
+      blueDetectedArtifactsCount = 0,
+      blueMissedArtifactsCount = 0,
+      containmentSpeedSeconds = 0,
+      wouldHaveCaughtYourselfVerdict = "Pending Duel Completion",
+      debriefSummary = "Complete all 5 rounds to evaluate if your defensive eye outmatches your offensive craft."
+    )
+  )
+  val purpleTeamArenaState: StateFlow<PurpleTeamArenaState> = _purpleTeamArenaState.asStateFlow()
+
+  fun advancePurpleTeamDuel(nextPhase: PurpleDuelPhase) {
+    _purpleTeamArenaState.value = _purpleTeamArenaState.value.copy(
+      activePhase = nextPhase,
+      blueDetectedArtifactsCount = if (nextPhase == PurpleDuelPhase.FORENSIC_DEBRIEF) 3 else _purpleTeamArenaState.value.blueDetectedArtifactsCount,
+      blueMissedArtifactsCount = if (nextPhase == PurpleDuelPhase.FORENSIC_DEBRIEF) 1 else _purpleTeamArenaState.value.blueMissedArtifactsCount,
+      containmentSpeedSeconds = if (nextPhase == PurpleDuelPhase.FORENSIC_DEBRIEF) 420 else _purpleTeamArenaState.value.containmentSpeedSeconds,
+      wouldHaveCaughtYourselfVerdict = if (nextPhase == PurpleDuelPhase.FORENSIC_DEBRIEF) "PARTIAL CATCH (75% Telemetry Attribution)" else "In Progress",
+      debriefSummary = if (nextPhase == PurpleDuelPhase.FORENSIC_DEBRIEF) "You detected your PowerShell beacon via Sysmon ID 1, but missed your secondary Registry Run Key persistence due to premature alert closure." else _purpleTeamArenaState.value.debriefSummary,
+      isCompleted = nextPhase == PurpleDuelPhase.FORENSIC_DEBRIEF
+    )
+  }
+
+  // 4. Real SOC Shift Simulator
+  private val _socShiftState = MutableStateFlow(
+    SocShiftState(
+      shiftId = "shift_delta_09",
+      shiftName = "Day Shift (08:00 - 16:00 UTC) Tier 1 Ingest",
+      analystCallsign = "VANCE-SOC",
+      elapsedMinutes = 14,
+      totalShiftDurationMinutes = 30,
+      queue = listOf(
+        SocShiftAlert(
+          id = "alert_01",
+          timestamp = "08:12:04 UTC",
+          title = "Mimikatz LSASS Memory Dump Attempt",
+          sourceIp = "10.0.4.18",
+          destinationHost = "WIN-FIN-CORP01",
+          userAccount = "fin_admin",
+          severity = SocAlertSeverity.CRITICAL,
+          rawLogSnippet = "Sysmon ID 10: ProcessAccess target: lsass.exe, GrantedAccess: 0x1010, Source: C:\\Users\\fin_admin\\AppData\\Local\\Temp\\procdump.exe",
+          conflictingEvidenceHint = "User submitted ticket 20 mins prior requesting memory diagnostic tool for crashing ERP client.",
+          isTruePositive = true
+        ),
+        SocShiftAlert(
+          id = "alert_02",
+          timestamp = "08:18:22 UTC",
+          title = "Unusual Outbound Data Spike over Port 443",
+          sourceIp = "10.0.2.99",
+          destinationHost = "52.84.12.140 (AWS CloudFront CDN)",
+          userAccount = "system",
+          severity = SocAlertSeverity.MEDIUM,
+          rawLogSnippet = "Suricata Flow: 450MB transferred in 3 minutes to cloudfront.net endpoint.",
+          conflictingEvidenceHint = "Automated WSUS / Office365 scheduled patch download window is currently active.",
+          isTruePositive = false
+        ),
+        SocShiftAlert(
+          id = "alert_03",
+          timestamp = "08:24:50 UTC",
+          title = "Multiple Failed Kerberos Pre-Auth (AS-REP Roasting)",
+          sourceIp = "10.0.4.55",
+          destinationHost = "DC01.CORP.LOCAL",
+          userAccount = "svc_backup",
+          severity = SocAlertSeverity.HIGH,
+          rawLogSnippet = "Event ID 4768: Kerberos authentication ticket (TGT) requested with encryption type 0x17 (RC4-HMAC) for svc_backup without pre-auth.",
+          conflictingEvidenceHint = "Legacy backup agent runs hourly from 10.0.4.55 using NTLM fallback.",
+          isTruePositive = true
+        )
+      ),
+      activeAlertIndex = 0
+    )
+  )
+  val socShiftState: StateFlow<SocShiftState> = _socShiftState.asStateFlow()
+
+  fun triageSocAlert(alertId: String, action: SocTriageAction) {
+    val current = _socShiftState.value
+    val updatedQueue = current.queue.map { alert ->
+      if (alert.id == alertId) {
+        val score = when {
+          alert.isTruePositive && (action == SocTriageAction.CONTAIN || action == SocTriageAction.ESCALATE || action == SocTriageAction.INVESTIGATE) -> 100
+          !alert.isTruePositive && action == SocTriageAction.CLOSE_FALSE_POSITIVE -> 100
+          else -> 40
+        }
+        alert.copy(resolvedAction = action, triageScoreAwarded = score)
+      } else alert
+    }
+    val nextIndex = (current.activeAlertIndex + 1).coerceAtMost(updatedQueue.size - 1)
+    val isComplete = updatedQueue.all { it.resolvedAction != null }
+    _socShiftState.value = current.copy(
+      queue = updatedQueue,
+      activeAlertIndex = nextIndex,
+      isShiftComplete = isComplete,
+      shiftDebriefNotes = if (isComplete) "Shift completed with 93% accuracy. Excellent false positive discrimination on WSUS patch spike." else ""
+    )
+  }
+
+  // 5. Skill Decay Radar & 5-Minute Resurrection Engine
+  private val _skillDecayNodesV8 = MutableStateFlow(
+    listOf(
+      SkillDecayNodeV8(
+        skillId = "sk_dns_tunnel",
+        skillName = "DNS Tunneling & TXT Record Exfiltration",
+        daysSinceLastPractice = 41,
+        currentRetentionPercent = 54,
+        decayVelocity = "CRITICAL_DECAY",
+        careerImportance = "CORE_PREREQUISITE",
+        resurrectionChallengeTitle = "Identify Encoded Base64 Subdomains in 5 DNS Query Logs",
+        resurrectionDurationMinutes = 5,
+        resurrectionLabRoute = "dns_forensics"
+      ),
+      SkillDecayNodeV8(
+        skillId = "sk_kerberoast",
+        skillName = "Kerberoasting & SPN Ticket Hash Extraction",
+        daysSinceLastPractice = 28,
+        currentRetentionPercent = 63,
+        decayVelocity = "MODERATE_DECAY",
+        careerImportance = "CORE_PREREQUISITE",
+        resurrectionChallengeTitle = "Spot Event ID 4769 RC4 Hash Request",
+        resurrectionDurationMinutes = 5,
+        resurrectionLabRoute = "kerberos_lab"
+      ),
+      SkillDecayNodeV8(
+        skillId = "sk_bpf_filter",
+        skillName = "Wireshark BPF Byte-Offset Syntax",
+        daysSinceLastPractice = 12,
+        currentRetentionPercent = 88,
+        decayVelocity = "STABLE",
+        careerImportance = "SPECIALIZED",
+        resurrectionChallengeTitle = "Filter TCP SYN-ACK flags with tcp[13] & 0x12 != 0",
+        resurrectionDurationMinutes = 3,
+        resurrectionLabRoute = "wireshark_pcap"
+      )
+    )
+  )
+  val skillDecayNodesV8: StateFlow<List<SkillDecayNodeV8>> = _skillDecayNodesV8.asStateFlow()
+
+  fun resurrectSkill(skillId: String) {
+    _skillDecayNodesV8.value = _skillDecayNodesV8.value.map { node ->
+      if (node.skillId == skillId) {
+        node.copy(
+          daysSinceLastPractice = 0,
+          currentRetentionPercent = 96,
+          decayVelocity = "STABLE"
+        )
+      } else node
+    }
+  }
+
+  // 6. Voice SOC Crisis Drills
+  private val _voiceSocScenarios = MutableStateFlow(
+    listOf(
+      VoiceSocScenario(
+        id = "voice_cfo_01",
+        callerPersona = "Panicked Chief Financial Officer (Elena Vance)",
+        callerPromptAudioText = "Vance! I just saw IT locked down the entire accounting workstation cluster right before monthly payroll batch execution. Is our payroll data stolen? Do we need to issue a public press breach notice right now?",
+        criticalPointsToAddress = listOf(
+          "Confirm endpoint was isolated proactively as a precaution",
+          "Clarify zero exfiltration detected to payroll database",
+          "Provide expected triage estimate (30 minutes) before unblocking",
+          "Advise against premature public statements while facts are verified"
+        ),
+        forbiddenJargonTraps = listOf("LSASS memory dump", "Mimikatz pass-the-hash", "C2 beacon jitter", "Sysmon Event ID 10"),
+        recordedLearnerResponse = "Elena, we isolated one accounting laptop as a standard precaution because of a suspicious diagnostic script. Our monitoring confirms the main payroll server is completely untouched and safe. We will finish verification within 30 minutes, so there is no need for a public notice.",
+        calmnessScore = 96,
+        technicalAccuracyScore = 92,
+        clarityScore = 94,
+        escalationScore = 90,
+        aiVoiceDebrief = "Outstanding delivery. You addressed her panic immediately, clearly affirmed payroll database integrity, and avoided technical jargon traps."
+      )
+    )
+  )
+  val voiceSocScenarios: StateFlow<List<VoiceSocScenario>> = _voiceSocScenarios.asStateFlow()
+
+  // 7. Incident Replay Multiverse
+  private val _multiverseBranches = MutableStateFlow(
+    listOf(
+      MultiverseBranch(
+        branchId = "multi_01",
+        hypothesisTitle = "Timeline Branch A: Baseline Timeline (Your Decision)",
+        whatIfDecisionText = "Isolated WIN-FIN-04 in 8 minutes upon observing suspicious PowerShell spawn.",
+        simulatedOutcomeDescription = "Attacker C2 connection severed before lateral movement credentials could be dumped. Total breach impact contained to 1 laptop.",
+        financialImpactEstimateDollars = 4500,
+        lateralMovementHostsAffected = 0,
+        forensicKeyTakeaway = "Prompt host isolation completely broke attacker killchain at execution phase."
+      ),
+      MultiverseBranch(
+        branchId = "multi_02",
+        hypothesisTitle = "Timeline Branch B: Delayed Containment (What If +15 Mins?)",
+        whatIfDecisionText = "What if you waited 15 additional minutes to request senior approval before isolation?",
+        simulatedOutcomeDescription = "Attacker dumped LSASS, extracted Domain Admin SPN, and pivoted to Domain Controller via PsExec. Ransomware staged across 14 server nodes.",
+        financialImpactEstimateDollars = 420000,
+        lateralMovementHostsAffected = 14,
+        forensicKeyTakeaway = "Credential dumping window is under 7 minutes once local admin is gained. Delayed containment escalates cost by 93x."
+      ),
+      MultiverseBranch(
+        branchId = "multi_03",
+        hypothesisTitle = "Timeline Branch C: Erroneous Isolation (Wrong Host)",
+        whatIfDecisionText = "What if you accidentally isolated DC01 instead of WIN-FIN-04?",
+        simulatedOutcomeDescription = "Active Directory authentication crashed for 2,400 corporate employees. Production halted for 45 minutes while actual malware continued running on endpoint.",
+        financialImpactEstimateDollars = 85000,
+        lateralMovementHostsAffected = 1,
+        forensicKeyTakeaway = "Always verify hostname vs IP mapping in DHCP lease table before executing isolation command."
+      )
+    )
+  )
+  val multiverseBranches: StateFlow<List<MultiverseBranch>> = _multiverseBranches.asStateFlow()
+
+  // 8. 18+ Career Families & Shortest-Path Roadmaps
+  private val _careerRoleProfiles = MutableStateFlow(
+    listOf(
+      CareerRoleProfile(
+        id = "role_soc_l1",
+        roleTitle = "SOC Analyst (Level 1)",
+        family = CyberCareerFamily.BLUE_TEAM,
+        experienceLevel = "Entry",
+        shortDescription = "Monitor, triage, and investigate security alerts across SIEM, EDR, and network telemetry.",
+        keyResponsibilities = listOf("Real-time alert triage", "Phishing email analysis", "Host containment", "Incident ticket documentation"),
+        requiredTools = listOf("Splunk / Sentinel", "CrowdStrike / Defender", "Wireshark", "VirusTotal / AnyRun"),
+        keyFrameworks = listOf("MITRE ATT&CK", "NIST CSF Incident Response", "Cyber Kill Chain"),
+        demonstratedReadinessScore = 69,
+        shortestPathEvidenceSteps = listOf(
+          "Complete Live SOC Shift Simulator (Reach 85% Precision)",
+          "Perform 1 Voice Crisis Call with CISO",
+          "Publish Skill Passport verifiable evidence badge"
+        ),
+        topRecommendedLab = "Live SOC Shift Simulator"
+      ),
+      CareerRoleProfile(
+        id = "role_red_pentest",
+        roleTitle = "Junior Penetration Tester",
+        family = CyberCareerFamily.RED_TEAM,
+        experienceLevel = "Entry - Mid",
+        shortDescription = "Perform ethical security assessments, network intrusion testing, and vulnerability validation.",
+        keyResponsibilities = listOf("Vulnerability scanning", "Web AppSec exploitation", "Network pivoting", "Executive debrief writeups"),
+        requiredTools = listOf("Burp Suite Pro", "Nmap", "Metasploit", "BloodHound"),
+        keyFrameworks = listOf("OWASP Top 10", "PTES Standard", "MITRE ATT&CK Enterprise"),
+        demonstratedReadinessScore = 58,
+        shortestPathEvidenceSteps = listOf(
+          "Complete Web AppSec Ladder (SQLi to SSRF)",
+          "Win 1 Purple Team Arena 'Self vs Self' Duel",
+          "Submit verified Binary Exploitation Proof"
+        ),
+        topRecommendedLab = "Purple Team Arena"
+      ),
+      CareerRoleProfile(
+        id = "role_cloud_sec",
+        roleTitle = "Cloud Security Engineer",
+        family = CyberCareerFamily.CLOUD_SECURITY,
+        experienceLevel = "Mid",
+        shortDescription = "Secure AWS/GCP/Azure infrastructure, IAM policies, Kubernetes clusters, and container pipelines.",
+        keyResponsibilities = listOf("IAM least-privilege auditing", "K8s audit log monitoring", "Terraform security guardrails", "CloudTrail anomaly detection"),
+        requiredTools = listOf("AWS CloudTrail / GuardDuty", "Kubernetes audit logs", "Trivy", "Falco"),
+        keyFrameworks = listOf("CIS Cloud Benchmarks", "MITRE ATT&CK Cloud Matrix", "NIST SP 800-190"),
+        demonstratedReadinessScore = 52,
+        shortestPathEvidenceSteps = listOf(
+          "Execute K8s Pod Exec Audit Log Transfer Test",
+          "Complete Cloud IAM Privilege Escalation Lab",
+          "Build CI/CD Terraform Security Scanning Project"
+        ),
+        topRecommendedLab = "Cloud & K8s Security Lab"
+      ),
+      CareerRoleProfile(
+        id = "role_dfir",
+        roleTitle = "Digital Forensics & Incident Response (DFIR)",
+        family = CyberCareerFamily.DIGITAL_FORENSICS,
+        experienceLevel = "Mid - Senior",
+        shortDescription = "Conduct in-depth host memory forensics, disk carving, timeline reconstruction, and malware analysis.",
+        keyResponsibilities = listOf("Memory acquisition & Volatility analysis", "NTFS MFT & USN Journal parsing", "Malware reverse engineering", "Court-ready chain of custody reports"),
+        requiredTools = listOf("Volatility 3", "FTK Imager", "Ghidra / IDA Pro", "Plaso / log2timeline"),
+        keyFrameworks = listOf("ISO/IEC 27037 Forensic Standards", "SANS DFIR Matrix"),
+        demonstratedReadinessScore = 64,
+        shortestPathEvidenceSteps = listOf(
+          "Complete Volatility 3 LSASS Injected DLL Lab",
+          "Carve hidden files from raw NTFS disk image",
+          "Assemble end-to-end incident forensic dossier"
+        ),
+        topRecommendedLab = "Binary Disassembler & Memory Lab"
+      ),
+      CareerRoleProfile(
+        id = "role_ai_sec",
+        roleTitle = "AI Security & LLM Red Teamer",
+        family = CyberCareerFamily.AI_SECURITY,
+        experienceLevel = "Emerging / Frontier",
+        shortDescription = "Audit foundation models, prompt injection resistance, model extraction risks, and AI agent permissions.",
+        keyResponsibilities = listOf("LLM prompt injection fuzzing", "RAG pipeline data poisoning defense", "Indirect prompt injection hardening", "AI system threat modeling"),
+        requiredTools = listOf("Garak LLM Vulnerability Scanner", "Promptfoo", "LangChain Security Linters", "PyTorch"),
+        keyFrameworks = listOf("OWASP Top 10 for LLM Applications", "MITRE ATLAS Matrix"),
+        demonstratedReadinessScore = 48,
+        shortestPathEvidenceSteps = listOf(
+          "Execute Indirect Prompt Injection Defense Challenge",
+          "Audit RAG Vector Database Access Controls",
+          "Demonstrate Prompt Armor Guardrail Implementation"
+        ),
+        topRecommendedLab = "AI Threat & LLM Hardening Range"
+      )
+    )
+  )
+  val careerRoleProfiles: StateFlow<List<CareerRoleProfile>> = _careerRoleProfiles.asStateFlow()
+
+  // ============================================================================
+  // AEGORA v8.1 INTELLIGENCE CONNECTIVE LAYER STATEFLOWS
+  // ============================================================================
+  val cyberTwinV81 = com.example.intelligence.AegoraIntelligenceOrchestrator.cyberTwin
+  val evidenceStream = com.example.intelligence.AegoraIntelligenceOrchestrator.evidenceStream
+  val mistakeDnaProfile = com.example.intelligence.AegoraIntelligenceOrchestrator.mistakeDnaProfile
+  val studentState = com.example.intelligence.AegoraIntelligenceOrchestrator.studentState
+  val selectedTimeBudget = com.example.intelligence.AegoraIntelligenceOrchestrator.selectedTimeBudget
+  val timeFilteredMission = com.example.intelligence.AegoraIntelligenceOrchestrator.timeFilteredMission
+  val reasoningGraphSession = com.example.intelligence.AegoraIntelligenceOrchestrator.reasoningGraphSession
+  val projectEvidenceCards = com.example.intelligence.AegoraIntelligenceOrchestrator.projectEvidenceCards
+  val weeklyReport = com.example.intelligence.AegoraIntelligenceOrchestrator.weeklyReport
+  val intelligenceTrace = com.example.intelligence.AegoraIntelligenceOrchestrator.intelligenceTrace
+  val syncStatus = com.example.intelligence.AegoraIntelligenceOrchestrator.syncStatus
+
+  fun setTimeBudget(timeOption: TimeAvailabilityOption) {
+    com.example.intelligence.AegoraIntelligenceOrchestrator.setTimeBudget(timeOption)
+  }
+
+  fun recordEvidence(
+    activityTitle: String,
+    skillDomain: String,
+    subskill: String,
+    difficulty: String,
+    score: Int,
+    mistakesCount: Int,
+    reasoningScore: Int,
+    statedConfidence: String,
+    timeSpentSeconds: Int,
+    strength: EvidenceStrength,
+    sourceType: EvidenceSourceType,
+    proofSnippet: String,
+    mistakeArchetype: MistakeArchetype? = null
+  ) {
+    com.example.intelligence.AegoraIntelligenceOrchestrator.recordLearnerActionAndEvidence(
+      activityTitle = activityTitle,
+      skillDomain = skillDomain,
+      subskill = subskill,
+      difficulty = difficulty,
+      score = score,
+      mistakesCount = mistakesCount,
+      reasoningScore = reasoningScore,
+      statedConfidence = statedConfidence,
+      timeSpentSeconds = timeSpentSeconds,
+      strength = strength,
+      sourceType = sourceType,
+      proofSnippet = proofSnippet,
+      mistakeArchetype = mistakeArchetype
+    )
+  }
+
+  fun analyzeJobDescription(rawJobText: String): V81JobRoadmapAnalysis {
+    return com.example.intelligence.AegoraIntelligenceOrchestrator.analyzeJobDescription(rawJobText)
+  }
+
+  // ============================================================================
+  // AEGORA v9.0 CYBER REALITY ENGINE DELEGATES
+  // ============================================================================
+
+  val v9IntelFeed: StateFlow<List<ExternalIntelligenceCard>> = com.example.intelligence.CyberRealityEngine.intelFeed
+  val v9PersonalRadar: StateFlow<List<PersonalRadarItem>> = com.example.intelligence.CyberRealityEngine.personalRadar
+  val v9KnowledgeNodes: StateFlow<List<KnowledgeNode30>> = com.example.intelligence.CyberRealityEngine.knowledgeNodes
+  val v9KnowledgeEdges: StateFlow<List<KnowledgeEdge30>> = com.example.intelligence.CyberRealityEngine.knowledgeEdges
+  val v9EventTransformations: StateFlow<List<EventToLessonTransformation>> = com.example.intelligence.CyberRealityEngine.eventTransformations
+  val v9WorkplaceFeed: StateFlow<List<WorkplaceFeedItem>> = com.example.intelligence.CyberRealityEngine.workplaceFeed
+  val v9PortfolioProjects: StateFlow<List<V9PortfolioProject>> = com.example.intelligence.CyberRealityEngine.portfolioProjects
+  val v9VaultNotes: StateFlow<List<PersonalKnowledgeVaultNote>> = com.example.intelligence.CyberRealityEngine.vaultNotes
+  val v9CompetitionLeaderboard: StateFlow<List<CompetitionLeaderboardEntry>> = com.example.intelligence.CyberRealityEngine.competitionLeaderboard
+  val v9TraceStream: StateFlow<List<String>> = com.example.intelligence.CyberRealityEngine.v9TraceStream
+
+  fun generateV9JobTrainingSimulation(rawJobText: String): JobToTrainingSimulationResult {
+    return com.example.intelligence.CyberRealityEngine.generateTrainingSimulationFromJob(rawJobText)
+  }
+
+  fun evaluateV9DecisionConsequence(decisionOption: String): ConsequenceOutcome {
+    return com.example.intelligence.CyberRealityEngine.evaluateDecisionConsequence(decisionOption)
+  }
+
+  fun evaluateV9Feynman(concept: String, audience: FeynmanAudience, text: String): CyberFeynmanAssessment {
+    return com.example.intelligence.CyberRealityEngine.evaluateFeynmanExplanation(concept, audience, text)
+  }
+
+  fun saveV9VaultNote(title: String, category: String, content: String, tags: List<String>) {
+    com.example.intelligence.CyberRealityEngine.saveVaultNote(title, category, content, tags)
+  }
+
+  fun completeMissionItem(itemId: String) {
+    val current = _todaysMissionV8.value
+    val updatedPrimary = if (current.primaryAction.id == itemId) current.primaryAction.copy(isCompleted = true) else current.primaryAction
+    val updatedOptionals = current.optionalActions.map { if (it.id == itemId) it.copy(isCompleted = true) else it }
+    _todaysMissionV8.value = current.copy(primaryAction = updatedPrimary, optionalActions = updatedOptionals)
+  }
 }
+
+
+
 
 

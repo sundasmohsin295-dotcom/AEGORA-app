@@ -28,7 +28,7 @@ import com.example.ui.components.CyberSectionHeader
 import com.example.ui.theme.*
 
 enum class IntelTab {
-  CVE_ADVISORIES, THREAT_ACTORS, MITRE_MATRIX
+  CVE_ADVISORIES, THREAT_ACTORS, MITRE_MATRIX, CYBER_EXPLAINER
 }
 
 @Composable
@@ -127,6 +127,7 @@ fun IntelligenceScreen(
                     IntelTab.CVE_ADVISORIES -> "CVE Advisories"
                     IntelTab.THREAT_ACTORS -> "Threat Actors"
                     IntelTab.MITRE_MATRIX -> "MITRE ATT&CK"
+                    IntelTab.CYBER_EXPLAINER -> "Cyber Explainers"
                   },
                   style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
@@ -189,6 +190,96 @@ fun IntelligenceScreen(
                     Text(tactic, style = MaterialTheme.typography.bodyMedium, color = TextPrimaryDark)
                     Icon(Icons.Default.Verified, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(16.dp))
                   }
+                }
+              }
+            }
+          }
+        }
+
+        IntelTab.CYBER_EXPLAINER -> {
+          item {
+            val explainers by AegoraRepository.cyberIntelligenceExplainers.collectAsState()
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+              explainers.forEach { explainer ->
+                CyberCard(
+                  borderColor = Color(explainer.sourceTier.badgeColor),
+                  backgroundColor = CyberSurfaceElevated,
+                  shapeRadius = 14.dp
+                ) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Surface(
+                      shape = RoundedCornerShape(4.dp),
+                      color = Color(explainer.sourceTier.badgeColor).copy(alpha = 0.15f),
+                      border = androidx.compose.foundation.BorderStroke(1.dp, Color(explainer.sourceTier.badgeColor))
+                    ) {
+                      Text(
+                        text = explainer.sourceTier.label,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                          fontFamily = FontFamily.Monospace,
+                          fontWeight = FontWeight.Bold
+                        ),
+                        color = Color(explainer.sourceTier.badgeColor)
+                      )
+                    }
+                    Text(
+                      text = "Confidence: ${explainer.confidenceScore}%",
+                      style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                      color = CyberCyan
+                    )
+                  }
+
+                  Spacer(modifier = Modifier.height(8.dp))
+                  Text(
+                    text = explainer.cveOrThreatTitle,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = TextPrimaryDark
+                  )
+                  Text(
+                    text = "Published: ${explainer.publicationDate} • Sourced: ${explainer.retrievedTimestamp}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextSecondaryDark
+                  )
+
+                  Spacer(modifier = Modifier.height(10.dp))
+                  Text(
+                    text = "WHAT HAPPENED & WHY IT MATTERS",
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                    color = CyberGold
+                  )
+                  Text(
+                    text = explainer.whatHappened,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextPrimaryDark
+                  )
+
+                  Spacer(modifier = Modifier.height(8.dp))
+                  Text(
+                    text = "TECHNICAL ROOT CAUSE",
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                    color = CyberCrimson
+                  )
+                  Text(
+                    text = explainer.technicalRootCause,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    color = TextSecondaryDark
+                  )
+
+                  Spacer(modifier = Modifier.height(8.dp))
+                  Text(
+                    text = "ATTACK PATH BREAKDOWN",
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                    color = CyberCyan
+                  )
+                  Text(
+                    text = explainer.attackPathBreakdown,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    color = CyberCyan
+                  )
                 }
               }
             }
