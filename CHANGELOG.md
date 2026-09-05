@@ -4,6 +4,25 @@ All notable changes to the AEGORA platform are documented in this file in accord
 
 ---
 
+## [13.0.0] — 2026-08-28
+
+### Added
+- **AEGORA v13.0: Cyber Reality Intelligence Operating System**:
+  - **Cyber Reality Engine 2.0**: 22+ entity classes across CVEs, Threat Actors, Campaigns, Malware Families, Techniques, Controls, Tools, Vendors, Cloud Services, and 12 relational edges.
+  - **Real-Time Intelligence Normalization**: Ingestion of verified public feeds (CISA KEV, NIST NVD, CERT advisories) with SHA-256 content verification and pedagogical extraction.
+  - **Personal Threat Radar**: Real-time relevance rank ordering of active cyber incidents tailored specifically to learner career paths and capability gaps.
+  - **Next Best Action 3.0**: Time-aware (5m, 15m, 30m, 60m) and energy-aware (Low, Moderate, High Focus, Exhausted) micro-drill generation with event-to-mission abstractions.
+  - **Career What-If Simulator & Skill Compounding Economy**: Interactive simulation calculating effort-to-role weeks, certification pathways, and high-leverage skill multipliers.
+  - **7-Stage Mastery Transfer Gates**: Mandatory completion across Understand, Recall, Apply, Investigate, Transfer, Explain, and Uncertainty resilience before granting demonstrated capability status.
+  - **Evidence Quality 2.0 & Cryptographic Proofs**: Multi-dimensional scoring (Authenticity, Independence, Complexity, Novelty, Recency, Transferability) with immutable hash validation.
+  - **Cyber Seasons 01-04 & Organizational Memory**: Continuous campaign-based cyber operations tied to an evolving enterprise model with persistent student decision impact logs.
+  - **Principles Invariant Matrix & Tool-Agnostic Challenges**: Transferable security invariants applied across Linux, Cloud IAM, Containers, and unfamiliar target tooling.
+  - **Ethical Decision Lab**: Multi-stakeholder dilemma simulations balancing statutory disclosure, operational continuity, and executive communications without simplistic dogma.
+  - **Dual-Perspective AI Mentor Desk & Second Opinion**: Comparison of AI Tutor guidance versus AI Senior Research Analyst critical reviews.
+  - **Release Control Center v13.0**: Automated verification of 13 safety, pedagogical, accessibility, and architectural release gates.
+
+---
+
 ## [11.0.0] — 2026-08-28
 
 ### Added

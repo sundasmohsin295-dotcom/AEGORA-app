@@ -63,8 +63,10 @@ sealed class ScreenDestination {
   data object IntelligenceConnective : ScreenDestination()
   data object CyberRealityEngine : ScreenDestination()
   data object CyberOperatingSystem : ScreenDestination()
+  data object CyberRealityIntelligenceV13 : ScreenDestination()
   data object Community : ScreenDestination()
   data object UniversityAdmin : ScreenDestination()
+  data object PersonalIntelligence : ScreenDestination()
 }
 
 @Composable
@@ -273,6 +275,30 @@ fun AegoraApp() {
         is ScreenDestination.CyberOperatingSystem -> {
           CyberOperatingSystemScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.CyberRealityIntelligenceV13 -> {
+          CyberRealityIntelligenceV13Screen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToLab = {
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.LABS
+            }
+          )
+        }
+
+        is ScreenDestination.PersonalIntelligence -> {
+          PersonalIntelligenceScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onLaunchMission = { _ ->
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.LABS
+            },
+            onOpenSkillPassport = {
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.PASSPORT
+            }
           )
         }
 
@@ -579,6 +605,12 @@ fun AegoraApp() {
                           },
                           onNavigateToCyberOperatingSystem = {
                             currentDestination = ScreenDestination.CyberOperatingSystem
+                          },
+                          onNavigateToV13Intelligence = {
+                            currentDestination = ScreenDestination.CyberRealityIntelligenceV13
+                          },
+                          onNavigateToPersonalIntelligence = {
+                            currentDestination = ScreenDestination.PersonalIntelligence
                           }
                         )
                       }
@@ -699,6 +731,9 @@ fun AegoraApp() {
           },
           onNavigateToMultiModalFusion = {
             currentDestination = ScreenDestination.MultiModalFusion
+          },
+          onNavigateToPersonalIntelligence = {
+            currentDestination = ScreenDestination.PersonalIntelligence
           }
         )
       }

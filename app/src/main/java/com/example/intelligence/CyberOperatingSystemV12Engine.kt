@@ -14,6 +14,10 @@ object CyberOperatingSystemV12Engine {
   private val _cyberTwin60 = MutableStateFlow(createInitialTwin60Snapshot())
   val cyberTwin60: StateFlow<CyberTwin60Snapshot> = _cyberTwin60.asStateFlow()
 
+  fun updateCyberTwin60(snapshot: CyberTwin60Snapshot) {
+    _cyberTwin60.value = snapshot
+  }
+
   // ============================================================
   // 2. CAPABILITY VS KNOWLEDGE ENGINE
   // ============================================================

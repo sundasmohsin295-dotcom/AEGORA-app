@@ -3514,6 +3514,10 @@ echo "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbg
   )
   val predictiveNextActions: StateFlow<List<PredictiveNextAction>> = _predictiveNextActions.asStateFlow()
 
+  fun updatePredictiveNextActions(actions: List<PredictiveNextAction>) {
+    _predictiveNextActions.value = actions
+  }
+
   // 4. Multi-Modal Fusion Session State
   private val _multiModalFusionSession = MutableStateFlow(
     MultiModalFusionSession(
@@ -4427,6 +4431,16 @@ echo "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbg
 
   fun analyzeJobDescription(rawJobText: String): V81JobRoadmapAnalysis {
     return com.example.intelligence.AegoraIntelligenceOrchestrator.analyzeJobDescription(rawJobText)
+  }
+
+  suspend fun executeCapabilityPipeline(
+    learnerId: String,
+    repository: DemonstratedCapabilityRepository
+  ): com.example.capability.CapabilityPipelineExecutionResult {
+    return com.example.intelligence.AegoraIntelligenceOrchestrator.executeCapabilityIntelligencePipeline(
+      learnerId = learnerId,
+      repository = repository
+    )
   }
 
   // ============================================================================

@@ -262,4 +262,31 @@ class CyberOperatingSystemV12Test {
     CyberOperatingSystemV12Engine.switchProficiencyTier(LearnerProficiencyTier.ADVANCED)
     assertEquals("Proficiency tier should switch to Advanced", LearnerProficiencyTier.ADVANCED, CyberOperatingSystemV12Engine.proficiencyTier.value)
   }
+
+  @Test
+  fun testCuriosityEnginePromptsGeneration() {
+    val twin = CyberOperatingSystemV12Engine.cyberTwin60.value
+    val prompts = com.example.ui.components.generateCuriosityPrompts(twin)
+    assertTrue("Prompts should be generated based on twin state", prompts.isNotEmpty())
+    val transferPrompt = prompts.find { it.dimension == TwinDimensionV12.TRANSFERABILITY }
+    assertNotNull("Transferability challenge prompt should be generated when transfer < 85", transferPrompt)
+    assertTrue("Action text should not be blank", transferPrompt!!.actionText.isNotBlank())
+    assertTrue("Impact label should not be blank", transferPrompt.impactLabel.isNotBlank())
+    assertTrue("Destination tag should be live_soc_range", transferPrompt.destinationTag == "live_soc_range")
+  }
+
+  @Test
+  fun testCyberTwin60UpdateSnapshot() {
+    val original = CyberOperatingSystemV12Engine.cyberTwin60.value
+    val updatedDims = original.dimensions.toMutableMap()
+    val transfer = updatedDims[TwinDimensionV12.TRANSFERABILITY]!!
+    updatedDims[TwinDimensionV12.TRANSFERABILITY] = transfer.copy(currentState = 92)
+    val newSnapshot = original.copy(overallScore = 2050, dimensions = updatedDims)
+    CyberOperatingSystemV12Engine.updateCyberTwin60(newSnapshot)
+
+    val current = CyberOperatingSystemV12Engine.cyberTwin60.value
+    assertEquals("Overall score should be updated", 2050, current.overallScore)
+    assertEquals("Transferability should be updated to 92", 92, current.dimensions[TwinDimensionV12.TRANSFERABILITY]?.currentState)
+  }
 }
+

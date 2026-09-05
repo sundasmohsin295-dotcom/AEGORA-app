@@ -43,7 +43,8 @@ fun UniversalSearchDialog(
   onNavigateToCyberTerminal: () -> Unit = {},
   onNavigateToLiveSocRange: () -> Unit = {},
   onNavigateToThreatAcoustic: () -> Unit = {},
-  onNavigateToMultiModalFusion: () -> Unit = {}
+  onNavigateToMultiModalFusion: () -> Unit = {},
+  onNavigateToPersonalIntelligence: () -> Unit = {}
 ) {
   var searchQuery by remember { mutableStateOf("") }
 
@@ -102,6 +103,19 @@ fun UniversalSearchDialog(
           modifier = Modifier.fillMaxWidth()
         ) {
           if (searchQuery.isBlank()) {
+            item {
+              SearchItemRow(
+                icon = Icons.Default.Psychology,
+                title = "Personal Intelligence Profile",
+                category = "4 Cognitive Clusters & Causal Graph",
+                chipColor = CyberCyan.copy(alpha = 0.2f),
+                chipTextColor = CyberCyan,
+                onClick = {
+                  onDismiss()
+                  onNavigateToPersonalIntelligence()
+                }
+              )
+            }
             item {
               SearchItemRow(
                 icon = Icons.Default.SecurityUpdateWarning,

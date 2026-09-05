@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,12 +26,29 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.data.AegoraRepository
-import com.example.model.DailyMission
-import com.example.model.UserProfile
-import com.example.ui.components.*
+import com.example.intelligence.CyberOperatingSystemV12Engine
+import com.example.intelligence.PersonalIntelligencePlatformEngine
+import com.example.model.*
+import com.example.ui.components.ChamferedCutCornerShape
+import com.example.ui.components.MissionExecutionSheet
 import com.example.ui.theme.*
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+/**
+ * AEGORA COMMAND CENTER — CLEAN, INTERACTIVE, JOB-READY DASHBOARD
+ *
+ * Design Principle:
+ * "Don't make students consume cybersecurity content. Make them experience cybersecurity."
+ *
+ * Answers 3 Questions Immediately:
+ * 1. Where am I? (Operator HUD, current capability state, progression stage)
+ * 2. What should I do next? (Dominant "NEXT MOVE" interactive hero)
+ * 3. Why does this matter? (Contextual reason, verified career signal, tangible proof)
+ */
 @Composable
 fun HomeScreen(
   onNavigateToJourney: () -> Unit,
@@ -67,2120 +85,1605 @@ fun HomeScreen(
   onNavigateToIntelligenceConnective: () -> Unit = {},
   onNavigateToCyberReality: () -> Unit = {},
   onNavigateToCyberOperatingSystem: () -> Unit = {},
+  onNavigateToV13Intelligence: () -> Unit = {},
+  onNavigateToPersonalIntelligence: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
+  // State from authoritative repositories & engines
   val userProfile by AegoraRepository.userProfile.collectAsState()
   val dailyMission by AegoraRepository.dailyMission.collectAsState()
-  val cyberTwinV8 by AegoraRepository.cyberTwinV8.collectAsState()
   val todaysMissionV8 by AegoraRepository.todaysMissionV8.collectAsState()
-  val reviewQueue by AegoraRepository.reviewQueue.collectAsState()
-  val skillDecays by AegoraRepository.skillDecayForecasts.collectAsState()
-  val sessionState by AegoraRepository.crossDeviceSession.collectAsState()
   val predictiveActions by AegoraRepository.predictiveNextActions.collectAsState()
-  val behavioralPacing by AegoraRepository.behavioralPacing.collectAsState()
-  val dueReviewCount = reviewQueue.count { it.isDue }
+  val cyberTwin60 by CyberOperatingSystemV12Engine.cyberTwin60.collectAsState()
 
-  var showRewardModal by remember { mutableStateOf(false) }
+  val clusterSummaries by PersonalIntelligencePlatformEngine.clusterSummaries.collectAsState()
+  val verifiedProofs by PersonalIntelligencePlatformEngine.verifiedCapabilityProofs.collectAsState()
+  val learningMemory by PersonalIntelligencePlatformEngine.learningMemory.collectAsState()
+  val mistakeRecords by PersonalIntelligencePlatformEngine.mistakeRecords.collectAsState()
 
-  val activeCareer = AegoraRepository.careerRoles.find { it.id == userProfile.targetCareerId }
-    ?: AegoraRepository.careerRoles.first()
+  var activeMissionAction by remember { mutableStateOf<PredictiveNextAction?>(null) }
+  var selectedClusterForDetail by remember { mutableStateOf<ClusterCapabilitySummary?>(null) }
 
-  if (showRewardModal) {
-    DecryptingCacheDialog(
-      onDismiss = { showRewardModal = false },
-      reward = DecryptedReward(
-        xpMultiplier = "3.5x CRITICAL SURGE",
-        bonusXp = 500,
-        rareBadgeName = "Master SOC Telemetry Infiltrator",
-        rareBadgeIcon = Icons.Default.Shield,
-        loreFragment = "Declassified Memo #902: Sysmon telemetry detected evasive reflective DLL injection across memory space."
+  val activeCareer = remember(userProfile.targetCareerId) {
+    AegoraRepository.careerRoles.find { it.id == userProfile.targetCareerId }
+      ?: AegoraRepository.careerRoles.first()
+  }
+
+  // Strongest and limiting clusters
+  val strongestCluster = remember(clusterSummaries) {
+    clusterSummaries.maxByOrNull { it.score }
+  }
+  val limitingCluster = remember(clusterSummaries) {
+    clusterSummaries.minByOrNull { it.score }
+  }
+
+  // Derive dominant Next Move from authoritative state (or fallback to beginner-safe action)
+  val nextMoveAction: PredictiveNextAction = remember(todaysMissionV8, predictiveActions) {
+    predictiveActions.firstOrNull() ?: PredictiveNextAction(
+      id = "mis_next_move_auth",
+      title = todaysMissionV8.primaryAction.title.ifBlank { "Investigate suspicious authentication event" },
+      category = "Active Defense",
+      destinationTag = "live_soc_range",
+      urgencyScore = 95,
+      primaryReason = "Why: strengthens Incident Triage & clears primary bottleneck",
+      reasoningTags = listOf("Active Defense", "Incident Triage", "Transfer Challenge"),
+      estimatedMins = 8,
+      xpReward = 350,
+      telemetryMetric = "Targets Primary Blocker: Correlate Sysmon ID 3 & Suricata Alert"
+    )
+  }
+
+  // Check if learner has zero evidence
+  val isZeroEvidence = clusterSummaries.all { it.score == 0 } && verifiedProofs.isEmpty()
+
+  fun handleMissionCompleted(delta: Int, dim: TwinDimensionV12) {
+    val currentDim = cyberTwin60.dimensions[dim]
+    if (currentDim != null) {
+      val updatedState = (currentDim.currentState + delta).coerceAtMost(100)
+      val updatedExplainability = currentDim.copy(
+        currentState = updatedState,
+        trend = "+$delta% demonstrated recently",
+        evidenceCount = currentDim.evidenceCount + 1,
+        confidence = (currentDim.confidence + 5).coerceAtMost(99),
+        decayRisk = DecayRiskLevel.LOW,
+        recentPerformance = "Verified in tactical containment and cross-context telemetry drill."
       )
+      val updatedDims = cyberTwin60.dimensions.toMutableMap()
+      updatedDims[dim] = updatedExplainability
+      val updatedSnapshot = cyberTwin60.copy(
+        overallScore = cyberTwin60.overallScore + 35,
+        dimensions = updatedDims,
+        daysToTargetReadiness = (cyberTwin60.daysToTargetReadiness - 2).coerceAtLeast(1)
+      )
+      CyberOperatingSystemV12Engine.updateCyberTwin60(updatedSnapshot)
+    }
+  }
+
+  // Mission Execution Dialog
+  val currentMission = activeMissionAction
+  if (currentMission != null) {
+    MissionExecutionSheet(
+      action = currentMission,
+      onDismiss = { activeMissionAction = null },
+      onMissionCompleted = { delta, dim ->
+        handleMissionCompleted(delta, dim)
+      },
+      onMissionOutcome = { isSuccess, delta, dim, proofHash, mistake ->
+        if (isSuccess) {
+          handleMissionCompleted(delta, dim)
+          val newProof = EvidenceProofItem(
+            capabilityId = currentMission.id,
+            capabilityName = currentMission.title,
+            proofType = "Sysmon / C2 Process Triage",
+            timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date()),
+            freshnessDays = 0,
+            telemetrySnippet = "Artifact [Sysmon Event ID 1 & 3] • Complexity: 85% • Independence: 95%",
+            verifiedHash = proofHash ?: "sha256:7f4ae91b4802c6d83a15f0134bc29088",
+            confidenceScore = 96,
+            isCryptographicallySigned = true
+          )
+          PersonalIntelligencePlatformEngine.addVerifiedProof(newProof)
+          val remainingActions = predictiveActions.filter { it.id != currentMission.id }
+          if (remainingActions.isNotEmpty()) {
+            AegoraRepository.updatePredictiveNextActions(remainingActions)
+          }
+        } else if (mistake != null) {
+          PersonalIntelligencePlatformEngine.recordMistake(
+            missionTitle = mistake.missionTitle,
+            failureType = mistake.failureType,
+            observedSymptom = mistake.observedSymptom,
+            rootCauseCausalLink = mistake.rootCauseCausalLink,
+            constructiveFeedback = mistake.constructiveFeedback,
+            remediationMission = mistake.targetedRemediationMission
+          )
+          val remediationAction = PredictiveNextAction(
+            id = "act_remediation_${System.currentTimeMillis()}",
+            title = mistake.targetedRemediationMission,
+            category = "Mistake Remediation",
+            destinationTag = "live_soc_range",
+            urgencyScore = 99,
+            primaryReason = "Remediation required: ${mistake.constructiveFeedback}",
+            reasoningTags = listOf("Remediation", mistake.failureType.label, "Limiting Gate"),
+            estimatedMins = mistake.remediationMinutes,
+            xpReward = 160,
+            telemetryMetric = "Remediation: ${mistake.failureType.label}"
+          )
+          AegoraRepository.updatePredictiveNextActions(listOf(remediationAction) + predictiveActions.filter { it.id != currentMission.id })
+        }
+        activeMissionAction = null
+      }
+    )
+  }
+
+  // Cluster Detail Dialog
+  val currentDetail = selectedClusterForDetail
+  if (currentDetail != null) {
+    ClusterDetailDialog(
+      summary = currentDetail,
+      onDismiss = { selectedClusterForDetail = null },
+      onLaunchMission = {
+        selectedClusterForDetail = null
+        activeMissionAction = nextMoveAction
+      },
+      onViewDeepProfile = {
+        selectedClusterForDetail = null
+        onNavigateToPersonalIntelligence()
+      }
     )
   }
 
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
-      .background(CyberBackground)
-      .cyberGridBackground()
+      .testTag("home_command_center_list")
+      .background(MaterialTheme.colorScheme.background)
       .padding(horizontal = 16.dp),
-    contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp)
+    contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
+    verticalArrangement = Arrangement.spacedBy(14.dp)
   ) {
-    // 0a. Ambient Co-Pilot Grounded Observation Chip
+
+    // ============================================================
+    // 1. WHERE AM I? — OPERATOR HUD & CURRENT STATUS
+    // ============================================================
     item {
-      AmbientCoPilotSurface(
-        onAskAi = { prompt -> onNavigateToAi() }
+      OperatorHudSection(
+        learnerId = if (isZeroEvidence) "NEW_OPERATOR" else cyberTwin60.learnerId.ifBlank { userProfile.callsign },
+        targetRole = cyberTwin60.targetRole,
+        readinessScore = if (isZeroEvidence) 0 else cyberTwin60.overallScore,
+        daysToTarget = if (isZeroEvidence) 60 else cyberTwin60.daysToTargetReadiness,
+        stage = if (isZeroEvidence) "ZERO EVIDENCE" else "INVESTIGATION",
+        onOpenProfile = onNavigateToPersonalIntelligence
       )
     }
 
-    // 0a-1. AEGORA v10.0 PERSONAL CYBER OPERATING SYSTEM MASTER BANNER
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurface,
-        border = BorderStroke(1.5.dp, NeonGreen),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToCyberOperatingSystem() }
-          .testTag("home_cyber_os_v10_card")
-      ) {
-        Column(
-          modifier = Modifier
-            .background(
-              Brush.horizontalGradient(
-                listOf(NeonGreen.copy(alpha = 0.15f), CyberSurface)
-              )
-            )
-            .padding(16.dp)
-        ) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(44.dp)
-                  .clip(HexagonShape)
-                  .background(NeonGreen.copy(alpha = 0.2f))
-                  .border(1.2.dp, NeonGreen, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.Hub, contentDescription = null, tint = NeonGreen, modifier = Modifier.size(26.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                  Text(
-                    text = "AEGORA v12.0",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                      fontFamily = FontFamily.Monospace,
-                      fontWeight = FontWeight.Black,
-                      letterSpacing = 0.8.sp
-                    ),
-                    color = NeonGreen
-                  )
-                  Spacer(modifier = Modifier.width(6.dp))
-                  Surface(
-                    color = NeonGreen.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(4.dp)
-                  ) {
-                    Text(
-                      text = "PERSONAL CYBER OS & REALITY",
-                      fontSize = 9.sp,
-                      fontWeight = FontWeight.Bold,
-                      color = NeonGreen,
-                      modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                    )
-                  }
-                }
-                Text(
-                  text = "Command Center & Cyber Reality",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = NeonGreen,
-              modifier = Modifier.clickable { onNavigateToCyberOperatingSystem() }
-            ) {
-              Text(
-                text = "OPEN OS",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Black,
-                  fontSize = 11.sp
-                ),
-                color = Color.Black,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(10.dp))
-          Text(
-            text = "Cyber Twin 6.0 (27 Dimensions) • Reality Graph • Decision Lab • Attacker Journey • Crime Scene Forensics • SOC Shift • Research Desk • Boss Incidents",
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 0a-2. AEGORA v9.0 CYBER REALITY ENGINE MASTER BANNER
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurface,
-        border = BorderStroke(1.2.dp, CyberCyan),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToCyberReality() }
-          .testTag("home_cyber_reality_v9_card")
-      ) {
-        Column(
-          modifier = Modifier
-            .background(
-              Brush.horizontalGradient(
-                listOf(CyberCyan.copy(alpha = 0.12f), CyberSurface)
-              )
-            )
-            .padding(16.dp)
-        ) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(CyberCyan.copy(alpha = 0.2f))
-                  .border(1.2.dp, CyberCyan, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.Radar, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(24.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                  Text(
-                    text = "AEGORA v9.0",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                      fontFamily = FontFamily.Monospace,
-                      fontWeight = FontWeight.Black,
-                      letterSpacing = 0.8.sp
-                    ),
-                    color = CyberCyan
-                  )
-                  Spacer(modifier = Modifier.width(6.dp))
-                  Surface(
-                    color = Color(0xFF00E676).copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(4.dp)
-                  ) {
-                    Text(
-                      text = "ONLINE",
-                      fontSize = 9.sp,
-                      fontWeight = FontWeight.Bold,
-                      color = Color(0xFF00E676),
-                      modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                    )
-                  }
-                }
-                Text(
-                  text = "Cyber Reality Engine",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberCyan,
-              modifier = Modifier.clickable { onNavigateToCyberReality() }
-            ) {
-              Text(
-                text = "OPEN v9.0",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Black,
-                  fontSize = 11.sp
-                ),
-                color = Color.Black,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(10.dp))
-          Text(
-            text = "Personal Cyber Radar • Constellation 3.0 • Job Description Lab Builder • Workplace 2.0 • Multiverse Consequences • Feynman Arena",
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 0b. Self-Reported Flow & Behavioral Pacing Suggestion (Zero Biometrics, 100% Honest Telemetry)
-    if (behavioralPacing.shouldSuggestPacing) {
+    // ============================================================
+    // 2. ZERO EVIDENCE WELCOME (Honest Empty State)
+    // ============================================================
+    if (isZeroEvidence) {
       item {
-        Surface(
-          shape = RoundedCornerShape(12.dp),
-          color = CyberSurfaceElevated,
-          border = BorderStroke(1.dp, CyberAmber.copy(alpha = 0.6f)),
-          modifier = Modifier
-            .fillMaxWidth()
-            .testTag("behavioral_pacing_banner")
-        ) {
-          Column(
+        ZeroEvidenceWelcomeCard(
+          onStartFirstMission = {
+            activeMissionAction = nextMoveAction
+          }
+        )
+      }
+    }
+
+    // ============================================================
+    // 3. WHAT SHOULD I DO NEXT? — HERO: "NEXT MOVE"
+    // ============================================================
+    item {
+      NextMoveHeroSection(
+        action = nextMoveAction,
+        onStart = {
+          activeMissionAction = nextMoveAction
+        }
+      )
+    }
+
+    // ============================================================
+    // 4. COMPACT CYBER TWIN (4 Cognitive Capability Clusters)
+    // ============================================================
+    item {
+      CompactCyberTwinSection(
+        clusterSummaries = clusterSummaries,
+        strongestCluster = strongestCluster,
+        limitingCluster = limitingCluster,
+        onSelectCluster = { cluster ->
+          selectedClusterForDetail = cluster
+        },
+        onOpenFullProfile = onNavigateToPersonalIntelligence
+      )
+    }
+
+    // ============================================================
+    // 5. CYBER TREASURE (Verified Career Capital)
+    // ============================================================
+    item {
+      CyberTreasureSection(
+        discoveriesCount = if (isZeroEvidence) 0 else (learningMemory.size + mistakeRecords.size),
+        capabilitiesProvenCount = if (isZeroEvidence) 0 else verifiedProofs.size,
+        investigationsCount = if (isZeroEvidence) 0 else (if (dailyMission.isCompleted) 4 else 3),
+        onOpenVault = onNavigateToPersonalIntelligence
+      )
+    }
+
+    // ============================================================
+    // 6. ZERO → JOB READY (Compact Progression Pipeline)
+    // ============================================================
+    item {
+      ZeroToJobReadySection(
+        currentStage = if (isZeroEvidence) "FOUNDATION" else "INVESTIGATION",
+        provenCount = if (isZeroEvidence) 0 else verifiedProofs.size,
+        totalStageCapabilities = 8,
+        nextMilestone = if (isZeroEvidence) "Initial SOC Diagnostic Baseline" else "Cross-Environment Transfer Triage",
+        onClick = onNavigateToJourney
+      )
+    }
+
+    // ============================================================
+    // 7. ACTIVE MISSION (In-Flight Operational Mission)
+    // ============================================================
+    item {
+      ActiveMissionSection(
+        title = if (isZeroEvidence) "Initial SOC Diagnostic Challenge" else todaysMissionV8.primaryAction.title.ifBlank { "SOC Beacon Investigation" },
+        subtitle = if (isZeroEvidence) "7-Gate Baseline Calibration" else todaysMissionV8.primaryAction.subtitle.ifBlank { "Correlate Sysmon ID 3 & Suricata Alert" },
+        stepsCompleted = if (isZeroEvidence) 0 else 2,
+        totalSteps = 4,
+        onContinue = {
+          activeMissionAction = nextMoveAction
+        }
+      )
+    }
+
+    // ============================================================
+    // 8. PROOF OF SKILL ("PROVEN" Verified Cryptographic Telemetry)
+    // ============================================================
+    item {
+      val latestProof = if (isZeroEvidence) null else verifiedProofs.firstOrNull()
+      ProvenSkillSection(
+        proof = latestProof,
+        onViewProof = onNavigateToPersonalIntelligence
+      )
+    }
+
+    // ============================================================
+    // 9. WHY DOES THIS MATTER? — CAREER SIGNAL
+    // ============================================================
+    item {
+      val provenSkillNames = if (isZeroEvidence) emptyList() else verifiedProofs.map { it.capabilityName }.distinct()
+      val remainingCaps = if (isZeroEvidence) activeCareer.primarySkills.size else (activeCareer.primarySkills.size - provenSkillNames.size).coerceAtLeast(0)
+      CareerSignalSection(
+        targetRole = activeCareer.title,
+        remainingCount = remainingCaps,
+        demonstratedSkills = provenSkillNames.take(2),
+        developingSkill = if (isZeroEvidence) "Awaiting Baseline Telemetry" else if (remainingCaps == 0) "Fully Qualified" else "${activeCareer.primarySkills.firstOrNull { it !in provenSkillNames } ?: "Threat Detection"} (In Progress)",
+        onOpenCareers = onNavigateToCareers
+      )
+    }
+  }
+}
+
+// ============================================================================
+// COMPONENT 1: OPERATOR HUD ("Where am I?")
+// ============================================================================
+@Composable
+private fun OperatorHudSection(
+  learnerId: String,
+  targetRole: String,
+  readinessScore: Int,
+  daysToTarget: Int,
+  stage: String,
+  onOpenProfile: () -> Unit
+) {
+  Surface(
+    shape = ChamferedCutCornerShape,
+    color = MaterialTheme.colorScheme.surface,
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    modifier = Modifier
+      .fillMaxWidth()
+      .testTag("home_operator_identity_hud")
+  ) {
+    Column(
+      modifier = Modifier
+        .background(
+          Brush.horizontalGradient(
+            listOf(
+              MaterialTheme.colorScheme.surfaceVariant,
+              MaterialTheme.colorScheme.surface
+            )
+          )
+        )
+        .padding(14.dp)
+    ) {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Box(
             modifier = Modifier
-              .background(
-                Brush.horizontalGradient(
-                  listOf(CyberAmber.copy(alpha = 0.12f), CyberSurfaceElevated)
-                )
-              )
-              .padding(14.dp)
+              .size(38.dp)
+              .clip(CircleShape)
+              .background(CyberCyan.copy(alpha = 0.15f))
+              .border(1.2.dp, CyberCyan, CircleShape),
+            contentAlignment = Alignment.Center
           ) {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                  imageVector = Icons.Default.SelfImprovement,
-                  contentDescription = null,
-                  tint = CyberAmber,
-                  modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+              Icons.Default.Terminal,
+              contentDescription = "Operator Terminal",
+              tint = CyberCyan,
+              modifier = Modifier.size(20.dp)
+            )
+          }
+          Spacer(modifier = Modifier.width(10.dp))
+          Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Text(
+                text = "OPERATOR // ${learnerId.uppercase()}",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Black,
+                  letterSpacing = 0.8.sp,
+                  fontSize = 10.sp
+                ),
+                color = CyberCyan
+              )
+              Spacer(modifier = Modifier.width(6.dp))
+              Surface(
+                shape = RoundedCornerShape(3.dp),
+                color = CyberEmerald.copy(alpha = 0.15f)
+              ) {
                 Text(
-                  text = "HONEST PACING ENGINE",
+                  text = stage,
                   style = MaterialTheme.typography.labelSmall.copy(
                     fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp
-                  ),
-                  color = CyberAmber
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Surface(
-                  shape = RoundedCornerShape(4.dp),
-                  color = CyberSurface,
-                  border = BorderStroke(0.5.dp, CyberBorder)
-                ) {
-                  Text(
-                    text = "${behavioralPacing.sessionDurationMins}m session • ${behavioralPacing.recentMistakeCount} tough triage checks",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    color = TextSecondaryDark,
-                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                  )
-                }
-              }
-
-              IconButton(
-                onClick = { AegoraRepository.dismissBehavioralPacing() },
-                modifier = Modifier.size(22.dp)
-              ) {
-                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = TextSecondaryDark, modifier = Modifier.size(14.dp))
-              }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-              text = behavioralPacing.questionPrompt,
-              style = MaterialTheme.typography.bodySmall,
-              color = TextPrimaryDark
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-              Button(
-                onClick = {
-                  AegoraRepository.dismissBehavioralPacing()
-                  onNavigateToVault()
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = CyberAmber),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.weight(1f)
-              ) {
-                Text(
-                  text = behavioralPacing.suggestedActionTitle,
-                  color = Color.Black,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 11.sp
-                )
-              }
-
-              OutlinedButton(
-                onClick = { AegoraRepository.dismissBehavioralPacing() },
-                shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(1.dp, CyberBorder),
-                modifier = Modifier.weight(0.6f)
-              ) {
-                Text("Continue", color = TextSecondaryDark, fontSize = 11.sp)
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // 0c. Universal Cross-Device Continue Hero
-    item {
-      com.example.ui.adaptive.UniversalContinueHero(
-        sessionState = sessionState,
-        onContinueAction = { screenTag ->
-          when (screenTag) {
-            "live_soc_range" -> onNavigateToLiveSocRange()
-            "binary_disassembler" -> onNavigateToBinaryDisassembler()
-            "shadow_range" -> onNavigateToShadowRange()
-            "threat_acoustic" -> onNavigateToThreatAcoustic()
-            "crisis_war_room" -> onNavigateToCrisisWarRoom()
-            "zero_day_lab" -> onNavigateToZeroDayLab()
-            "swarm_arena" -> onNavigateToSwarmArena()
-            "cyber_terminal" -> onNavigateToCyberTerminal()
-            else -> onNavigateToLabs()
-          }
-        }
-      )
-    }
-
-    // 1. Hero Command Center Banner (Non-Standard Chamfered Geometry & Endowed Progress)
-    item {
-      Surface(
-        modifier = Modifier
-          .fillMaxWidth()
-          .clip(ChamferedCutCornerShape)
-          .border(1.5.dp, CyberCyan.copy(alpha = 0.7f), ChamferedCutCornerShape),
-        color = CyberSurface,
-        tonalElevation = 3.dp
-      ) {
-        Column(
-          modifier = Modifier
-            .background(
-              Brush.linearGradient(
-                listOf(
-                  CyberCyan.copy(alpha = 0.10f),
-                  CyberSurface
-                )
-              )
-            )
-            .padding(18.dp)
-        ) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Column(modifier = Modifier.weight(1f)) {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                  shape = RoundedCornerShape(4.dp),
-                  color = CyberCyan.copy(alpha = 0.15f),
-                  border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.4f))
-                ) {
-                  Text(
-                    text = "TARGET CAREER TRACK",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                      fontFamily = FontFamily.Monospace,
-                      fontWeight = FontWeight.Bold,
-                      letterSpacing = 1.sp,
-                      fontSize = 9.sp
-                    ),
-                    color = CyberCyan,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                  )
-                }
-              }
-              Spacer(modifier = Modifier.height(4.dp))
-              Text(
-                text = activeCareer.title,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                  fontWeight = FontWeight.Black
-                ),
-                color = TextPrimaryDark
-              )
-              Text(
-                text = "Phase 1 • Foundational Systems & Telemetry",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondaryDark
-              )
-            }
-
-            // Hexagonal Job Readiness Badge
-            Box(
-              modifier = Modifier
-                .size(68.dp)
-                .clip(HexagonShape)
-                .background(CyberCyan.copy(alpha = 0.15f))
-                .border(1.5.dp, CyberCyan, HexagonShape),
-              contentAlignment = Alignment.Center
-            ) {
-              Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                  text = "${userProfile.jobReadinessScore}%",
-                  style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = FontFamily.Monospace,
+                    fontSize = 8.5.sp,
                     fontWeight = FontWeight.Black
                   ),
-                  color = CyberCyan
-                )
-                Text(
-                  text = "READY",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                  ),
-                  color = TextSecondaryDark
+                  color = CyberEmerald,
+                  modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                 )
               }
             }
-          }
-
-          Spacer(modifier = Modifier.height(14.dp))
-
-          // Endowed Momentum Progress Bar
-          EndowedProgressBar(
-            progress = userProfile.jobReadinessScore / 100f,
-            endowedBonus = 0.18f,
-            label = "Career Milestone Momentum",
-            valueText = "${userProfile.jobReadinessScore}% (Goal: 100%)",
-            barColor = CyberCyan,
-            bonusColor = CyberEmerald
-          )
-
-          Spacer(modifier = Modifier.height(14.dp))
-
-          // PREDICTIVE NEXT-ACTION ENGINE (Grounded & Explainable)
-          Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Insights, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                  text = "PREDICTIVE NEXT-ACTION ENGINE",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
-                    fontSize = 10.sp
-                  ),
-                  color = CyberCyan
-                )
-              }
-              Surface(
-                shape = RoundedCornerShape(4.dp),
-                color = CyberCyan.copy(alpha = 0.15f)
-              ) {
-                Text(
-                  text = "Data-Grounded",
-                  style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                  color = CyberCyan,
-                  modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                )
-              }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Render top ranked predictive actions
-            predictiveActions.take(2).forEach { action ->
-              Surface(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(10.dp),
-                color = CyberSurfaceElevated,
-                border = androidx.compose.foundation.BorderStroke(
-                  1.dp,
-                  if (action.urgencyScore >= 90) NeonCrimson.copy(alpha = 0.6f) else CyberBorder
-                )
-              ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                  Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                  ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                      Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        action.reasoningTags.forEach { tag ->
-                          Surface(
-                            shape = RoundedCornerShape(3.dp),
-                            color = if (tag.contains("Critical") || tag.contains("Decay"))
-                              NeonCrimson.copy(alpha = 0.18f)
-                            else CyberCyan.copy(alpha = 0.12f)
-                          ) {
-                            Text(
-                              text = tag,
-                              style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 8.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace
-                              ),
-                              color = if (tag.contains("Critical") || tag.contains("Decay"))
-                                NeonCrimson
-                              else CyberCyan,
-                              modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
-                          }
-                        }
-                      }
-                      Spacer(modifier = Modifier.height(4.dp))
-                      Text(
-                        text = action.title,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimaryDark
-                      )
-                    }
-
-                    Button(
-                      onClick = {
-                        when (action.destinationTag) {
-                          "live_soc_range" -> onNavigateToLiveSocRange()
-                          "knowledge_vault" -> onNavigateToVault()
-                          "lab_simulator" -> onNavigateToLabs()
-                          else -> onNavigateToLesson("les_102")
-                        }
-                      },
-                      colors = ButtonDefaults.buttonColors(
-                        containerColor = if (action.urgencyScore >= 90) NeonCrimson else CyberCyan
-                      ),
-                      shape = RoundedCornerShape(8.dp),
-                      contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                      Text(
-                        text = "Resolve",
-                        color = if (action.urgencyScore >= 90) Color.White else Color.Black,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                      )
-                    }
-                  }
-
-                  Spacer(modifier = Modifier.height(6.dp))
-                  Text(
-                    text = "💡 Grounding: ${action.primaryReason}",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
-                    color = TextSecondaryDark
-                  )
-                }
-              }
-            }
+            Text(
+              text = targetRole,
+              style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+              color = MaterialTheme.colorScheme.onSurface
+            )
           }
         }
-      }
-    }
 
-    // 1b. AEGORA Cyber Expert Engine Master Launcher (10-Tier Ladder & Personal Cyber Twin)
-    item {
+        Column(horizontalAlignment = Alignment.End) {
+          Text(
+            text = "$readinessScore MMR",
+            style = MaterialTheme.typography.titleMedium.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black
+            ),
+            color = CyberGold
+          )
+          Text(
+            text = "${daysToTarget}d to Target",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontSize = 9.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      // Shortcut to Personal Intelligence Profile
       Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurface,
-        border = BorderStroke(1.2.dp, NeonCyan),
+        shape = RoundedCornerShape(6.dp),
+        color = CyberCyan.copy(alpha = 0.06f),
+        border = BorderStroke(1.dp, CyberCyan.copy(alpha = 0.3f)),
         modifier = Modifier
           .fillMaxWidth()
-          .clickable { onNavigateToCyberExpertEngine() }
-          .testTag("home_cyber_expert_engine_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(NeonCyan.copy(alpha = 0.2f))
-                  .border(1.2.dp, NeonCyan, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.MilitaryTech, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(24.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "CYBER EXPERT DEVELOPMENT ENGINE",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                  ),
-                  color = NeonCyan
-                )
-                Text(
-                  text = "10-Tier Ladder • Cyber Twin • Judgment Simulator",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberEmerald.copy(alpha = 0.15f),
-              border = BorderStroke(1.dp, CyberEmerald.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "TIER L3 → L4",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 10.sp
-                ),
-                color = CyberEmerald,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Track capability over completion, resolve root-cause prerequisite gaps with 1-click diagnostic drills, and test real-world judgment under uncertainty.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 1c. PROFESSIONAL WORKPLACE EXPERIENCE ENGINE (First Day on the Job, Live Shift, Manager Slack, Reasoning Graph)
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurfaceElevated,
-        border = BorderStroke(1.2.dp, CyberEmerald),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToWorkplaceSimulator() }
-          .testTag("home_workplace_simulator_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(CyberEmerald.copy(alpha = 0.2f))
-                  .border(1.2.dp, CyberEmerald, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.WorkHistory, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(24.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "PROFESSIONAL WORK EXPERIENCE SIMULATOR",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                  ),
-                  color = CyberEmerald
-                )
-                Text(
-                  text = "Live Shifts • Tickets • Slack • Consequence Tree",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberEmerald.copy(alpha = 0.15f),
-              border = BorderStroke(1.dp, CyberEmerald.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "SHIFT ACTIVE",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 10.sp
-                ),
-                color = CyberEmerald,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Experience authentic cybersecurity work in living virtual enterprises. Investigate multi-source telemetry, brief AI managers, manage business downtime trade-offs, and construct forensic reasoning graphs.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 1d. AEGORA ZERO-TRUST SECURITY CENTER & PASSKEY IDENTITY GATEWAY
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurfaceElevated,
-        border = BorderStroke(1.2.dp, NeonCyan),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToSecurityCenter() }
-          .testTag("home_security_center_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(NeonCyan.copy(alpha = 0.2f))
-                  .border(1.2.dp, NeonCyan, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.Security, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(24.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "ZERO-TRUST SECURITY CENTER",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                  ),
-                  color = NeonCyan
-                )
-                Text(
-                  text = "Passkeys • Risk Engine • Attack Sim",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberEmerald.copy(alpha = 0.15f),
-              border = BorderStroke(1.dp, CyberEmerald.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "POSTURE 92%",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 10.sp
-                ),
-                color = CyberEmerald,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Production-grade Zero-Trust Identity management: FIDO2 Passkeys, hardware-backed Keystore attestation, Adaptive Risk telemetry, and interactive attack defense simulations.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 1d2. CYBER LEARNING GENOME 2.0 & MULTI-DIMENSIONAL INTELLIGENCE
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurfaceElevated,
-        border = BorderStroke(1.2.dp, CyberCyan),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToGenome() }
-          .testTag("home_cyber_genome_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(CyberCyan.copy(alpha = 0.2f))
-                  .border(1.2.dp, CyberCyan, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.Psychology, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(24.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "CYBER LEARNING GENOME 2.0",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                  ),
-                  color = CyberCyan
-                )
-                Text(
-                  text = "8-Dim Competency • Fingerprint • Transfer",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberCyan.copy(alpha = 0.15f),
-              border = BorderStroke(1.dp, CyberCyan.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "v7.0 GENOME",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 10.sp
-                ),
-                color = CyberCyan,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Track capability across 8 multi-dimensional vectors, audit your Investigation Fingerprint against the Training Reference Model, and execute Cross-Domain Transfer challenges.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 1d2b. AEGORA v8.1 THE INTELLIGENCE CONNECTIVE LAYER (Centralized Orchestrator)
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurfaceElevated,
-        border = BorderStroke(1.4.dp, CyberCyan),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToIntelligenceConnective() }
-          .testTag("home_intelligence_connective_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(44.dp)
-                  .clip(HexagonShape)
-                  .background(CyberCyan.copy(alpha = 0.2f))
-                  .border(1.2.dp, CyberCyan, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.Hub, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(26.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "THE INTELLIGENCE CONNECTIVE LAYER",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                  ),
-                  color = CyberCyan
-                )
-                Text(
-                  text = "Autonomous Cyber Learning OS",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberCyan.copy(alpha = 0.15f),
-              border = BorderStroke(1.dp, CyberCyan.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "v8.1 CORE",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 10.sp
-                ),
-                color = CyberCyan,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(10.dp))
-          Text(
-            text = "Every learner action generates cryptographically verifiable evidence, updates the living Cyber Twin 3.0, audits Mistake DNA 2.0, and selects the Next Best Action across 18 pedagogical learning models.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-
-          Spacer(modifier = Modifier.height(12.dp))
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-          ) {
-            Text("• 9 Vector Twin 3.0", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace), color = CyberGreen)
-            Text("• Time-Aware NBA", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace), color = CyberGold)
-            Text("• Mistake DNA 2.0", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace), color = CyberCrimson)
-          }
-        }
-      }
-    }
-
-    // 1d3. AEGORA v8.0 SIGNATURE PURPLE TEAM ARENA ("SELF VS SELF")
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurfaceElevated,
-        border = BorderStroke(1.2.dp, CyberCrimson),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToPurpleArena() }
-          .testTag("home_purple_arena_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(CyberCrimson.copy(alpha = 0.2f))
-                  .border(1.2.dp, CyberCrimson, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.Security, contentDescription = null, tint = CyberCrimson, modifier = Modifier.size(24.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "PURPLE TEAM ARENA (SELF VS SELF)",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                  ),
-                  color = CyberCrimson
-                )
-                Text(
-                  text = "5-Round Adversary Breach Duel",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberCrimson.copy(alpha = 0.15f),
-              border = BorderStroke(1.dp, CyberCrimson.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "v8.0 SIGNATURE",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 10.sp
-                ),
-                color = CyberCrimson,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Stage an authorized red team attack playbook, synthesize realistic EDR telemetry, switch to blue team to investigate, contain the breach, and face the forensic debrief: 'Would you have caught yourself?'",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 1d4. REAL SOC SHIFT SIMULATOR
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurfaceElevated,
-        border = BorderStroke(1.2.dp, CyberCyan),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToSocShiftSimulator() }
-          .testTag("home_soc_shift_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(CyberCyan.copy(alpha = 0.2f))
-                  .border(1.2.dp, CyberCyan, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.Dns, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(24.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "REAL SOC SHIFT SIMULATOR",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                  ),
-                  color = CyberCyan
-                )
-                Text(
-                  text = "Tier 1 Ingest Queue & Alert Decisions",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberCyan.copy(alpha = 0.15f),
-              border = BorderStroke(1.dp, CyberCyan.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "v8.0 LIVE QUEUE",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 10.sp
-                ),
-                color = CyberCyan,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Process concurrent SIEM/EDR alerts under shift time constraints, isolate true positives from noisy false positives, and earn forensic triage scores.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 1d5. VOICE SOC CRISIS DRILL & MULTIVERSE REPLAY
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurfaceElevated,
-        border = BorderStroke(1.2.dp, CyberEmerald),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToVoiceSocAndMultiverse() }
-          .testTag("home_voice_multiverse_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(CyberEmerald.copy(alpha = 0.2f))
-                  .border(1.2.dp, CyberEmerald, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(24.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "VOICE SOC & MULTIVERSE REPLAY",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                  ),
-                  color = CyberEmerald
-                )
-                Text(
-                  text = "Executive Crisis Calls & Alternate Timelines",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberEmerald.copy(alpha = 0.15f),
-              border = BorderStroke(1.dp, CyberEmerald.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "v8.0 DRILLS",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 10.sp
-                ),
-                color = CyberEmerald,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Calm panicked stakeholders without jargon traps, and explore alternate counterfactual branches ('What if containment was delayed 15 minutes?').",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 1e. MULTIMODAL FUSION ENGINE (Synchronized Graph Topology + Audio Voice Stream)
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurfaceElevated,
-        border = BorderStroke(1.2.dp, CyberCyan),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToMultiModalFusion() }
-          .testTag("home_multimodal_fusion_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(CyberCyan.copy(alpha = 0.2f))
-                  .border(1.2.dp, CyberCyan, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.GraphicEq, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(24.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "MULTIMODAL FUSION ENGINE",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                  ),
-                  color = CyberCyan
-                )
-                Text(
-                  text = "Synchronized Voice & Topology Graph",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = CyberCyan.copy(alpha = 0.15f),
-              border = BorderStroke(1.dp, CyberCyan.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "AUDIO SYNC",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 10.sp
-                ),
-                color = CyberCyan,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-              )
-            }
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Correlate audio incident briefings directly with live interactive visual network graphs. As narration speaks, relevant attack nodes highlight and sync in real time.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 2. Behavioral Attention: Spaced Repetition Due Card with Breathing Pulse Glow
-    item {
-      PulsingBreathingContainer(
-        pulseColor = if (dueReviewCount > 0) CyberAmber else CyberCyan,
-        isActive = dueReviewCount > 0,
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Surface(
-          shape = RoundedCornerShape(20.dp),
-          color = if (dueReviewCount > 0) CyberSurfaceElevated else CyberSurface,
-          border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (dueReviewCount > 0) CyberAmber.copy(alpha = 0.5f) else CyberBorderSubtle
-          ),
-          modifier = Modifier.clickable { onNavigateToVault() }
-        ) {
-          Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(
-              modifier = Modifier.weight(1f),
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Box(
-                modifier = Modifier
-                  .size(46.dp)
-                  .clip(HexagonShape)
-                  .background(if (dueReviewCount > 0) CyberAmber.copy(alpha = 0.15f) else CyberCyan.copy(alpha = 0.15f))
-                  .border(
-                    1.dp,
-                    if (dueReviewCount > 0) CyberAmber else CyberCyan,
-                    HexagonShape
-                  ),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(
-                  imageVector = if (dueReviewCount > 0) Icons.Default.PsychologyAlt else Icons.Default.Bookmark,
-                  contentDescription = null,
-                  tint = if (dueReviewCount > 0) CyberAmber else CyberCyan,
-                  modifier = Modifier.size(24.dp)
-                )
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = if (dueReviewCount > 0) "SPACED REPETITION QUEUE" else "KNOWLEDGE VAULT",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    fontSize = 9.sp
-                  ),
-                  color = if (dueReviewCount > 0) CyberAmber else CyberCyan
-                )
-                Text(
-                  text = if (dueReviewCount > 0) "$dueReviewCount Flashcards Due for Review" else "Personal Notes & Bookmarks",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Button(
-              onClick = onNavigateToVault,
-              shape = RoundedCornerShape(12.dp),
-              colors = ButtonDefaults.buttonColors(
-                containerColor = if (dueReviewCount > 0) CyberAmber else CyberCyan,
-                contentColor = Color.Black
-              )
-            ) {
-              Text(if (dueReviewCount > 0) "Review" else "Open", fontWeight = FontWeight.Bold)
-            }
-          }
-        }
-      }
-    }
-
-    // 2b. Skill Decay Radar (Forgetting Forecast)
-    item {
-      CyberCard(
-        borderColor = CyberAmber.copy(alpha = 0.4f),
-        backgroundColor = CyberSurface,
-        shapeRadius = 20.dp
+          .clickable { onOpenProfile() }
+          .testTag("btn_hud_open_intelligence")
       ) {
         Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
+          modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.SpaceBetween
         ) {
           Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-              modifier = Modifier
-                .size(42.dp)
-                .clip(HexagonShape)
-                .background(CyberAmber.copy(alpha = 0.15f))
-                .border(1.dp, CyberAmber, HexagonShape),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = CyberAmber, modifier = Modifier.size(22.dp))
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-              Text(
-                text = "SKILL DECAY FORECAST & RETENTION",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold,
-                  letterSpacing = 1.sp,
-                  fontSize = 9.sp
-                ),
-                color = CyberAmber
-              )
-              Text(
-                text = "Predictive Memory Degradation",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = TextPrimaryDark
-              )
-            }
+            Icon(Icons.Default.Psychology, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(15.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = "Personal Intelligence Profile • 4 Clusters & Causal Graph",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 9.5.sp
+              ),
+              color = CyberCyan
+            )
           }
+          Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "View Profile", tint = CyberCyan, modifier = Modifier.size(13.dp))
+        }
+      }
+    }
+  }
+}
 
+// ============================================================================
+// COMPONENT 2: HERO "NEXT MOVE" ("What should I do next?")
+// ============================================================================
+@Composable
+private fun NextMoveHeroSection(
+  action: PredictiveNextAction,
+  onStart: () -> Unit
+) {
+  Card(
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    ),
+    border = BorderStroke(1.5.dp, CyberCyan.copy(alpha = 0.6f)),
+    modifier = Modifier
+      .fillMaxWidth()
+      .testTag("home_next_move_hero")
+  ) {
+    Column(
+      modifier = Modifier
+        .background(
+          Brush.verticalGradient(
+            listOf(
+              CyberCyan.copy(alpha = 0.08f),
+              MaterialTheme.colorScheme.surface
+            )
+          )
+        )
+        .padding(16.dp)
+    ) {
+      // Header badge with pulsing indicator
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Box(
+            modifier = Modifier
+              .size(8.dp)
+              .clip(CircleShape)
+              .background(CyberEmerald)
+          )
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(
+            text = "NEXT MOVE",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black,
+              letterSpacing = 1.sp,
+              fontSize = 11.sp
+            ),
+            color = CyberCyan
+          )
+        }
+
+        Surface(
+          shape = RoundedCornerShape(4.dp),
+          color = MaterialTheme.colorScheme.surfaceVariant
+        ) {
+          Text(
+            text = "~ ${action.estimatedMins} min",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+          )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      // Dominant action title
+      Text(
+        text = action.title,
+        style = MaterialTheme.typography.titleMedium.copy(
+          fontWeight = FontWeight.Bold,
+          fontSize = 16.sp
+        ),
+        color = MaterialTheme.colorScheme.onSurface
+      )
+
+      Spacer(modifier = Modifier.height(4.dp))
+
+      // Why does this matter? Contextual reasoning
+      Text(
+        text = action.primaryReason,
+        style = MaterialTheme.typography.bodySmall.copy(
+          fontSize = 11.5.sp
+        ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+
+      Spacer(modifier = Modifier.height(12.dp))
+
+      // Metadata chips & Primary CTA Button
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
           Surface(
             shape = RoundedCornerShape(4.dp),
-            color = CyberAmber.copy(alpha = 0.15f),
-            border = BorderStroke(1.dp, CyberAmber.copy(alpha = 0.5f))
+            color = CyberIndigo.copy(alpha = 0.15f)
           ) {
             Text(
-              text = "EBBINGHAUS AI",
+              text = action.category.uppercase(),
               style = MaterialTheme.typography.labelSmall.copy(
                 fontFamily = FontFamily.Monospace,
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold
               ),
+              color = CyberIndigo,
+              modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+            )
+          }
+
+          Text(
+            text = "+${action.xpReward} XP",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontSize = 9.5.sp,
+              fontWeight = FontWeight.Bold
+            ),
+            color = CyberGold
+          )
+        }
+
+        Button(
+          onClick = onStart,
+          shape = RoundedCornerShape(6.dp),
+          colors = ButtonDefaults.buttonColors(
+            containerColor = CyberCyan,
+            contentColor = Color.Black
+          ),
+          modifier = Modifier
+            .heightIn(min = 48.dp)
+            .testTag("home_btn_start_next_move")
+        ) {
+          Icon(
+            Icons.Default.PlayArrow,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp)
+          )
+          Spacer(modifier = Modifier.width(4.dp))
+          Text(
+            text = "START",
+            style = MaterialTheme.typography.labelMedium.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black,
+              letterSpacing = 0.5.sp
+            )
+          )
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// COMPONENT 3: COMPACT CYBER TWIN (4 Cognitive Clusters)
+// ============================================================================
+@Composable
+private fun CompactCyberTwinSection(
+  clusterSummaries: List<ClusterCapabilitySummary>,
+  strongestCluster: ClusterCapabilitySummary?,
+  limitingCluster: ClusterCapabilitySummary?,
+  onSelectCluster: (ClusterCapabilitySummary) -> Unit,
+  onOpenFullProfile: () -> Unit
+) {
+  Card(
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    ),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    modifier = Modifier
+      .fillMaxWidth()
+      .testTag("home_compact_cyber_twin")
+  ) {
+    Column(modifier = Modifier.padding(14.dp)) {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Column {
+          Text(
+            text = "CYBER TWIN",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black,
+              letterSpacing = 0.8.sp,
+              fontSize = 11.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+          )
+          Text(
+            text = "4 Cognitive Capability Clusters",
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+
+        TextButton(
+          onClick = onOpenFullProfile,
+          contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+          modifier = Modifier.heightIn(min = 48.dp)
+        ) {
+          Text(
+            text = "Full Profile",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Bold
+            ),
+            color = CyberCyan
+          )
+          Spacer(modifier = Modifier.width(4.dp))
+          Icon(
+            Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = "Open Profile",
+            tint = CyberCyan,
+            modifier = Modifier.size(12.dp)
+          )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      // 4 Cluster Grid/List
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (summary in clusterSummaries) {
+          val isStrongest = summary.cluster == strongestCluster?.cluster
+          val isLimiting = summary.cluster == limitingCluster?.cluster
+          ClusterSummaryRow(
+            summary = summary,
+            isStrongest = isStrongest,
+            isLimiting = isLimiting,
+            onClick = { onSelectCluster(summary) }
+          )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      // Diagnostic Footnote
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          text = "Tap cluster to view verified evidence & recommended action",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontSize = 9.5.sp
+          ),
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun ClusterSummaryRow(
+  summary: ClusterCapabilitySummary,
+  isStrongest: Boolean,
+  isLimiting: Boolean,
+  onClick: () -> Unit
+) {
+  Surface(
+    shape = RoundedCornerShape(8.dp),
+    color = MaterialTheme.colorScheme.surfaceVariant,
+    border = BorderStroke(
+      1.dp,
+      when {
+        isLimiting -> CyberCrimson.copy(alpha = 0.5f)
+        isStrongest -> CyberEmerald.copy(alpha = 0.5f)
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+      }
+    ),
+    modifier = Modifier
+      .fillMaxWidth()
+      .clickable { onClick() }
+  ) {
+    Row(
+      modifier = Modifier
+        .padding(horizontal = 12.dp, vertical = 9.dp)
+        .fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+      Column(modifier = Modifier.weight(1f)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Text(
+            text = summary.cluster.displayName,
+            style = MaterialTheme.typography.bodySmall.copy(
+              fontWeight = FontWeight.Bold,
+              fontSize = 12.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+          )
+          if (isStrongest) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = "STRONGEST",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Black
+              ),
+              color = CyberEmerald
+            )
+          } else if (isLimiting) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = "LIMITING",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Black
+              ),
+              color = CyberCrimson
+            )
+          }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Score bar
+        LinearProgressIndicator(
+          progress = { (summary.score / 100f).coerceIn(0f, 1f) },
+          modifier = Modifier
+            .fillMaxWidth(0.9f)
+            .height(4.dp)
+            .clip(RoundedCornerShape(2.dp)),
+          color = when {
+            summary.score >= 75 -> CyberEmerald
+            summary.score >= 50 -> CyberCyan
+            else -> CyberAmber
+          },
+          trackColor = MaterialTheme.colorScheme.surface
+        )
+      }
+
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+          text = "${summary.score}%",
+          style = MaterialTheme.typography.labelMedium.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Black,
+            fontSize = 12.sp
+          ),
+          color = when {
+            summary.score >= 75 -> CyberEmerald
+            summary.score >= 50 -> CyberCyan
+            else -> CyberAmber
+          }
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Icon(
+          Icons.Default.ChevronRight,
+          contentDescription = "Inspect Cluster",
+          tint = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.size(16.dp)
+        )
+      }
+    }
+  }
+}
+
+// ============================================================================
+// COMPONENT 4: "CYBER TREASURE" (Verified Career Capital)
+// ============================================================================
+@Composable
+private fun CyberTreasureSection(
+  discoveriesCount: Int,
+  capabilitiesProvenCount: Int,
+  investigationsCount: Int,
+  onOpenVault: () -> Unit
+) {
+  Card(
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    ),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    modifier = Modifier
+      .fillMaxWidth()
+      .clickable { onOpenVault() }
+      .testTag("home_cyber_treasure")
+  ) {
+    Column(modifier = Modifier.padding(14.dp)) {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Icon(Icons.Default.Security, contentDescription = null, tint = CyberGold, modifier = Modifier.size(16.dp))
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(
+            text = "CYBER TREASURE",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black,
+              letterSpacing = 0.8.sp,
+              fontSize = 11.sp
+            ),
+            color = CyberGold
+          )
+        }
+
+        Text(
+          text = "Verified Career Capital",
+          style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        TreasureMetricTile(
+          count = discoveriesCount,
+          label = "Discoveries",
+          subLabel = "Verified patterns",
+          tint = CyberCyan,
+          modifier = Modifier.weight(1f)
+        )
+        TreasureMetricTile(
+          count = capabilitiesProvenCount,
+          label = "Proven",
+          subLabel = "Cryptographic gates",
+          tint = CyberEmerald,
+          modifier = Modifier.weight(1f)
+        )
+        TreasureMetricTile(
+          count = investigationsCount,
+          label = "Investigations",
+          subLabel = "Live telemetry",
+          tint = CyberIndigo,
+          modifier = Modifier.weight(1f)
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun TreasureMetricTile(
+  count: Int,
+  label: String,
+  subLabel: String,
+  tint: Color,
+  modifier: Modifier = Modifier
+) {
+  Surface(
+    shape = RoundedCornerShape(8.dp),
+    color = MaterialTheme.colorScheme.surfaceVariant,
+    border = BorderStroke(1.dp, tint.copy(alpha = 0.25f)),
+    modifier = modifier
+  ) {
+    Column(
+      modifier = Modifier.padding(8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Text(
+        text = "$count",
+        style = MaterialTheme.typography.titleMedium.copy(
+          fontFamily = FontFamily.Monospace,
+          fontWeight = FontWeight.Black,
+          fontSize = 17.sp
+        ),
+        color = tint
+      )
+      Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall.copy(
+          fontWeight = FontWeight.Bold,
+          fontSize = 10.sp
+        ),
+        color = MaterialTheme.colorScheme.onSurface
+      )
+      Text(
+        text = subLabel,
+        style = MaterialTheme.typography.labelSmall.copy(
+          fontSize = 8.sp
+        ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+    }
+  }
+}
+
+// ============================================================================
+// COMPONENT 5: ZERO → JOB READY (Compact Progression Pipeline)
+// ============================================================================
+@Composable
+private fun ZeroToJobReadySection(
+  currentStage: String,
+  provenCount: Int,
+  totalStageCapabilities: Int,
+  nextMilestone: String,
+  onClick: () -> Unit
+) {
+  val stages = listOf("FOUNDATION", "OPERATIONS", "INVESTIGATION", "SPECIALIZATION", "PROVE IT", "JOB READY")
+
+  Card(
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    ),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    modifier = Modifier
+      .fillMaxWidth()
+      .clickable { onClick() }
+      .testTag("home_zero_to_job_ready")
+  ) {
+    Column(modifier = Modifier.padding(14.dp)) {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          text = "ZERO → JOB READY",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.8.sp,
+            fontSize = 11.sp
+          ),
+          color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Text(
+          text = "$provenCount / $totalStageCapabilities capabilities proven",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontSize = 9.5.sp,
+            fontWeight = FontWeight.Bold
+          ),
+          color = CyberCyan
+        )
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      // Compact Progression pipeline row
+      LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        items(stages) { stageName ->
+          val isCurrent = stageName == currentStage
+          val isPast = stages.indexOf(stageName) < stages.indexOf(currentStage)
+
+          Surface(
+            shape = RoundedCornerShape(4.dp),
+            color = when {
+              isCurrent -> CyberCyan.copy(alpha = 0.2f)
+              isPast -> CyberEmerald.copy(alpha = 0.15f)
+              else -> MaterialTheme.colorScheme.surfaceVariant
+            },
+            border = BorderStroke(
+              1.dp,
+              when {
+                isCurrent -> CyberCyan
+                isPast -> CyberEmerald.copy(alpha = 0.5f)
+                else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+              }
+            )
+          ) {
+            Text(
+              text = if (isPast) "$stageName ✓" else stageName,
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 8.5.sp,
+                fontWeight = if (isCurrent) FontWeight.Black else FontWeight.Normal
+              ),
+              color = when {
+                isCurrent -> CyberCyan
+                isPast -> CyberEmerald
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+              },
+              modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+            )
+          }
+        }
+      }
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          text = "Next milestone: $nextMilestone",
+          style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Icon(
+          Icons.AutoMirrored.Filled.ArrowForward,
+          contentDescription = "View Journey",
+          tint = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.size(13.dp)
+        )
+      }
+    }
+  }
+}
+
+// ============================================================================
+// COMPONENT 6: ACTIVE MISSION
+// ============================================================================
+@Composable
+private fun ActiveMissionSection(
+  title: String,
+  subtitle: String,
+  stepsCompleted: Int,
+  totalSteps: Int,
+  onContinue: () -> Unit
+) {
+  Card(
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    ),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    modifier = Modifier
+      .fillMaxWidth()
+      .testTag("home_active_mission")
+  ) {
+    Row(
+      modifier = Modifier
+        .padding(14.dp)
+        .fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Column(modifier = Modifier.weight(1f)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Text(
+            text = "ACTIVE MISSION",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black,
+              letterSpacing = 0.8.sp,
+              fontSize = 10.sp
+            ),
+            color = CyberCyan
+          )
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(
+            text = "$stepsCompleted / $totalSteps steps",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontSize = 9.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+          text = title,
+          style = MaterialTheme.typography.bodySmall.copy(
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.5.sp
+          ),
+          color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Text(
+          text = subtitle,
+          style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          maxLines = 1
+        )
+      }
+
+      Spacer(modifier = Modifier.width(10.dp))
+
+      Button(
+        onClick = onContinue,
+        shape = RoundedCornerShape(6.dp),
+        colors = ButtonDefaults.buttonColors(
+          containerColor = MaterialTheme.colorScheme.surfaceVariant,
+          contentColor = CyberCyan
+        ),
+        border = BorderStroke(1.dp, CyberCyan.copy(alpha = 0.4f)),
+        modifier = Modifier
+          .heightIn(min = 48.dp)
+          .testTag("home_btn_continue_active_mission")
+      ) {
+        Text(
+          text = "CONTINUE",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Black
+          )
+        )
+      }
+    }
+  }
+}
+
+// ============================================================================
+// COMPONENT 7: PROOF OF SKILL ("PROVEN")
+// ============================================================================
+@Composable
+private fun ProvenSkillSection(
+  proof: EvidenceProofItem?,
+  onViewProof: () -> Unit
+) {
+  val isProven = proof != null
+  val title = proof?.capabilityName ?: "Awaiting First Verified Proof"
+  val proofType = proof?.proofType ?: "Pending Lab Telemetry"
+  val hash = proof?.verifiedHash ?: "SHA-256: Unverified (0 Proofs)"
+
+  Card(
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    ),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    modifier = Modifier
+      .fillMaxWidth()
+      .clickable { onViewProof() }
+      .testTag("home_proven_skill")
+  ) {
+    Column(modifier = Modifier.padding(14.dp)) {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Icon(
+            imageVector = if (isProven) Icons.Default.Verified else Icons.Default.HourglassEmpty,
+            contentDescription = null,
+            tint = if (isProven) CyberEmerald else CyberAmber,
+            modifier = Modifier.size(15.dp)
+          )
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(
+            text = if (isProven) "PROVEN" else "PENDING",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black,
+              letterSpacing = 0.8.sp,
+              fontSize = 11.sp
+            ),
+            color = if (isProven) CyberEmerald else CyberAmber
+          )
+        }
+
+        Text(
+          text = if (isProven) "Active Defense" else "Zero Evidence",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontSize = 9.sp,
+            color = if (isProven) CyberCyan else CyberAmber
+          )
+        )
+      }
+
+      Spacer(modifier = Modifier.height(6.dp))
+
+      Text(
+        text = title,
+        style = MaterialTheme.typography.bodyMedium.copy(
+          fontWeight = FontWeight.Bold,
+          fontSize = 13.sp
+        ),
+        color = MaterialTheme.colorScheme.onSurface
+      )
+
+      Spacer(modifier = Modifier.height(2.dp))
+
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          text = "Evidence: $proofType",
+          style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+          text = hash,
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontSize = 9.sp
+          ),
+          color = if (isProven) CyberEmerald else CyberAmber
+        )
+      }
+    }
+  }
+}
+
+// ============================================================================
+// COMPONENT 8: CAREER SIGNAL ("Why does this matter?")
+// ============================================================================
+@Composable
+private fun CareerSignalSection(
+  targetRole: String,
+  remainingCount: Int,
+  demonstratedSkills: List<String>,
+  developingSkill: String,
+  onOpenCareers: () -> Unit
+) {
+  Card(
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    ),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    modifier = Modifier
+      .fillMaxWidth()
+      .clickable { onOpenCareers() }
+      .testTag("home_career_signal")
+  ) {
+    Column(modifier = Modifier.padding(14.dp)) {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Icon(Icons.Default.Badge, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(15.dp))
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(
+            text = "CAREER SIGNAL",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black,
+              letterSpacing = 0.8.sp,
+              fontSize = 11.sp
+            ),
+            color = CyberCyan
+          )
+        }
+
+        Text(
+          text = "$remainingCount capabilities remaining",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontSize = 9.sp,
+            color = CyberAmber
+          )
+        )
+      }
+
+      Spacer(modifier = Modifier.height(6.dp))
+
+      Text(
+        text = targetRole,
+        style = MaterialTheme.typography.bodyMedium.copy(
+          fontWeight = FontWeight.Bold,
+          fontSize = 13.sp
+        ),
+        color = MaterialTheme.colorScheme.onSurface
+      )
+
+      Spacer(modifier = Modifier.height(6.dp))
+
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        if (demonstratedSkills.isEmpty()) {
+          Surface(
+            shape = RoundedCornerShape(4.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, CyberAmber.copy(alpha = 0.3f))
+          ) {
+            Text(
+              text = "0/${remainingCount} Demonstrated • Complete initial diagnostic",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium
+              ),
               color = CyberAmber,
               modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
             )
           }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        val highestRiskSkill = skillDecays.find { it.riskLevel == "HIGH" } ?: skillDecays.first()
-        Surface(
-          shape = RoundedCornerShape(12.dp),
-          color = CyberSurfaceElevated,
-          border = BorderStroke(1.dp, CyberBorderSubtle)
-        ) {
-          Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
+        } else {
+          demonstratedSkills.forEach { skill ->
+            Surface(
+              shape = RoundedCornerShape(4.dp),
+              color = CyberEmerald.copy(alpha = 0.15f)
             ) {
               Text(
-                text = highestRiskSkill.skillName,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                color = TextPrimaryDark
-              )
-              Text(
-                text = "${highestRiskSkill.currentHealth}% Retention",
+                text = "$skill ✓",
                 style = MaterialTheme.typography.labelSmall.copy(
                   fontFamily = FontFamily.Monospace,
+                  fontSize = 9.sp,
                   fontWeight = FontWeight.Bold
                 ),
-                color = if (highestRiskSkill.currentHealth < 60) CyberCrimson else CyberAmber
+                color = CyberEmerald,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
               )
-            }
-
-            Text(
-              text = "Projected decay: ${highestRiskSkill.currentHealth}% → ${highestRiskSkill.projected30Days}% in 30 days without reinforcement.",
-              style = MaterialTheme.typography.labelSmall,
-              color = TextSecondaryDark
-            )
-
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Text(
-                text = "⚡ Drill: ${highestRiskSkill.recommendedDiagnosticTitle}",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontSize = 10.sp
-                ),
-                color = CyberCyan,
-                modifier = Modifier.weight(1f)
-              )
-              Button(
-                onClick = onNavigateToLabs,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                modifier = Modifier.height(32.dp)
-              ) {
-                Text("Start Drill", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-              }
             }
           }
         }
+
+        Surface(
+          shape = RoundedCornerShape(4.dp),
+          color = CyberAmber.copy(alpha = 0.15f)
+        ) {
+          Text(
+            text = developingSkill,
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontSize = 9.sp,
+              fontWeight = FontWeight.Bold
+            ),
+            color = CyberAmber,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+          )
+        }
       }
     }
+  }
+}
 
-    // 3. Tactile 'Hold-to-Hack' Active Daily Mission (Skewed Parallelogram Shape)
-    item {
-      CyberMissionCard(
-        title = dailyMission.title,
-        subtitle = dailyMission.scenarioContext,
-        tag = "Daily Mission • +${dailyMission.xpReward} XP",
-        tagColor = CyberMagenta,
-        onClick = onNavigateToLabs
+// ============================================================================
+// COMPONENT 9: ZERO EVIDENCE WELCOME CARD
+// ============================================================================
+@Composable
+private fun ZeroEvidenceWelcomeCard(
+  onStartFirstMission: () -> Unit
+) {
+  Card(
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    ),
+    border = BorderStroke(1.5.dp, CyberEmerald),
+    modifier = Modifier
+      .fillMaxWidth()
+      .testTag("home_empty_state")
+  ) {
+    Column(
+      modifier = Modifier
+        .background(
+          Brush.verticalGradient(
+            listOf(
+              CyberEmerald.copy(alpha = 0.1f),
+              MaterialTheme.colorScheme.surface
+            )
+          )
+        )
+        .padding(16.dp)
+    ) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Default.Explore, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+          text = "YOUR CAPABILITY MAP STARTS HERE",
+          style = MaterialTheme.typography.labelMedium.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Black,
+            fontSize = 11.5.sp
+          ),
+          color = CyberEmerald
+        )
+      }
+
+      Spacer(modifier = Modifier.height(6.dp))
+
+      Text(
+        text = "You don't need cybersecurity experience. AEGORA maps your verified capabilities as you complete live telemetry investigations.",
+        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      Button(
+        onClick = onStartFirstMission,
+        shape = RoundedCornerShape(6.dp),
+        colors = ButtonDefaults.buttonColors(
+          containerColor = CyberEmerald,
+          contentColor = Color.Black
+        ),
+        modifier = Modifier
+          .heightIn(min = 48.dp)
+          .testTag("home_btn_start_from_zero")
       ) {
+        Text(
+          text = "START FROM ZERO: PROTOCOL PACKET ANALYSIS",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Black
+          )
+        )
+      }
+    }
+  }
+}
+
+// ============================================================================
+// COMPONENT 10: CLUSTER DETAIL DIALOG
+// ============================================================================
+@Composable
+private fun ClusterDetailDialog(
+  summary: ClusterCapabilitySummary,
+  onDismiss: () -> Unit,
+  onLaunchMission: () -> Unit,
+  onViewDeepProfile: () -> Unit
+) {
+  Dialog(onDismissRequest = onDismiss) {
+    Surface(
+      shape = RoundedCornerShape(12.dp),
+      color = MaterialTheme.colorScheme.surface,
+      border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(8.dp)
+    ) {
+      Column(modifier = Modifier.padding(16.dp)) {
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically
         ) {
-          Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = CyberSurfaceElevated
-          ) {
+          Column {
             Text(
-              text = "${dailyMission.difficulty} • ${dailyMission.estimatedTimeMinutes}m Estimated",
-              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-              color = TextPrimaryDark,
-              modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+              text = summary.cluster.displayName.uppercase(),
+              style = MaterialTheme.typography.titleMedium.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Black,
+                fontSize = 15.sp
+              ),
+              color = CyberCyan
+            )
+            Text(
+              text = summary.trendLabel,
+              style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+              color = MaterialTheme.colorScheme.onSurfaceVariant
             )
           }
 
-          if (!dailyMission.isCompleted) {
-            HoldToHackButton(
-              text = "HOLD TO COMPLETE",
-              onComplete = {
-                AegoraRepository.completeDailyMission()
-                showRewardModal = true
-              },
-              primaryColor = CyberMagenta,
-              activeColor = CyberEmerald,
-              testTag = "home_complete_mission_btn"
-            )
-          } else {
-            Surface(
-              shape = RoundedCornerShape(8.dp),
-              color = CyberEmerald.copy(alpha = 0.2f),
-              border = androidx.compose.foundation.BorderStroke(1.dp, CyberEmerald)
-            ) {
+          Text(
+            text = "${summary.score}%",
+            style = MaterialTheme.typography.titleLarge.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black
+            ),
+            color = if (summary.score >= 75) CyberEmerald else CyberCyan
+          )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Text(
+          text = summary.plainEnglishMeaning,
+          style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+          color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Recent Evidence
+        val proof = summary.recentEvidence.firstOrNull()
+        if (proof != null) {
+          Surface(
+            shape = RoundedCornerShape(6.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Column(modifier = Modifier.padding(8.dp)) {
               Text(
-                text = "✓ Solved & Verified",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = CyberEmerald,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                text = "LATEST VERIFIED EVIDENCE:",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontSize = 8.5.sp,
+                  fontWeight = FontWeight.Bold
+                ),
+                color = CyberEmerald
+              )
+              Text(
+                text = proof.telemetrySnippet,
+                style = MaterialTheme.typography.bodySmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontSize = 10.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface
               )
             }
           }
+          Spacer(modifier = Modifier.height(10.dp))
         }
-      }
-    }
 
-    // 4. Hexagonal Skill Radar Constellation Overview
-    item {
-      CyberSectionHeader(
-        title = "Skill Radar & Constellation",
-        subtitle = "Multi-vector mastery nodes",
-        actionText = "Full Graph",
-        onActionClick = onNavigateToPassport
-      )
-
-      CyberCard(
-        borderColor = CyberCyan.copy(alpha = 0.4f),
-        backgroundColor = CyberSurface,
-        shapeRadius = 20.dp
-      ) {
+        // Recommended Action
         Text(
-          text = "CORE TELEMETRY CLUSTER",
+          text = "RECOMMENDED ACTION:",
           style = MaterialTheme.typography.labelSmall.copy(
             fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            color = CyberCyan
-          )
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold
+          ),
+          color = CyberGold
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+          text = summary.topGrowthMissions.firstOrNull() ?: "Complete tactical verification mission",
+          style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
 
         Row(
           modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceEvenly
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          HexagonalSkillNode(
-            title = "PCAP Analysis",
-            level = 4,
-            masteryPct = 85,
-            icon = Icons.Default.NetworkCheck,
-            accentColor = CyberCyan,
-            isSelected = true,
-            onClick = onNavigateToPassport
-          )
-          HexagonalSkillNode(
-            title = "Sysmon / EDR",
-            level = 3,
-            masteryPct = 78,
-            icon = Icons.Default.Shield,
-            accentColor = CyberBlue,
-            onClick = onNavigateToPassport
-          )
-          HexagonalSkillNode(
-            title = "OWASP Web",
-            level = 2,
-            masteryPct = 63,
-            icon = Icons.Default.Language,
-            accentColor = CyberViolet,
-            onClick = onNavigateToPassport
-          )
-          HexagonalSkillNode(
-            title = "Cloud IAM",
-            level = 2,
-            masteryPct = 57,
-            icon = Icons.Default.Cloud,
-            accentColor = CyberAmber,
-            onClick = onNavigateToPassport
-          )
-        }
-      }
-    }
-
-    // 5. Curiosity Gaps & Redacted Classified Intel Card
-    item {
-      CyberSectionHeader(
-        title = "Live Cyber Threat Intelligence",
-        subtitle = "Zero-day advisories & CISA alerts",
-        actionText = "Intel Hub",
-        onActionClick = onNavigateToIntelligence
-      )
-
-      val threat = AegoraRepository.threatAdvisories.first()
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurface,
-        border = androidx.compose.foundation.BorderStroke(1.2.dp, CyberCrimson.copy(alpha = 0.5f)),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToIntelligence() }
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+          OutlinedButton(
+            onClick = onViewDeepProfile,
+            shape = RoundedCornerShape(6.dp),
+            modifier = Modifier
+              .weight(1f)
+              .heightIn(min = 48.dp)
           ) {
-            Surface(
-              shape = RoundedCornerShape(4.dp),
-              color = CyberCrimson.copy(alpha = 0.15f),
-              border = androidx.compose.foundation.BorderStroke(1.dp, CyberCrimson.copy(alpha = 0.4f))
-            ) {
-              Text(
-                text = "${threat.cveId} • CVSS ${threat.cvssScore}",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                  fontWeight = FontWeight.Bold
-                ),
-                color = CyberCrimson,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-              )
-            }
-
             Text(
-              text = "LIVE ADVISORY",
+              text = "CAUSAL GRAPH",
               style = MaterialTheme.typography.labelSmall.copy(
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold
-              ),
-              color = CyberCrimson
+              )
             )
           }
 
-          Spacer(modifier = Modifier.height(10.dp))
-          Text(
-            text = threat.title,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = TextPrimaryDark
-          )
-
-          Spacer(modifier = Modifier.height(6.dp))
-          Text(
-            text = threat.summary,
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondaryDark,
-            maxLines = 2
-          )
-
-          Spacer(modifier = Modifier.height(10.dp))
-
-          // Curiosity Gap: Classified Payload Signature
-          CuriosityGlitchText(
-            secretText = "IOC PAYLOAD: 0x4F77AC -> Kerberoast TGS-REQ Hashcat Rule",
-            classification = "CONFIDENTIAL // NSA TAO SIGNATURE",
-            modifier = Modifier.fillMaxWidth()
-          )
-        }
-      }
-    }
-
-    // 6. Next-Gen Sovereign Cyber-Intelligence Innovations
-    item {
-      CyberSectionHeader(
-        title = "Sovereign Intelligence & Cyber Range",
-        subtitle = "Zero-day engines & autonomous simulations",
-        actionText = "Radar Hub",
-        onActionClick = onNavigateToGlobalRadar
-      )
-
-      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Shadow Agent Range
-        Surface(
-          shape = ChamferedCutCornerShape,
-          color = CyberSurface,
-          border = androidx.compose.foundation.BorderStroke(1.2.dp, NeonPink.copy(alpha = 0.6f)),
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onNavigateToShadowRange() }
-            .testTag("home_shadow_agent_card")
-        ) {
-          Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+          Button(
+            onClick = onLaunchMission,
+            shape = RoundedCornerShape(6.dp),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = CyberCyan,
+              contentColor = Color.Black
+            ),
+            modifier = Modifier
+              .weight(1f)
+              .heightIn(min = 48.dp)
           ) {
-            Box(
-              modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(NeonPink.copy(alpha = 0.15f)),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(Icons.Default.SecurityUpdateWarning, contentDescription = null, tint = NeonPink, modifier = Modifier.size(22.dp))
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-              Text(
-                text = "AUTONOMOUS ADVERSARY // SHADOW RANGE",
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
-                color = NeonPink
+            Text(
+              text = "PROVE IT",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Black
               )
-              Text("Dynamic Zero-Day Chains & Deception Grid", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
-            }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = NeonPink)
-          }
-        }
-
-        // Timeline Fork & Time Machine
-        Surface(
-          shape = ChamferedCutCornerShape,
-          color = CyberSurface,
-          border = androidx.compose.foundation.BorderStroke(1.2.dp, CyberCyan.copy(alpha = 0.6f)),
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onNavigateToTimelineFork() }
-            .testTag("home_timeline_fork_card")
-        ) {
-          Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Box(
-              modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(CyberCyan.copy(alpha = 0.15f)),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(Icons.Default.AltRoute, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(22.dp))
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-              Text(
-                text = "INCIDENT TIME-MACHINE & FORKING",
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
-                color = CyberCyan
-              )
-              Text("Dual-Timeline Hypothesis & Blast Diff", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
-            }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CyberCyan)
-          }
-        }
-
-        // Crisis War Room & Executive Escalation
-        Surface(
-          shape = ChamferedCutCornerShape,
-          color = CyberSurface,
-          border = androidx.compose.foundation.BorderStroke(1.2.dp, CyberAmber.copy(alpha = 0.6f)),
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onNavigateToCrisisWarRoom() }
-            .testTag("home_crisis_war_room_card")
-        ) {
-          Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Box(
-              modifier = Modifier
-                .size(42.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(CyberAmber.copy(alpha = 0.15f)),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = CyberAmber, modifier = Modifier.size(22.dp))
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-              Text(
-                text = "VOICE WAR ROOM & CRISIS SIMULATOR",
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
-                color = CyberAmber
-              )
-              Text("Multi-Agent CISO/Legal/CEO Escalation", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
-            }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CyberAmber)
-          }
-        }
-
-        // Row of 2: Zero-Day Studio & Bio Stress HUD
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-          Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = CyberSurface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, CyberEmerald.copy(alpha = 0.5f)),
-            modifier = Modifier
-              .weight(1f)
-              .clip(RoundedCornerShape(12.dp))
-              .clickable { onNavigateToZeroDayLab() }
-              .testTag("home_zero_day_lab_card")
-          ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-              Icon(Icons.Default.BugReport, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(20.dp))
-              Spacer(modifier = Modifier.height(6.dp))
-              Text("ZERO-DAY LAB", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = CyberEmerald)
-              Text("Sigma/YARA Studio", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
-            }
-          }
-
-          Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = CyberSurface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, CyberViolet.copy(alpha = 0.5f)),
-            modifier = Modifier
-              .weight(1f)
-              .clip(RoundedCornerShape(12.dp))
-              .clickable { onNavigateToBioStress() }
-              .testTag("home_bio_stress_card")
-          ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-              Icon(Icons.Default.MonitorHeart, contentDescription = null, tint = CyberViolet, modifier = Modifier.size(20.dp))
-              Spacer(modifier = Modifier.height(6.dp))
-              Text("BIO STRESS HUD", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = CyberViolet)
-              Text("Composure Tracker", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
-            }
-          }
-        }
-
-        // Row of 2: Binary Disassembler & Tactical CLI Terminal
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-          Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = CyberSurface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, NeonCyan.copy(alpha = 0.6f)),
-            modifier = Modifier
-              .weight(1f)
-              .clip(RoundedCornerShape(12.dp))
-              .clickable { onNavigateToBinaryDisassembler() }
-              .testTag("home_disassembler_card")
-          ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-              Icon(Icons.Default.Code, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(20.dp))
-              Spacer(modifier = Modifier.height(6.dp))
-              Text("DISASSEMBLER & CFG", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = NeonCyan)
-              Text("x86-64 Hex Dissector", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
-            }
-          }
-
-          Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = CyberSurface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, NeonGreen.copy(alpha = 0.6f)),
-            modifier = Modifier
-              .weight(1f)
-              .clip(RoundedCornerShape(12.dp))
-              .clickable { onNavigateToCyberTerminal() }
-              .testTag("home_terminal_card")
-          ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-              Icon(Icons.Default.Terminal, contentDescription = null, tint = NeonGreen, modifier = Modifier.size(20.dp))
-              Spacer(modifier = Modifier.height(6.dp))
-              Text("TACTICAL TERMINAL", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = NeonGreen)
-              Text("eBPF Sandboxed CLI", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
-            }
-          }
-        }
-
-        // Row of 2: Live SOC Range & Threat Acoustic Sonification
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-          Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = CyberSurface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, NeonCrimson.copy(alpha = 0.6f)),
-            modifier = Modifier
-              .weight(1f)
-              .clip(RoundedCornerShape(12.dp))
-              .clickable { onNavigateToLiveSocRange() }
-              .testTag("home_soc_range_card")
-          ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-              Icon(Icons.Default.SecurityUpdateWarning, contentDescription = null, tint = NeonCrimson, modifier = Modifier.size(20.dp))
-              Spacer(modifier = Modifier.height(6.dp))
-              Text("LIVE SOC RANGE", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = NeonCrimson)
-              Text("One-Tap SIEM Triage", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
-            }
-          }
-
-          Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = CyberSurface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, NeonViolet.copy(alpha = 0.6f)),
-            modifier = Modifier
-              .weight(1f)
-              .clip(RoundedCornerShape(12.dp))
-              .clickable { onNavigateToThreatAcoustic() }
-              .testTag("home_threat_acoustic_card")
-          ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-              Icon(Icons.Default.GraphicEq, contentDescription = null, tint = NeonViolet, modifier = Modifier.size(20.dp))
-              Spacer(modifier = Modifier.height(6.dp))
-              Text("SONIC RADAR", style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), color = NeonViolet)
-              Text("Waveform Triage Drill", style = MaterialTheme.typography.bodySmall, color = TextSecondaryDark)
-            }
-          }
-        }
-      }
-    }
-
-    // 7. Sequential Terminal & AppSec Ladders Hub (Parallelogram Cut)
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurface,
-        border = androidx.compose.foundation.BorderStroke(1.2.dp, CyberEmerald.copy(alpha = 0.5f)),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToLabs() }
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(40.dp)
-                  .clip(HexagonShape)
-                  .background(CyberEmerald.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.Terminal, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(20.dp))
-              }
-              Spacer(modifier = Modifier.width(10.dp))
-              Column {
-                Text(
-                  text = "SEQUENTIAL TERMINAL & APPSEC LADDERS",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold
-                  ),
-                  color = CyberEmerald
-                )
-                Text(
-                  text = "Bandit Linux • PowerShell • Web • Binary Track",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = CyberEmerald)
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Zero-hand-holding 16-level terminal ladders and live AppSec patch workflows directly connected to your career story.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 7. Resource Knowledge Universe Hub (V13 Engine)
-    item {
-      Surface(
-        shape = ChamferedCutCornerShape,
-        color = CyberSurface,
-        border = BorderStroke(1.2.dp, NeonCyan.copy(alpha = 0.7f)),
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable { onNavigateToResourceUniverse() }
-          .testTag("home_resource_universe_card")
-      ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Box(
-                modifier = Modifier
-                  .size(42.dp)
-                  .clip(HexagonShape)
-                  .background(NeonCyan.copy(alpha = 0.18f))
-                  .border(1.2.dp, NeonCyan, HexagonShape),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(Icons.Default.MenuBook, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(22.dp))
-              }
-              Spacer(modifier = Modifier.width(12.dp))
-              Column {
-                Text(
-                  text = "RESOURCE INTELLIGENCE UNIVERSE",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp
-                  ),
-                  color = NeonCyan
-                )
-                Text(
-                  text = "Authoritative Books, RFCs, Papers & Standards",
-                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                  color = TextPrimaryDark
-                )
-              }
-            }
-
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = NeonCyan)
-          }
-
-          Spacer(modifier = Modifier.height(8.dp))
-          Text(
-            text = "Explore NIST SP 800-61, MITRE ATT&CK, PortSwigger WAHH, and IETF RFCs connected to your career path with transparent quality scores.",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryDark
-          )
-        }
-      }
-    }
-
-    // 8. Quick Access Shortcuts
-    item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-      ) {
-        // AI Mentor
-        CyberCard(
-          modifier = Modifier.weight(1f),
-          borderColor = CyberCyan.copy(alpha = 0.35f),
-          backgroundColor = CyberSurface,
-          shapeRadius = 20.dp,
-          onClick = onNavigateToAi
-        ) {
-          Box(
-            modifier = Modifier
-              .size(40.dp)
-              .clip(HexagonShape)
-              .background(CyberViolet.copy(alpha = 0.18f))
-              .border(1.dp, CyberViolet, HexagonShape),
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              imageVector = Icons.Default.Psychology,
-              contentDescription = null,
-              tint = CyberViolet,
-              modifier = Modifier.size(22.dp)
             )
           }
-          Spacer(modifier = Modifier.height(10.dp))
-          Text("Aegora AI", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
-          Text("SOC Mentor & Socratic Tutor", style = MaterialTheme.typography.labelSmall, color = TextSecondaryDark)
-        }
-
-        // Career Tracks
-        CyberCard(
-          modifier = Modifier.weight(1f),
-          borderColor = CyberAmber.copy(alpha = 0.35f),
-          backgroundColor = CyberSurface,
-          shapeRadius = 20.dp,
-          onClick = onNavigateToCareers
-        ) {
-          Box(
-            modifier = Modifier
-              .size(40.dp)
-              .clip(HexagonShape)
-              .background(CyberAmber.copy(alpha = 0.18f))
-              .border(1.dp, CyberAmber, HexagonShape),
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              imageVector = Icons.Default.WorkOutline,
-              contentDescription = null,
-              tint = CyberAmber,
-              modifier = Modifier.size(22.dp)
-            )
-          }
-          Spacer(modifier = Modifier.height(10.dp))
-          Text("Career Hub", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimaryDark)
-          Text("6 Cybersecurity Roles", style = MaterialTheme.typography.labelSmall, color = TextSecondaryDark)
         }
       }
     }

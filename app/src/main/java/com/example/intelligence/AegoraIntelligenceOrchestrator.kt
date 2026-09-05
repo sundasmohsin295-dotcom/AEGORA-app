@@ -1,5 +1,8 @@
 package com.example.intelligence
 
+import com.example.capability.*
+import com.example.data.AegoraRepository
+import com.example.data.DemonstratedCapabilityRepository
 import com.example.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -986,6 +989,99 @@ object AegoraIntelligenceOrchestrator {
         "3. Record 1 Voice Crisis Drill with CFO persona",
         "4. Export Cryptographic Skill Passport PDF"
       )
+    )
+  }
+
+  // ============================================================================
+  // 12. DEMONSTRATED CAPABILITY INTELLIGENCE PIPELINE
+  // ============================================================================
+
+  /**
+   * Real Evidence -> DemonstratedCapabilityEngine -> CapabilityAssessmentResult
+   * -> CyberTwinAdapter -> Existing Cyber Twin 6.0 -> Capability Bottleneck
+   * -> NextBestActionAdapter -> Existing Next Best Action -> Real Mission
+   */
+  suspend fun executeCapabilityIntelligencePipeline(
+    learnerId: String,
+    repository: DemonstratedCapabilityRepository,
+    engine: DemonstratedCapabilityEngine = DemonstratedCapabilityEngine(),
+    cyberTwinAdapter: CyberTwinAdapter = DefaultCyberTwinAdapter(),
+    nextBestActionAdapter: NextBestActionAdapter = DefaultNextBestActionAdapter(),
+    currentTime: Long = System.currentTimeMillis()
+  ): CapabilityPipelineExecutionResult {
+    require(learnerId.isNotBlank()) { "Learner ID cannot be blank" }
+
+    // 1. Evaluate all persisted capabilities and evidence for this learner from Room
+    val results = engine.evaluateAllForLearner(
+      learnerId = learnerId,
+      repository = repository,
+      currentTime = currentTime
+    )
+
+    // 2. Map capability assessment results through CyberTwinAdapter
+    val twinSnapshot = cyberTwinAdapter.mapToCyberTwinSnapshot(
+      learnerId = learnerId,
+      results = results
+    )
+
+    // 3. Update existing Cyber Twin 6.0 state
+    CyberOperatingSystemV12Engine.updateCyberTwin60(twinSnapshot)
+
+    // 4. Identify primary capability bottleneck across failed gates
+    val primaryBottleneck = results.firstOrNull { !it.isDemonstrated && it.limitingGate != null }?.limitingGate
+
+    // 5. Synthesize Next Best Actions grounded in capability bottlenecks
+    val nextActions = nextBestActionAdapter.generateNextActions(results)
+
+    // 6. Update existing Next Best Action state flow in AegoraRepository
+    AegoraRepository.updatePredictiveNextActions(nextActions)
+
+    // 7. Record pipeline trace in orchestrator intelligence log
+    val traceEntry = IntelligenceTraceEntry(
+      traceId = "trc_cap_${UUID.randomUUID().toString().take(6)}",
+      timestamp = dateFormat.format(Date(currentTime)),
+      learnerAction = "Capability Intelligence Pipeline Evaluation",
+      evidenceGenerated = "${results.size} capabilities evaluated across 7-Gate Rubric",
+      skillAffected = if (results.isNotEmpty()) results.joinToString { it.name }.take(40) else "General Diagnostic",
+      scoreDelta = "Cyber Twin MMR: ${twinSnapshot.overallScore}",
+      detectedCognitiveSignal = if (primaryBottleneck != null) "Bottleneck: ${primaryBottleneck.displayName}" else "All Gates Passed",
+      recommendationOutput = "Generated ${nextActions.size} Next Best Actions"
+    )
+    _intelligenceTrace.value = listOf(traceEntry) + _intelligenceTrace.value
+
+    return CapabilityPipelineExecutionResult(
+      learnerId = learnerId,
+      capabilityResults = results,
+      cyberTwinSnapshot = twinSnapshot,
+      primaryBottleneckGate = primaryBottleneck,
+      nextBestActions = nextActions
+    )
+  }
+
+  /**
+   * Evaluates a single persisted capability, updates its Room entity, and runs full pipeline propagation.
+   */
+  suspend fun evaluateCapabilityAndPropagate(
+    capabilityId: String,
+    repository: DemonstratedCapabilityRepository,
+    engine: DemonstratedCapabilityEngine = DemonstratedCapabilityEngine(),
+    cyberTwinAdapter: CyberTwinAdapter = DefaultCyberTwinAdapter(),
+    nextBestActionAdapter: NextBestActionAdapter = DefaultNextBestActionAdapter(),
+    currentTime: Long = System.currentTimeMillis()
+  ): CapabilityPipelineExecutionResult? {
+    val singleResult = engine.evaluateAndPersist(
+      capabilityId = capabilityId,
+      repository = repository,
+      currentTime = currentTime
+    ) ?: return null
+
+    return executeCapabilityIntelligencePipeline(
+      learnerId = singleResult.learnerId,
+      repository = repository,
+      engine = engine,
+      cyberTwinAdapter = cyberTwinAdapter,
+      nextBestActionAdapter = nextBestActionAdapter,
+      currentTime = currentTime
     )
   }
 
