@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.auth.AegoraAuthRepository
 import com.example.data.ZeroTrustSecurityRepository
 import com.example.model.*
 import com.example.ui.components.ChamferedCutCornerShape
@@ -140,6 +141,62 @@ fun SecurityCenterScreen(
       verticalArrangement = Arrangement.spacedBy(16.dp),
       contentPadding = PaddingValues(bottom = 40.dp)
     ) {
+      // 0. Architectural Honesty Banner
+      item {
+        val providerStatus = remember { AegoraAuthRepository.getProviderStatus() }
+        Surface(
+          shape = RoundedCornerShape(8.dp),
+          color = Color(0xFF1E140A),
+          border = BorderStroke(1.dp, Color(0xFFFF9100).copy(alpha = 0.6f)),
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("security_center_provider_status_banner")
+        ) {
+          Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Icon(
+              Icons.Default.Warning,
+              contentDescription = null,
+              tint = Color(0xFFFF9100),
+              modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                  text = "AUTH BACKEND: NOT CONNECTED",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                  ),
+                  color = Color(0xFFFF9100)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Surface(
+                  shape = RoundedCornerShape(3.dp),
+                  color = Color(0xFFFF9100).copy(alpha = 0.2f)
+                ) {
+                  Text(
+                    text = "DEMO / ARCHITECTURAL",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontFamily = FontFamily.Monospace),
+                    color = Color(0xFFFF9100),
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                  )
+                }
+              }
+              Spacer(modifier = Modifier.height(2.dp))
+              Text(
+                text = "External identity provider (Firebase) is not connected (missing google-services.json). Displayed security center states demonstrate architectural specifications.",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                color = TextSecondaryDark
+              )
+            }
+          }
+        }
+      }
+
       // 1. Posture Summary Header
       item {
         SecurityPostureHeaderCard(posture = posture, currentAuthMethod = currentAuthMethod)

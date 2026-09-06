@@ -30,6 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.auth.AegoraAuthRepository
+import com.example.auth.AuthState
 import com.example.data.ZeroTrustSecurityRepository
 import com.example.model.AuthMethod
 import com.example.model.AuthRiskLevel
@@ -231,6 +233,45 @@ fun CyberAuthScreen(
           style = MaterialTheme.typography.bodySmall,
           color = TextSecondaryDark
         )
+      }
+
+      // Honest Provider Status Banner
+      Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = Color(0xFF1E140A),
+        border = BorderStroke(1.dp, Color(0xFFFF9100).copy(alpha = 0.6f)),
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("cyber_auth_provider_status_banner")
+      ) {
+        Row(
+          modifier = Modifier.padding(12.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Icon(
+            Icons.Default.Warning,
+            contentDescription = null,
+            tint = Color(0xFFFF9100),
+            modifier = Modifier.size(20.dp)
+          )
+          Spacer(modifier = Modifier.width(10.dp))
+          Column {
+            Text(
+              text = "IDENTITY PROVIDER NOT CONNECTED",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+              ),
+              color = Color(0xFFFF9100)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+              text = "Firebase Auth configuration (google-services.json) is missing. The gateway below operates in architectural simulation mode.",
+              style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+              color = TextSecondaryDark
+            )
+          }
+        }
       }
 
       // 3. Adaptive Risk Engine Signal Badge

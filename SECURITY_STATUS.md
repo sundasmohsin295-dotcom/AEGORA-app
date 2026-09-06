@@ -113,3 +113,32 @@ All affected repository methods, state objects, and UI screens have been tagged 
 // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
 ```
 This ensures absolute clarity for engineers, auditors, and future contributors directly in the source code.
+
+---
+
+## Phase 1C: Authentication Architecture Hardening Summary
+
+**Implementation Date:** September 2026  
+**Status:** **AUTH BACKEND BLOCKED (Awaiting google-services.json)** — Architecture Hardened
+
+1. **Provider-Agnostic Abstraction Layer:**
+   - Introduced `AuthProvider` contract and `AegoraAuthRepository` singleton.
+   - Built `BlockedAuthProvider` which honestly reports that external IdP configuration is missing rather than simulating success.
+
+2. **Safe Default State:**
+   - Production startup state is strictly `AuthState.Unauthenticated`.
+   - Purged default `MutableStateFlow(true)` across production repositories (`ZeroTrustSecurityRepository._isAuthenticated` now defaults to `false`).
+
+3. **Strongly Typed Identity & Isolation:**
+   - `AuthenticatedIdentity` strictly encapsulates verified provider assertions.
+   - Authoritative mapping from provider credentials to internal AEGORA learner IDs (`mappedLearnerId`).
+   - Domain operations protected via `AuthorizationBoundary.executeProtected()` and `ProtectedCapabilityGateway`.
+   - UI learner ID parameters can no longer spoof or override authenticated learner identity.
+
+4. **UI Honesty:**
+   - Prominent status banners added to `CyberAuthScreen` and `SecurityCenterScreen` indicating `AUTH BACKEND: NOT CONNECTED` / `DEMO / ARCHITECTURAL`.
+
+5. **Architectural Verification:**
+   - 10 automated unit tests implemented in `AuthenticationArchitectureHardeningTest.kt` verifying default unauthenticated state, rejection of unauthenticated/unauthorized operations, cross-learner isolation, and sign-out invalidation.
+   - All 118 application unit tests pass with zero regressions.
+

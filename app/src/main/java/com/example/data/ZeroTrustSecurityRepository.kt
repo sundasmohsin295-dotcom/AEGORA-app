@@ -15,10 +15,12 @@ import java.util.UUID
 // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
 object ZeroTrustSecurityRepository {
 
-  // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
-  // Active Authenticated State
-  private val _isAuthenticated = MutableStateFlow(true)
+  // Production default state is strictly unauthenticated
+  private val _isAuthenticated = MutableStateFlow(false)
   val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
+  val isLiveProviderConnected: Boolean = false
+  val providerInfrastructureStatus: String = "AUTH BACKEND BLOCKED: Missing google-services.json / OAuth client credentials"
 
   private val _currentAuthMethod = MutableStateFlow(AuthMethod.PASSKEY)
   val currentAuthMethod: StateFlow<AuthMethod> = _currentAuthMethod.asStateFlow()
