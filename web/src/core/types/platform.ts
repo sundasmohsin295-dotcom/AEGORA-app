@@ -111,3 +111,93 @@ export interface MissionValidationOutcome {
   reasoningFeedback: string;
   capabilityKey?: string;
 }
+
+// Canonical Cloud Data Models (Aligned with Android and Firestore Security Rules)
+export interface CloudLearnerDocument {
+  firebaseAuthUid: string;
+  ownerAuthUid: string;
+  canonicalLearnerId: string;
+  email?: string | null;
+  displayName: string;
+  createdAt: number;
+  lastActiveAt: number;
+}
+
+export interface CloudMissionAttempt {
+  attemptId: string;
+  missionId: string;
+  ownerAuthUid: string;
+  status: 'INITIALIZED' | 'IN_PROGRESS' | 'SUBMITTED' | 'EVALUATED';
+  clientStartedAt: number;
+  clientCompletedAt?: number;
+  userInputs: Record<string, unknown>;
+  evaluatedScore?: number;
+  outcome?: 'PASS' | 'FAIL';
+  verifiedOutcome?: boolean;
+  masteryAwarded?: boolean;
+  revision: number;
+}
+
+export interface CloudEvidenceItem {
+  evidenceId: string;
+  ownerAuthUid: string;
+  attemptId: string;
+  skillKey: string;
+  evidenceType: string;
+  rawPayload: Record<string, unknown>;
+  clientDigest: string; // SHA-256 for integrity check only (NOT a digital signature)
+  serverVerificationState: 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
+  verified: boolean;
+  sourcePlatform: PlatformClient;
+  clientTimestamp: number;
+  serverTimestamp?: number;
+}
+
+export interface CloudCapabilityState {
+  skillKey: string;
+  ownerAuthUid: string;
+  level: 'NOVICE' | 'COMPETENT' | 'PROFICIENT' | 'EXPERT' | 'MASTERED';
+  demonstratedState: boolean;
+  verifiedState: boolean;
+  confidence: number;
+  evidenceCount: number;
+  lastDemonstratedAt: number;
+  revision: number;
+}
+
+export interface CloudMasteryAssessment {
+  assessmentId: string;
+  ownerAuthUid: string;
+  skillKey: string;
+  masteryLevel: string;
+  confidenceScore: number;
+  evaluationMethod: 'AUTOMATED_BENCHMARK' | 'HUMAN_EXPERT' | 'MULTI_MODAL_EVAL';
+  evidenceReferences: string[];
+  evaluatedAt: number;
+}
+
+export interface CloudCyberTreasure {
+  treasureId: string;
+  ownerAuthUid: string;
+  title: string;
+  rarity: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+  isUnlocked: boolean;
+  unlockAuthority: string;
+  grantReceiptToken?: string;
+  unlockedAt: number;
+}
+
+export interface CloudNextAction {
+  actionId: string;
+  ownerAuthUid: string;
+  targetSkillKey: string;
+  prescribedMissionId: string;
+  priority: 'HIGH' | 'MEDIUM' | 'NORMAL';
+  reason: string;
+  userStatus: 'PENDING' | 'ACCEPTED' | 'DISMISSED';
+  acknowledgedAt?: number;
+  dismissedAt?: number;
+  generatedAt: number;
+  expiresAt: number;
+}
+

@@ -1,6 +1,10 @@
 package com.example
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.example.auth.*
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.*
@@ -15,12 +19,14 @@ import org.robolectric.annotation.Config
  *
  * Verifies:
  * 1. Initial authentication state is strictly Unauthenticated.
- * 2. RealFirebaseAuthProvider detects absence of google-services.json honestly without fake auth.
+ * 2. RealFirebaseAuthProvider safely handles uninitialized context.
  * 3. Firebase UID deterministically maps to canonical learner identity.
  * 4. Cross-platform invariant: Android and Web produce the identical canonical learner ID for the same Firebase UID.
  * 5. Deterministic collision resistance & sanitization of provider UIDs.
  * 6. Sign-out cleanly invalidates active identity.
  * 7. Arbitrary client learnerId cannot override authenticated identity.
+ * 8. Real FirebaseApp and FirebaseAuth initialization from google-services.json resources.
+ * 9. Email/Password authentication wiring to AuthProvider -> AegoraAuthRepository -> AuthenticatedIdentity.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -46,16 +52,14 @@ class RealFirebaseIdentityContractTest {
   }
 
   @Test
-  fun test02_realFirebaseAuthProvider_unconfiguredWithoutGoogleServices() {
-    val provider = RealFirebaseAuthProvider()
-    assertFalse("Without google-services.json, RealFirebaseAuthProvider must not claim to be configured", provider.isConfigured)
+  fun test02_realFirebaseAuthProvider_uninitializedWithoutContext() {
+    val provider = RealFirebaseAuthProvider(null)
     assertEquals("FIREBASE", provider.providerId)
+    assertFalse("Without initialized FirebaseApp, provider reports not configured", provider.isConfigured)
 
     runBlocking {
-      val result = provider.signInWithEmailPassword("user@example.com", "secret123")
-      assertTrue("Sign-in without google-services.json must return Blocked", result is AuthResult.Blocked)
-      val blocked = result as AuthResult.Blocked
-      assertTrue("Must explicitly mention missing app/google-services.json", blocked.reason.contains("google-services.json"))
+      val result = provider.signInWithEmailPassword("test@example.com", "pass123")
+      assertTrue("Sign-in without initialized FirebaseApp returns Blocked", result is AuthResult.Blocked)
     }
   }
 
@@ -151,5 +155,30 @@ class RealFirebaseIdentityContractTest {
 
     val spoofResult = AuthorizationBoundary.validateLearnerAccess("operator_attacker_spoofed")
     assertTrue("Access to foreign identity must be forbidden", spoofResult is AuthorizationCheckResult.Forbidden)
+  }
+
+  @Test
+  fun test08_firebaseAppAndAuthInitializationFromConfiguredResources() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val app = if (FirebaseApp.getApps(context).isEmpty()) {
+      FirebaseApp.initializeApp(context)
+    } else {
+      FirebaseApp.getInstance()
+    }
+
+    assertNotNull("FirebaseApp must successfully initialize from google-services.json", app)
+    assertEquals("aegora-adc1a", app?.options?.projectId)
+    assertEquals("1:58767423205:android:de1352d1e54ddb68a7060c", app?.options?.applicationId)
+
+    val firebaseAuth = FirebaseAuth.getInstance(app!!)
+    assertNotNull("FirebaseAuth instance must initialize successfully", firebaseAuth)
+
+    val provider = RealFirebaseAuthProvider(context)
+    assertTrue("RealFirebaseAuthProvider must report configured true", provider.isConfigured)
+
+    AegoraAuthRepository.initializeWithContext(context)
+    val status = AegoraAuthRepository.getProviderStatus()
+    assertTrue("Provider status must be LIVE", status is ProviderStatus.LIVE)
+    assertEquals("FIREBASE", (status as ProviderStatus.LIVE).providerName)
   }
 }

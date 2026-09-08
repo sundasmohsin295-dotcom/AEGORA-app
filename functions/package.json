@@ -1,0 +1,35 @@
+{
+  "name": "aegora-functions",
+  "version": "1.0.0",
+  "description": "AEGORA Trusted Server Authority Backend — Firebase Cloud Functions & Admin SDK",
+  "main": "lib/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "test": "vitest run test/serverAuthority.test.ts",
+    "test:emulator": "firebase emulators:exec --only auth,firestore,functions \"vitest run test/emulator/\"",
+    "test:all": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.2.0",
+    "firebase-functions": "^6.3.2"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "@types/node": "^22.13.9",
+    "firebase": "^12.18.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7"
+  },
+  "private": true
+}

@@ -41,6 +41,16 @@ object AegoraAuthRepository {
   val currentLearnerId: String?
     get() = currentIdentity?.mappedLearnerId
 
+  fun initializeWithContext(context: android.content.Context) {
+    if (!activeProvider.isConfigured) {
+      val real = RealFirebaseAuthProvider(context.applicationContext)
+      if (real.isConfigured) {
+        activeProvider = real
+        _authState.value = real.authState.value
+      }
+    }
+  }
+
   fun getProviderStatus(): ProviderStatus {
     return if (activeProvider.isConfigured) {
       ProviderStatus.LIVE(activeProvider.providerId)

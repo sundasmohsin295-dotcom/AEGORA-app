@@ -7,6 +7,8 @@ import {
   User,
   Auth
 } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFunctions, Functions, httpsCallable } from 'firebase/functions';
 
 export interface FirebaseConfig {
   apiKey: string;
@@ -43,14 +45,22 @@ export function getFirebaseConfig(): FirebaseConfig | null {
 
 let firebaseAppInstance: FirebaseApp | null = null;
 let firebaseAuthInstance: Auth | null = null;
+let firestoreInstance: Firestore | null = null;
+let functionsInstance: Functions | null = null;
 
 /**
  * Initializes Firebase App exactly once if valid configuration is present.
  */
-export function initFirebase(): { app: FirebaseApp | null; auth: Auth | null; isConfigured: boolean } {
+export function initFirebase(): {
+  app: FirebaseApp | null;
+  auth: Auth | null;
+  firestore: Firestore | null;
+  functions: Functions | null;
+  isConfigured: boolean;
+} {
   const config = getFirebaseConfig();
   if (!config) {
-    return { app: null, auth: null, isConfigured: false };
+    return { app: null, auth: null, firestore: null, functions: null, isConfigured: false };
   }
 
   try {
@@ -60,14 +70,18 @@ export function initFirebase(): { app: FirebaseApp | null; auth: Auth | null; is
       firebaseAppInstance = getApp();
     }
     firebaseAuthInstance = getAuth(firebaseAppInstance);
+    firestoreInstance = getFirestore(firebaseAppInstance);
+    functionsInstance = getFunctions(firebaseAppInstance);
     return {
       app: firebaseAppInstance,
       auth: firebaseAuthInstance,
+      firestore: firestoreInstance,
+      functions: functionsInstance,
       isConfigured: true
     };
   } catch (err) {
     console.error('Failed to initialize Firebase Web SDK:', err);
-    return { app: null, auth: null, isConfigured: false };
+    return { app: null, auth: null, firestore: null, functions: null, isConfigured: false };
   }
 }
 
@@ -79,10 +93,29 @@ export function getFirebaseAuth(): Auth | null {
   return firebaseAuthInstance;
 }
 
+export function getFirestoreInstance(): Firestore | null {
+  if (!firestoreInstance) {
+    const init = initFirebase();
+    return init.firestore;
+  }
+  return firestoreInstance;
+}
+
+export function getFunctionsInstance(): Functions | null {
+  if (!functionsInstance) {
+    const init = initFirebase();
+    return init.functions;
+  }
+  return functionsInstance;
+}
+
 export {
   signInWithEmailAndPassword,
   firebaseSignOut,
   onAuthStateChanged,
+  httpsCallable,
   type User,
-  type Auth
+  type Auth,
+  type Firestore,
+  type Functions
 };

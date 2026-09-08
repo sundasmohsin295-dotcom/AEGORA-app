@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for zero-trust authorization
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(authUid) {
+      return isAuthenticated() && request.auth.uid == authUid;
+    }
+
+    // Public / Reference Catalogs (Read-only for authenticated learners)
+    match /catalogs/{catalog}/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // Canonical Scoped Learner Root
+    match /learners/{authUid} {
+      // 1. Identity & Profile
+      allow read: if isOwner(authUid);
+      allow create: if isOwner(authUid)
+                    && request.resource.data.firebaseAuthUid == authUid
+                    && request.resource.data.ownerAuthUid == authUid;
+      allow update: if isOwner(authUid)
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['firebaseAuthUid', 'canonicalLearnerId', 'createdAt', 'reputationScore']);
+      allow delete: if false;
+
+      // 2. Missions & Mission Attempts (Client-writable session telemetry, server-evaluated outcome)
+      match /missions/{missionId} {
+        allow read: if isOwner(authUid);
+        allow create: if isOwner(authUid)
+                      && request.resource.data.ownerAuthUid == authUid;
+        allow update: if isOwner(authUid)
+                      && !request.resource.data.diff(resource.data).affectedKeys()
+                          .hasAny(['ownerAuthUid', 'verifiedOutcome', 'masteryAwarded']);
+        allow delete: if false;
+      }
+
+      match /mission_attempts/{attemptId} {
+        allow read: if isOwner(authUid);
+        allow create: if isOwner(authUid)
+                      && request.resource.data.ownerAuthUid == authUid
+                      && request.resource.data.status in ['INITIALIZED', 'IN_PROGRESS', 'SUBMITTED'];
+        allow update: if isOwner(authUid)
+                      && resource.data.status in ['INITIALIZED', 'IN_PROGRESS']
+                      && !request.resource.data.diff(resource.data).affectedKeys()
+                          .hasAny(['attemptId', 'ownerAuthUid', 'evaluatedScore', 'outcome', 'verifiedAt']);
+        allow delete: if false;
+      }
+
+      // 3. Raw Evidence (Client can append pending evidence with local SHA-256 integrity digest; cannot self-verify or modify)
+      match /evidence/{evidenceId} {
+        allow read: if isOwner(authUid);
+        allow create: if isOwner(authUid)
+                      && request.resource.data.ownerAuthUid == authUid
+                      && request.resource.data.serverVerificationState == 'PENDING_VERIFICATION'
+                      && request.resource.data.verified == false;
+        allow update, delete: if false;
+      }
+
+      // 4. Server-Authoritative Capabilities (Clients CANNOT self-promote or mark verified)
+      match /capabilities/{skillKey} {
+        allow read: if isOwner(authUid);
+        allow write: if false;
+      }
+
+      // 5. Server-Authoritative Mastery Assessments (Clients CANNOT inject mastery results)
+      match /mastery_assessments/{assessmentId} {
+        allow read: if isOwner(authUid);
+        allow write: if false;
+      }
+
+      // 6. Server-Authoritative Cyber Treasure (Clients CANNOT self-grant achievements or treasure)
+      match /cyber_treasure/{treasureId} {
+        allow read: if isOwner(authUid);
+        allow write: if false;
+      }
+
+      // 7. Server-Authoritative NEXT MOVE / Next Actions (Clients can only acknowledge/dismiss)
+      match /next_actions/{actionId} {
+        allow read: if isOwner(authUid);
+        allow update: if isOwner(authUid)
+                      && request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['userStatus', 'acknowledgedAt', 'dismissedAt']);
+        allow create, delete: if false;
+      }
+    }
+
+    // Deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

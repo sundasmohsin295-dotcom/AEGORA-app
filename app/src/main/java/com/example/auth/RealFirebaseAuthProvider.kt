@@ -29,14 +29,22 @@ class RealFirebaseAuthProvider(
 
   private val firebaseAuth: FirebaseAuth? by lazy {
     try {
-      val isInit = try {
-        FirebaseApp.getApps(context ?: FirebaseApp.getInstance().applicationContext).isNotEmpty()
+      val app: FirebaseApp? = try {
+        if (context != null) {
+          if (FirebaseApp.getApps(context).isEmpty()) {
+            FirebaseApp.initializeApp(context)
+          } else {
+            FirebaseApp.getInstance()
+          }
+        } else {
+          FirebaseApp.getInstance()
+        }
       } catch (_: Exception) {
-        false
+        null
       }
 
-      if (isInit) {
-        FirebaseAuth.getInstance()
+      if (app != null) {
+        FirebaseAuth.getInstance(app)
       } else {
         null
       }
