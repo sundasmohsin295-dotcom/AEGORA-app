@@ -122,12 +122,16 @@ fun SkillGraphScreen(
           ) {
             Text(
               text = when (tab) {
-                SkillGraphViewTab.LIVING_CONSTELLATION -> "🌌 3D Space"
-                SkillGraphViewTab.LEARNING_GENOME -> "🧬 Genome"
-                SkillGraphViewTab.SKILL_NODES -> "🌐 Tree"
-                SkillGraphViewTab.DECAY_FORECAST -> "📉 Decay"
+                SkillGraphViewTab.LIVING_CONSTELLATION -> "3D CONSTELLATION"
+                SkillGraphViewTab.LEARNING_GENOME -> "GENOME PROFILE"
+                SkillGraphViewTab.SKILL_NODES -> "TAXONOMY TREE"
+                SkillGraphViewTab.DECAY_FORECAST -> "DECAY FORECAST"
               },
-              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 9.sp
+              ),
               color = if (isSelected) CyberCyan else TextSecondaryDark,
               modifier = Modifier
                 .padding(vertical = 8.dp)

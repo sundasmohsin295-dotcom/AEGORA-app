@@ -45,6 +45,10 @@ export class AuthVerificationService {
     }
   }
 
+  public static generateDigest(rawString: string): string {
+    return 'sha256:' + crypto.createHash('sha256').update(rawString, 'utf8').digest('hex');
+  }
+
   /**
    * Evaluates SHA-256 integrity digest for evidence payload.
    * NOTE: SHA-256 IS STRICTLY INTEGRITY/TAMPER-DETECTION.

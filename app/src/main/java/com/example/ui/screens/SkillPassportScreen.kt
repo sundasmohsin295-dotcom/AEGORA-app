@@ -28,6 +28,7 @@ import com.example.model.SimulatedExperienceLedger
 import com.example.ui.components.CyberCard
 import com.example.ui.components.CyberSectionHeader
 import com.example.ui.components.EvidenceBadge
+import com.example.ui.components.Interactive3DPassportCard
 import com.example.ui.components.SkillProgressBar
 import com.example.ui.theme.*
 
@@ -54,106 +55,17 @@ fun SkillPassportScreen(
     contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
-    // 1. Digital Passport Hero Card
+    // 1. Digital Passport Hero Card (3D Interactive)
     item {
-      CyberCard(
-        borderColor = CyberEmerald,
-        backgroundColor = CyberSurface
-      ) {
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-              modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(
-                  Brush.linearGradient(
-                    colors = listOf(CyberEmerald, CyberCyan)
-                  )
-                ),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-              Text(
-                text = "AEGORA SKILL PASSPORT",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = TextPrimaryDark
-              )
-              Text(
-                text = "PASSPORT ID: ${userProfile.passportId}",
-                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                color = CyberCyan
-              )
-            }
-          }
-
-          Row {
-            IconButton(
-              onClick = { showDossierDialog = true },
-              modifier = Modifier.testTag("export_talent_dossier_btn")
-            ) {
-              Icon(Icons.Default.Description, contentDescription = "Export Dossier", tint = CyberEmerald)
-            }
-            IconButton(
-              onClick = { showShareDialog = true },
-              modifier = Modifier.testTag("passport_share_btn")
-            ) {
-              Icon(Icons.Default.Share, contentDescription = "Share Passport", tint = CyberCyan)
-            }
-          }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Profile Details
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-          Column {
-            Text("OPERATOR CALLSIGN", style = MaterialTheme.typography.labelSmall, color = TextSecondaryDark)
-            Text(userProfile.callsign, style = MaterialTheme.typography.titleMedium, color = TextPrimaryDark)
-          }
-          Column {
-            Text("VERIFIED LABS", style = MaterialTheme.typography.labelSmall, color = TextSecondaryDark)
-            Text("${userProfile.completedLabsCount} Completed", style = MaterialTheme.typography.titleMedium, color = CyberEmerald)
-          }
-          Column {
-            Text("JOB READINESS", style = MaterialTheme.typography.labelSmall, color = TextSecondaryDark)
-            Text("${userProfile.jobReadinessScore}%", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = CyberCyan)
-          }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Surface(
-          shape = RoundedCornerShape(8.dp),
-          color = CyberSurfaceElevated,
-          border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorderSubtle)
-        ) {
-          Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Icon(Icons.Default.Lock, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-              text = "Cryptographically signed by AEGORA Verification Authority. SHA-256 Ledger: 0x8F92...B14A",
-              style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-              color = TextSecondaryDark
-            )
-          }
-        }
-      }
+      Interactive3DPassportCard(
+        targetRole = "SOC Analyst Tier 1",
+        readinessScore = userProfile.jobReadinessScore,
+        verifiedCapabilitiesCount = userProfile.completedLabsCount.coerceAtLeast(8),
+        evidenceProofsCount = (simulatedLedger.socInvestigationsCount + simulatedLedger.incidentSimulationsCount).coerceAtLeast(14),
+        lastVerifiedDate = "2026-09-09",
+        verificationStatus = "Verified Server-Authoritative",
+        onVerifyPassport = { showShareDialog = true }
+      )
     }
 
     // 1b. Recruiter Export & Cognitive Profile Launch Bar

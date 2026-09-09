@@ -156,3 +156,19 @@ export interface CloudNextAction {
   createdAt: string;
   authorityMetadata: AuthoritativeMetadata;
 }
+
+export type SubscriptionTier = 'FREE' | 'PRO' | 'CAREER' | 'UNKNOWN';
+
+export interface AuthoritativeSubscriptionState {
+  ownerAuthUid: string;
+  tier: SubscriptionTier;
+  active: boolean;
+  entitlementIdentifiers: string[];
+  productIdentifier: string | null;
+  expiresAt: string | null;
+  provider: 'REVENUECAT' | 'SYSTEM_DEFAULT';
+  customerId: string;
+  checkedAt: string;
+  sourceEventId?: string;
+  authorityMetadata: AuthoritativeMetadata;
+}

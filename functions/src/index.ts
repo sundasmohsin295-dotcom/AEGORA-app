@@ -7,6 +7,8 @@ import { ServerMasteryAuthority } from './authority/masteryAuthority';
 import { ServerReadinessAuthority } from './authority/readinessAuthority';
 import { ServerCyberTreasureAuthority, TreasureGrantRequest } from './authority/cyberTreasureAuthority';
 import { ServerNextMoveAuthority } from './authority/nextMoveAuthority';
+import { SubscriptionAuthority } from './authority/subscriptionAuthority';
+import { onRequest } from 'firebase-functions/v2/https';
 
 // Initialize Firebase Admin SDK ONLY inside trusted server execution environment.
 // Never expose Admin credentials to clients or commit private keys.
@@ -20,6 +22,7 @@ const masteryAuthority = new ServerMasteryAuthority();
 const readinessAuthority = new ServerReadinessAuthority();
 const treasureAuthority = new ServerCyberTreasureAuthority();
 const nextMoveAuthority = new ServerNextMoveAuthority();
+const subscriptionAuthority = new SubscriptionAuthority();
 
 /**
  * 1. SERVER-SIDE EVIDENCE INGESTION & VERIFICATION
@@ -96,4 +99,39 @@ export const evaluateFullLearnerState = onCall(async (request) => {
     readiness,
     nextMove
   };
+});
+
+/**
+ * 8. SERVER-AUTHORITATIVE SUBSCRIPTION STATE VERIFICATION
+ * Never trusts client-reported tier or entitlements. Derives state directly from
+ * authoritative Firestore record or verified server lookup.
+ */
+export const getOrSyncSubscriptionState = onCall(async (request) => {
+  const authenticatedUid = AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+  return await subscriptionAuthority.getAuthoritativeSubscription(authenticatedUid);
+});
+
+/**
+ * 9. REVENUECAT SERVER-TO-SERVER WEBHOOK HANDLER
+ * Idempotent, tamper-proof webhook processor that persists authoritative subscription state.
+ */
+export const revenuecatWebhook = onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
+    return;
+  }
+
+  const authHeader = req.headers.authorization || (req.headers['x-revenuecat-webhook-auth'] as string | undefined);
+  const result = await subscriptionAuthority.processRevenueCatWebhook(req.body, authHeader);
+
+  if (!result.success) {
+    if (result.reason === 'UNAUTHORIZED_WEBHOOK') {
+      res.status(401).json({ error: 'UNAUTHORIZED' });
+      return;
+    }
+    res.status(400).json({ error: result.reason || 'BAD_REQUEST' });
+    return;
+  }
+
+  res.status(200).json({ status: 'OK', processed: result.processed, reason: result.reason });
 });

@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -32,11 +33,23 @@ import com.example.intelligence.CyberOperatingSystemV12Engine
 import com.example.intelligence.PersonalIntelligencePlatformEngine
 import com.example.model.*
 import com.example.ui.components.ChamferedCutCornerShape
+import com.example.ui.components.CinematicCyberTwinVisualizer
+import com.example.ui.components.CinematicVerificationModal
 import com.example.ui.components.MissionExecutionSheet
 import com.example.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+data class VerificationModalData(
+  val evidenceId: String,
+  val missionTitle: String,
+  val submissionId: String,
+  val verificationDigest: String,
+  val previousCapability: Int,
+  val authoritativeCapability: Int,
+  val affectedSkillName: String
+)
 
 /**
  * AEGORA COMMAND CENTER — CLEAN, INTERACTIVE, JOB-READY DASHBOARD
@@ -103,6 +116,9 @@ fun HomeScreen(
 
   var activeMissionAction by remember { mutableStateOf<PredictiveNextAction?>(null) }
   var selectedClusterForDetail by remember { mutableStateOf<ClusterCapabilitySummary?>(null) }
+  var pendingVerificationData by remember {
+    mutableStateOf<VerificationModalData?>(null)
+  }
 
   val activeCareer = remember(userProfile.targetCareerId) {
     AegoraRepository.careerRoles.find { it.id == userProfile.targetCareerId }
@@ -170,6 +186,7 @@ fun HomeScreen(
       },
       onMissionOutcome = { isSuccess, delta, dim, proofHash, mistake ->
         if (isSuccess) {
+          val previousCap = cyberTwin60.dimensions[dim]?.currentState ?: 70
           handleMissionCompleted(delta, dim)
           val newProof = EvidenceProofItem(
             capabilityId = currentMission.id,
@@ -187,6 +204,17 @@ fun HomeScreen(
           if (remainingActions.isNotEmpty()) {
             AegoraRepository.updatePredictiveNextActions(remainingActions)
           }
+
+          // Trigger Cinematic Authoritative Verification Sequence
+          pendingVerificationData = VerificationModalData(
+            evidenceId = "evi_${System.currentTimeMillis().toString().takeLast(6)}",
+            missionTitle = currentMission.title,
+            submissionId = "sub_${currentMission.id}",
+            verificationDigest = proofHash ?: "sha256:7f4ae91b4802c6d83a15f0134bc29088",
+            previousCapability = previousCap,
+            authoritativeCapability = (previousCap + delta).coerceAtMost(100),
+            affectedSkillName = dim.displayName
+          )
         } else if (mistake != null) {
           PersonalIntelligencePlatformEngine.recordMistake(
             missionTitle = mistake.missionTitle,
@@ -228,6 +256,23 @@ fun HomeScreen(
       onViewDeepProfile = {
         selectedClusterForDetail = null
         onNavigateToPersonalIntelligence()
+      }
+    )
+  }
+
+  // Authoritative Cinematic Evidence Verification Modal
+  val verificationData = pendingVerificationData
+  if (verificationData != null) {
+    CinematicVerificationModal(
+      evidenceId = verificationData.evidenceId,
+      missionTitle = verificationData.missionTitle,
+      submissionId = verificationData.submissionId,
+      verificationDigest = verificationData.verificationDigest,
+      previousCapability = verificationData.previousCapability,
+      authoritativeCapability = verificationData.authoritativeCapability,
+      affectedSkillName = verificationData.affectedSkillName,
+      onComplete = {
+        pendingVerificationData = null
       }
     )
   }
@@ -278,6 +323,16 @@ fun HomeScreen(
         onStart = {
           activeMissionAction = nextMoveAction
         }
+      )
+    }
+
+    // ============================================================
+    // 3B. 3D CYBER TWIN ORBITAL VISUALIZER (Authoritative Spatial Projection)
+    // ============================================================
+    item {
+      CinematicCyberTwinVisualizer(
+        skills = AegoraRepository.skillDomains.flatMap { it.skills },
+        modifier = Modifier.testTag("home_3d_cyber_twin_visualizer")
       )
     }
 
@@ -520,14 +575,35 @@ private fun NextMoveHeroSection(
   action: PredictiveNextAction,
   onStart: () -> Unit
 ) {
+  var isVisible by remember { mutableStateOf(false) }
+  LaunchedEffect(Unit) {
+    isVisible = true
+  }
+
+  val alphaAnim by androidx.compose.animation.core.animateFloatAsState(
+    targetValue = if (isVisible) 1f else 0f,
+    animationSpec = androidx.compose.animation.core.tween(durationMillis = 380, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+    label = "next_move_fade"
+  )
+  val scaleAnim by androidx.compose.animation.core.animateFloatAsState(
+    targetValue = if (isVisible) 1.0f else 0.97f,
+    animationSpec = androidx.compose.animation.core.tween(durationMillis = 380, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+    label = "next_move_scale"
+  )
+
   Card(
     shape = RoundedCornerShape(12.dp),
     colors = CardDefaults.cardColors(
-      containerColor = MaterialTheme.colorScheme.surface
+      containerColor = AegoraSurface
     ),
-    border = BorderStroke(1.5.dp, CyberCyan.copy(alpha = 0.6f)),
+    border = BorderStroke(1.dp, AegoraCyanVerified.copy(alpha = 0.7f)),
     modifier = Modifier
       .fillMaxWidth()
+      .graphicsLayer {
+        alpha = alphaAnim
+        scaleX = scaleAnim
+        scaleY = scaleAnim
+      }
       .testTag("home_next_move_hero")
   ) {
     Column(
@@ -535,12 +611,12 @@ private fun NextMoveHeroSection(
         .background(
           Brush.verticalGradient(
             listOf(
-              CyberCyan.copy(alpha = 0.08f),
-              MaterialTheme.colorScheme.surface
+              AegoraCyanVerified.copy(alpha = 0.08f),
+              AegoraSurface
             )
           )
         )
-        .padding(16.dp)
+        .padding(18.dp)
     ) {
       // Header badge with pulsing indicator
       Row(
@@ -553,7 +629,7 @@ private fun NextMoveHeroSection(
             modifier = Modifier
               .size(8.dp)
               .clip(CircleShape)
-              .background(CyberEmerald)
+              .background(AegoraCyanVerified)
           )
           Spacer(modifier = Modifier.width(6.dp))
           Text(
@@ -561,118 +637,169 @@ private fun NextMoveHeroSection(
             style = MaterialTheme.typography.labelSmall.copy(
               fontFamily = FontFamily.Monospace,
               fontWeight = FontWeight.Black,
-              letterSpacing = 1.sp,
+              letterSpacing = 1.2.sp,
               fontSize = 11.sp
             ),
-            color = CyberCyan
+            color = AegoraCyanVerified
           )
         }
 
         Surface(
           shape = RoundedCornerShape(4.dp),
-          color = MaterialTheme.colorScheme.surfaceVariant
+          color = AegoraSurfaceElevated,
+          border = BorderStroke(1.dp, AegoraBorder)
         ) {
           Text(
-            text = "~ ${action.estimatedMins} min",
+            text = "ESTIMATED: ${action.estimatedMins.coerceAtLeast(8)} MIN",
             style = MaterialTheme.typography.labelSmall.copy(
               fontFamily = FontFamily.Monospace,
-              fontSize = 10.sp,
+              fontSize = 9.sp,
               fontWeight = FontWeight.Bold
             ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = AegoraTextSecondary,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
           )
         }
       }
 
-      Spacer(modifier = Modifier.height(8.dp))
+      Spacer(modifier = Modifier.height(10.dp))
 
       // Dominant action title
       Text(
-        text = action.title,
+        text = action.title.uppercase(),
         style = MaterialTheme.typography.titleMedium.copy(
           fontWeight = FontWeight.Bold,
-          fontSize = 16.sp
+          fontSize = 16.sp,
+          letterSpacing = 0.2.sp
         ),
-        color = MaterialTheme.colorScheme.onSurface
+        color = AegoraTextPrimary
       )
 
+      Spacer(modifier = Modifier.height(8.dp))
+
+      // WHY THIS MISSION — Up to 3 concise bullet points
+      Text(
+        text = "WHY THIS MISSION:",
+        style = MaterialTheme.typography.labelSmall.copy(
+          fontFamily = FontFamily.Monospace,
+          fontSize = 9.sp,
+          fontWeight = FontWeight.Bold
+        ),
+        color = AegoraTextSecondary
+      )
       Spacer(modifier = Modifier.height(4.dp))
 
-      // Why does this matter? Contextual reasoning
-      Text(
-        text = action.primaryReason,
-        style = MaterialTheme.typography.bodySmall.copy(
-          fontSize = 11.5.sp
-        ),
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-      )
+      val reasons = remember(action) {
+        val list = mutableListOf<String>()
+        list.add(action.primaryReason)
+        if (action.reasoningTags.isNotEmpty()) {
+          list.add("Targeted cognitive domain: ${action.reasoningTags.first()}")
+        }
+        list.add("Generates server-verified evidence for Skill Passport")
+        list.take(3)
+      }
+
+      for (r in reasons) {
+        Row(
+          modifier = Modifier.padding(vertical = 1.dp),
+          verticalAlignment = Alignment.Top
+        ) {
+          Text(
+            text = "• ",
+            style = MaterialTheme.typography.bodySmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Bold
+            ),
+            color = AegoraCyanVerified
+          )
+          Text(
+            text = r,
+            style = MaterialTheme.typography.bodySmall.copy(
+              fontSize = 11.5.sp,
+              lineHeight = 16.sp
+            ),
+            color = AegoraTextSecondary
+          )
+        }
+      }
 
       Spacer(modifier = Modifier.height(12.dp))
 
-      // Metadata chips & Primary CTA Button
+      // Expected Impact
       Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Row(
-          horizontalArrangement = Arrangement.spacedBy(6.dp),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Surface(
-            shape = RoundedCornerShape(4.dp),
-            color = CyberIndigo.copy(alpha = 0.15f)
-          ) {
-            Text(
-              text = action.category.uppercase(),
-              style = MaterialTheme.typography.labelSmall.copy(
-                fontFamily = FontFamily.Monospace,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold
-              ),
-              color = CyberIndigo,
-              modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-            )
-          }
-
+        Row(verticalAlignment = Alignment.CenterVertically) {
           Text(
-            text = "+${action.xpReward} XP",
+            text = "EXPECTED IMPACT: ",
             style = MaterialTheme.typography.labelSmall.copy(
               fontFamily = FontFamily.Monospace,
-              fontSize = 9.5.sp,
+              fontSize = 9.sp,
               fontWeight = FontWeight.Bold
             ),
-            color = CyberGold
+            color = AegoraTextSecondary
+          )
+          Text(
+            text = "+12% CAPABILITY",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Black,
+              fontSize = 9.5.sp
+            ),
+            color = AegoraCyanVerified
           )
         }
 
-        Button(
-          onClick = onStart,
-          shape = RoundedCornerShape(6.dp),
-          colors = ButtonDefaults.buttonColors(
-            containerColor = CyberCyan,
-            contentColor = Color.Black
-          ),
-          modifier = Modifier
-            .heightIn(min = 48.dp)
-            .testTag("home_btn_start_next_move")
+        Surface(
+          shape = RoundedCornerShape(4.dp),
+          color = AegoraSurfaceElevated,
+          border = BorderStroke(1.dp, AegoraBorder)
         ) {
-          Icon(
-            Icons.Default.PlayArrow,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp)
-          )
-          Spacer(modifier = Modifier.width(4.dp))
           Text(
-            text = "START",
-            style = MaterialTheme.typography.labelMedium.copy(
+            text = action.category.uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(
               fontFamily = FontFamily.Monospace,
-              fontWeight = FontWeight.Black,
-              letterSpacing = 0.5.sp
-            )
+              fontSize = 8.5.sp,
+              fontWeight = FontWeight.Bold
+            ),
+            color = AegoraTextSecondary,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
           )
         }
+      }
+
+      Spacer(modifier = Modifier.height(14.dp))
+
+      // Dominant Visually Centered Primary CTA
+      Button(
+        onClick = onStart,
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+          containerColor = AegoraCyanVerified,
+          contentColor = Color(0xFF0A0E14)
+        ),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(48.dp)
+          .testTag("home_btn_start_next_move")
+      ) {
+        Icon(
+          Icons.Default.PlayArrow,
+          contentDescription = null,
+          modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+          text = "EXECUTE MISSION",
+          style = MaterialTheme.typography.labelMedium.copy(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 0.8.sp,
+            fontSize = 12.sp
+          )
+        )
       }
     }
   }

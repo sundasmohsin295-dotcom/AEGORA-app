@@ -128,4 +128,19 @@ object AegoraServerAuthorityClient {
     @Suppress("UNCHECKED_CAST")
     return result.data as? Map<String, Any?> ?: emptyMap()
   }
+
+  /**
+   * Fetches server-authoritative subscription state directly from Cloud Functions.
+   * Cross-verified against the caller's Firebase Auth token.
+   */
+  suspend fun fetchAuthoritativeSubscription(targetAuthUid: String): Map<String, Any?> {
+    val data = hashMapOf<String, Any?>("targetAuthUid" to targetAuthUid)
+    val result = functionsInstance
+      .getHttpsCallable("getOrSyncSubscriptionState")
+      .call(data)
+      .await()
+
+    @Suppress("UNCHECKED_CAST")
+    return result.data as? Map<String, Any?> ?: emptyMap()
+  }
 }

@@ -12,7 +12,7 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "vitest run test/serverAuthority.test.ts",
+    "test": "vitest run test/*.test.ts",
     "test:emulator": "firebase emulators:exec --only auth,firestore,functions \"vitest run test/emulator/\"",
     "test:all": "vitest run",
     "typecheck": "tsc --noEmit"

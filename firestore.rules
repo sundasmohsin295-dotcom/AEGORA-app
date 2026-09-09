@@ -88,6 +88,13 @@ service cloud.firestore {
                           .hasOnly(['userStatus', 'acknowledgedAt', 'dismissedAt']);
         allow create, delete: if false;
       }
+
+      // 8. Server-Authoritative Subscription State (RevenueCat Server Authority / Admin SDK only)
+      // Clients may READ their own subscription state; clients are STRICTLY FORBIDDEN from writing or modifying tiers.
+      match /subscription/{docId} {
+        allow read: if isOwner(authUid);
+        allow write: if false;
+      }
     }
 
     // Deny all other paths

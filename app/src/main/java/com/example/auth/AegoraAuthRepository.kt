@@ -65,6 +65,7 @@ object AegoraAuthRepository {
     when (result) {
       is AuthResult.Success -> {
         _authState.value = AuthState.Authenticated(result.identity)
+        com.example.subscription.AegoraSubscriptionRepository.syncSubscriptionForUser(result.identity.providerUid)
       }
       is AuthResult.Failure -> {
         _authState.value = AuthState.AuthenticationFailed(result.error)
@@ -82,6 +83,7 @@ object AegoraAuthRepository {
     when (result) {
       is AuthResult.Success -> {
         _authState.value = AuthState.Authenticated(result.identity)
+        com.example.subscription.AegoraSubscriptionRepository.syncSubscriptionForUser(result.identity.providerUid)
       }
       is AuthResult.Failure -> {
         _authState.value = AuthState.AuthenticationFailed(result.error)
@@ -96,6 +98,7 @@ object AegoraAuthRepository {
   suspend fun signOut() {
     _authState.value = AuthState.SigningOut
     activeProvider.signOut()
+    com.example.subscription.AegoraSubscriptionRepository.onUserSignedOut()
     _authState.value = AuthState.Unauthenticated
   }
 

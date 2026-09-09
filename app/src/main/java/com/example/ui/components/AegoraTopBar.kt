@@ -37,6 +37,7 @@ fun AegoraTopBar(
   onProfileClick: () -> Unit,
   onSyncClick: () -> Unit = {},
   onPerformanceClick: () -> Unit = {},
+  onSubscriptionClick: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   Surface(
@@ -83,28 +84,29 @@ fun AegoraTopBar(
 
         Column {
           Text(
-            text = "Hello, ${userProfile.callsign}",
-            style = MaterialTheme.typography.titleLarge.copy(
-              fontWeight = FontWeight.Bold
+            text = "AEGORA // VERIFIED OPERATIONS",
+            style = MaterialTheme.typography.titleMedium.copy(
+              fontWeight = FontWeight.Bold,
+              letterSpacing = 0.5.sp
             ),
-            color = TextPrimaryDark
+            color = AegoraTextPrimary
           )
           Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
               modifier = Modifier
                 .size(6.dp)
                 .clip(CircleShape)
-                .background(CyberEmerald)
+                .background(AegoraCyanVerified)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-              text = "AEGORA ONLINE",
+              text = "OPERATOR: ${userProfile.callsign.uppercase()} • ACTIVE",
               style = MaterialTheme.typography.labelSmall.copy(
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.5.sp
               ),
-              color = CyberEmerald
+              color = AegoraCyanVerified
             )
           }
         }
@@ -163,6 +165,21 @@ fun AegoraTopBar(
             contentDescription = "Performance Mode",
             tint = if (performanceMode == PerformanceMode.FULL_VISUAL) NeonCyan else TerminalAmber,
             modifier = Modifier.size(18.dp)
+          )
+        }
+
+        // Subscription / Clearance Upgrade Button
+        IconButton(
+          onClick = onSubscriptionClick,
+          modifier = Modifier
+            .size(36.dp)
+            .testTag("topbar_subscription_button")
+        ) {
+          Icon(
+            imageVector = Icons.Default.WorkspacePremium,
+            contentDescription = "Clearance Subscription",
+            tint = CyberAmber,
+            modifier = Modifier.size(20.dp)
           )
         }
 

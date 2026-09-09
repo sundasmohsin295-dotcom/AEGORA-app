@@ -83,6 +83,8 @@ fun AegoraApp() {
     var showNotificationDialog by remember { mutableStateOf(false) }
     var showSyncDialog by remember { mutableStateOf(false) }
     var showPerformanceDialog by remember { mutableStateOf(false) }
+    var showSubscriptionDialog by remember { mutableStateOf(false) }
+    val subscriptionState by com.example.subscription.AegoraSubscriptionRepository.subscriptionState.collectAsState()
 
     Surface(
       modifier = Modifier.fillMaxSize(),
@@ -471,7 +473,8 @@ fun AegoraApp() {
                     onNotificationClick = { showNotificationDialog = true },
                     onProfileClick = { currentDestination = ScreenDestination.ProfileSettings },
                     onSyncClick = { showSyncDialog = true },
-                    onPerformanceClick = { showPerformanceDialog = true }
+                    onPerformanceClick = { showPerformanceDialog = true },
+                    onSubscriptionClick = { showSubscriptionDialog = true }
                   )
                 },
                 bottomBar = {
@@ -742,6 +745,14 @@ fun AegoraApp() {
       if (showSyncDialog) {
         SyncStateAndConflictDialog(
           onDismiss = { showSyncDialog = false }
+        )
+      }
+
+      // Subscription & Clearance Paywall Dialog
+      if (showSubscriptionDialog) {
+        com.example.ui.components.SubscriptionPaywallDialog(
+          currentSubscription = subscriptionState,
+          onDismiss = { showSubscriptionDialog = false }
         )
       }
 
