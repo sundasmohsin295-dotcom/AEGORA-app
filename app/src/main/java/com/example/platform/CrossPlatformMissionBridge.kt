@@ -70,6 +70,97 @@ object CrossPlatformMissionBridge {
       )
     }
   }
+
+  /**
+   * Deterministic client-side evaluation helper for AI Analyst claims, strictly matching
+   * ServerAiHallucinationAuthority.
+   */
+  fun evaluateAiClaimDecision(
+    attemptId: String,
+    missionId: String,
+    claimId: String,
+    learnerDecision: com.example.model.LearnerAiDecision,
+    selectedEvidenceIds: List<String>,
+    learnerReasoning: String = ""
+  ): com.example.model.ClientSafeAiVerificationResult {
+    val mission = getCanonicalMission(missionId)
+      ?: throw IllegalArgumentException("Mission $missionId not found in canonical catalog")
+
+    val validPool = mission.timelineEvents.map { it.id }
+    for (eviId in selectedEvidenceIds) {
+      if (!validPool.contains(eviId)) {
+        throw IllegalArgumentException("Foreign evidence '$eviId' rejected.")
+      }
+    }
+
+    val now = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US).format(java.util.Date())
+    val digest = "sha256:aegora_ai_claim_${claimId}_${System.currentTimeMillis()}"
+
+    if (claimId == "claim_login_malicious_ip") {
+      // The claim is UNSUPPORTED (trap)
+      return if (learnerDecision == com.example.model.LearnerAiDecision.CHALLENGE_AI) {
+        val hasEvidence = selectedEvidenceIds.any { listOf("tl_01", "tl_02", "tl_03").contains(it) }
+        com.example.model.ClientSafeAiVerificationResult(
+          attemptId = attemptId,
+          claimId = claimId,
+          outcome = com.example.model.VerificationOutcomeStatus.AI_FAILURE_DETECTED,
+          isAiFailureDetected = true,
+          evidenceVerified = hasEvidence || selectedEvidenceIds.isNotEmpty(),
+          headline = "AI FAILURE DETECTED ✓",
+          explanation = "The AI analyst made an unsupported claim. You detected it using authoritative evidence.",
+          detectedFailurePattern = null,
+          evidenceDigest = digest,
+          verifiedAt = now
+        )
+      } else {
+        // Learner incorrectly accepted the unsupported claim
+        com.example.model.ClientSafeAiVerificationResult(
+          attemptId = attemptId,
+          claimId = claimId,
+          outcome = com.example.model.VerificationOutcomeStatus.AI_CLAIM_NOT_VERIFIED,
+          isAiFailureDetected = false,
+          evidenceVerified = false,
+          headline = "AI CLAIM NOT VERIFIED",
+          explanation = "Evidence does not support the analyst's conclusion. Telemetry does not establish that attribution.",
+          detectedFailurePattern = com.example.model.FailureModeType.EVIDENCE_OVERWEIGHTING,
+          evidenceDigest = digest,
+          verifiedAt = now
+        )
+      }
+    }
+
+    if (claimId == "claim_login_supported_geo") {
+      return if (learnerDecision == com.example.model.LearnerAiDecision.ACCEPT_AI) {
+        com.example.model.ClientSafeAiVerificationResult(
+          attemptId = attemptId,
+          claimId = claimId,
+          outcome = com.example.model.VerificationOutcomeStatus.AI_CLAIM_CORRECTLY_ACCEPTED,
+          isAiFailureDetected = false,
+          evidenceVerified = true,
+          headline = "EVIDENCE VERIFIED ✓",
+          explanation = "Correct. The analyst's conclusion is grounded directly in the supplied telemetry events.",
+          detectedFailurePattern = null,
+          evidenceDigest = digest,
+          verifiedAt = now
+        )
+      } else {
+        com.example.model.ClientSafeAiVerificationResult(
+          attemptId = attemptId,
+          claimId = claimId,
+          outcome = com.example.model.VerificationOutcomeStatus.INCORRECT_AI_CHALLENGE,
+          isAiFailureDetected = false,
+          evidenceVerified = false,
+          headline = "INCORRECT CHALLENGE",
+          explanation = "The AI analyst claim was rigorously supported by the telemetry events.",
+          detectedFailurePattern = com.example.model.FailureModeType.INSUFFICIENT_CORRELATION,
+          evidenceDigest = digest,
+          verifiedAt = now
+        )
+      }
+    }
+
+    throw IllegalArgumentException("Unknown claim '$claimId'")
+  }
 }
 
 sealed class CanonicalMissionValidationResult {

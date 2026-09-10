@@ -8,6 +8,8 @@ import { ServerReadinessAuthority } from './authority/readinessAuthority';
 import { ServerCyberTreasureAuthority, TreasureGrantRequest } from './authority/cyberTreasureAuthority';
 import { ServerNextMoveAuthority } from './authority/nextMoveAuthority';
 import { SubscriptionAuthority } from './authority/subscriptionAuthority';
+import { ServerAdaptiveAdversaryAuthority } from './authority/adaptiveAdversaryAuthority';
+import { ServerAiHallucinationAuthority } from './authority/aiHallucinationAuthority';
 import { onRequest } from 'firebase-functions/v2/https';
 
 // Initialize Firebase Admin SDK ONLY inside trusted server execution environment.
@@ -23,6 +25,8 @@ const readinessAuthority = new ServerReadinessAuthority();
 const treasureAuthority = new ServerCyberTreasureAuthority();
 const nextMoveAuthority = new ServerNextMoveAuthority();
 const subscriptionAuthority = new SubscriptionAuthority();
+const adversaryAuthority = new ServerAdaptiveAdversaryAuthority();
+const aiHallucinationAuthority = new ServerAiHallucinationAuthority(undefined, evidenceAuthority);
 
 /**
  * 1. SERVER-SIDE EVIDENCE INGESTION & VERIFICATION
@@ -135,3 +139,49 @@ export const revenuecatWebhook = onRequest(async (req, res) => {
 
   res.status(200).json({ status: 'OK', processed: result.processed, reason: result.reason });
 });
+
+/**
+ * 10. SERVER-AUTHORITATIVE FAILURE PATTERNS
+ * Derives and records failure patterns strictly within caller's authenticated learner scope.
+ * Client claims of confidence or forged failure types are discarded.
+ */
+export const recordAuthoritativeFailurePatterns = onCall(async (request) => {
+  const authenticatedUid = AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+  const missionId = request.data?.missionId;
+  const detectedPatterns = request.data?.detectedPatterns || [];
+  const supportingEvidenceIds = request.data?.supportingEvidenceIds || [];
+
+  if (!missionId) {
+    throw new HttpsError('invalid-argument', 'missionId is required.');
+  }
+
+  return await evidenceAuthority.evaluateAndPersistFailurePatterns(
+    authenticatedUid,
+    missionId,
+    detectedPatterns,
+    supportingEvidenceIds
+  );
+});
+
+/**
+ * 11. SERVER-AUTHORITATIVE ADAPTIVE CHALLENGE GENERATION
+ * Derives challenge strictly from caller's authoritative failure patterns.
+ * Client claims of difficulty, target failure mode, or trap states are rejected.
+ */
+export const generateAuthoritativeAdaptiveChallenge = onCall(async (request) => {
+  const authenticatedUid = AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+  return await adversaryAuthority.generateAuthoritativeAdaptiveChallenge(authenticatedUid);
+});
+
+/**
+ * 12. SERVER-AUTHORITATIVE AI HALLUCINATION & CLAIM VERIFICATION
+ * Client is NEVER authoritative for claim verification, hidden trap state, or ground truth.
+ * Validates learner accept/challenge against authoritative mission evidence.
+ */
+export const verifyAiClaimDecision = onCall(async (request) => {
+  const authenticatedUid = AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+  return await aiHallucinationAuthority.verifyAiClaimDecision(authenticatedUid, request.data);
+});
+
+
+

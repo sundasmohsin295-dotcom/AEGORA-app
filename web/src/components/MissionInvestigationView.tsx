@@ -15,9 +15,11 @@ import {
 } from 'lucide-react';
 import {
   SUSPICIOUS_LOGIN_MISSION,
-  validateWebMission
+  SUSPICIOUS_LOGIN_AI_CLAIM,
+  validateWebMission,
+  evaluateWebAiClaimChallenge
 } from '../core/missions/SuspiciousLoginMission';
-import { MissionValidationOutcome } from '../core/types/platform';
+import { MissionValidationOutcome, ClientSafeAiVerificationResult } from '../core/types/platform';
 
 interface MissionInvestigationViewProps {
   onReturnToCommandCenter: () => void;
@@ -27,12 +29,34 @@ export const MissionInvestigationView: React.FC<MissionInvestigationViewProps> =
   onReturnToCommandCenter
 }) => {
   const mission = SUSPICIOUS_LOGIN_MISSION;
+  const aiClaim = SUSPICIOUS_LOGIN_AI_CLAIM;
 
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [reasoning, setReasoning] = useState<string>('');
   const [openHintIndex, setOpenHintIndex] = useState<number | null>(null);
   const [validationOutcome, setValidationOutcome] = useState<MissionValidationOutcome | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string>(mission.events[0].id);
+
+  // AI Hallucination & Human Verification state
+  const [selectedEvidenceIdsForAi, setSelectedEvidenceIdsForAi] = useState<string[]>([]);
+  const [aiVerificationResult, setAiVerificationResult] = useState<ClientSafeAiVerificationResult | null>(null);
+
+  const handleToggleEvidenceForAi = (eventId: string) => {
+    setSelectedEvidenceIdsForAi(prev =>
+      prev.includes(eventId) ? prev.filter(id => id !== eventId) : [...prev, eventId]
+    );
+  };
+
+  const handleAiDecision = (decision: 'ACCEPT_AI' | 'CHALLENGE_AI') => {
+    const outcome = evaluateWebAiClaimChallenge(
+      `att_${Date.now()}`,
+      aiClaim.claimId,
+      decision,
+      selectedEvidenceIdsForAi,
+      reasoning
+    );
+    setAiVerificationResult(outcome as ClientSafeAiVerificationResult);
+  };
 
   const handleSelectAnswer = (questionId: string, optionIndex: number) => {
     setSelectedAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
@@ -230,6 +254,221 @@ export const MissionInvestigationView: React.FC<MissionInvestigationViewProps> =
 
         {/* RIGHT COLUMN: DECISION TRIAGE & EVIDENCE VERIFICATION */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+          {/* FLAGSHIP AI HALLUCINATION DETECTION / HUMAN VERIFICATION MECHANIC */}
+          <div
+            style={{
+              padding: '20px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: aiVerificationResult?.isAiFailureDetected
+                ? '1px solid var(--accent-emerald)'
+                : '1px solid var(--accent-amber)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    color: 'var(--accent-amber)',
+                    border: '1px solid var(--accent-amber)'
+                  }}
+                >
+                  AI CO-PILOT CLAIM
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  {aiClaim.analystName}
+                </span>
+              </div>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--accent-cyan)',
+                  padding: '2px 6px',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: 'var(--bg-tertiary)'
+                }}
+              >
+                {aiClaim.confidenceScore}% CONFIDENCE
+              </span>
+            </div>
+
+            {/* AI Claim Statement */}
+            <div
+              style={{
+                padding: '12px',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-subtle)',
+                marginBottom: '12px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '12px',
+                lineHeight: 1.5,
+                color: 'var(--text-primary)'
+              }}
+            >
+              "{aiClaim.claimText}"
+              <div style={{ marginTop: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {aiClaim.assertedIocs.map(ioc => (
+                  <span
+                    key={ioc}
+                    style={{
+                      fontSize: '10px',
+                      padding: '2px 6px',
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: 'var(--bg-secondary)',
+                      color: 'var(--accent-cyan)',
+                      border: '1px solid var(--border-subtle)'
+                    }}
+                  >
+                    IOC: {ioc}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+              <strong>Recommended Action:</strong> {aiClaim.recommendedAction}
+            </div>
+
+            {/* Evidence Checklist to Audit Claim */}
+            <div style={{ marginBottom: '16px' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  color: 'var(--accent-cyan)',
+                  marginBottom: '8px'
+                }}
+              >
+                AUDIT AUTHORITATIVE EVIDENCE (Select corroborating / refuting logs):
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {mission.events.map(event => {
+                  const isChecked = selectedEvidenceIdsForAi.includes(event.id);
+                  return (
+                    <label
+                      key={event.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '8px 10px',
+                        borderRadius: 'var(--radius-sm)',
+                        backgroundColor: isChecked ? 'var(--bg-tertiary)' : 'transparent',
+                        border: isChecked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-subtle)',
+                        cursor: 'pointer',
+                        fontSize: '11px'
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleToggleEvidenceForAi(event.id)}
+                      />
+                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                        {event.id}
+                      </span>
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {event.timestamp} - {event.eventType}: {event.summary}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Accept / Challenge Decision Buttons */}
+            {!aiVerificationResult ? (
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => handleAiDecision('ACCEPT_AI')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 14px',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--text-secondary)',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ACCEPT AI
+                </button>
+                <button
+                  onClick={() => handleAiDecision('CHALLENGE_AI')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 14px',
+                    backgroundColor: 'var(--accent-cyan)',
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    color: '#0a0e17',
+                    fontWeight: 800,
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  CHALLENGE AI
+                </button>
+              </div>
+            ) : (
+              /* Authoritative Verification Result */
+              <div
+                style={{
+                  padding: '14px',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: aiVerificationResult.isAiFailureDetected
+                    ? 'var(--accent-emerald-subtle)'
+                    : 'var(--accent-rose-subtle)',
+                  border: aiVerificationResult.isAiFailureDetected
+                    ? '1px solid var(--accent-emerald)'
+                    : '1px solid var(--accent-rose)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <h4
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      color: aiVerificationResult.isAiFailureDetected
+                        ? 'var(--accent-emerald)'
+                        : 'var(--accent-rose)',
+                      fontFamily: 'var(--font-mono)'
+                    }}
+                  >
+                    {aiVerificationResult.headline}
+                  </h4>
+                  <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                    AUTHORITATIVE
+                  </span>
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                  {aiVerificationResult.explanation}
+                </p>
+                {aiVerificationResult.detectedFailurePattern && (
+                  <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--accent-amber)', fontWeight: 700 }}>
+                    Detected Weakness: {aiVerificationResult.detectedFailurePattern}
+                  </div>
+                )}
+                <div style={{ marginTop: '8px', fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                  Digest: {aiVerificationResult.evidenceDigest.slice(0, 32)}...
+                </div>
+              </div>
+            )}
+          </div>
+
           <div
             style={{
               padding: '20px',

@@ -232,3 +232,78 @@ export interface CloudFailurePattern {
   decayHalfLifeDays: number;
 }
 
+export type AdaptiveChallengeTier = 'OBSERVED' | 'REPEATED' | 'HIGH_CONFIDENCE';
+
+export interface AdaptiveChallengePolicy {
+  targetFailureMode: FailurePatternType;
+  challengeTier: AdaptiveChallengeTier;
+  policyObjective: string;
+  adversaryRole: string;
+  recoveryCriteria: string;
+  evidenceRequirements: string[];
+}
+
+export interface LearnerSafeAdaptiveChallenge {
+  challengeId: string;
+  targetFailureMode: FailurePatternType;
+  challengeTier: AdaptiveChallengeTier;
+  weaknessNarrative: string;
+  targetedSkill: string;
+  scenarioTitle: string;
+  scenarioBriefing: string;
+  aiAnalystClaim: {
+    analystName: string;
+    claimText: string;
+    assertedEvidenceIds: string[];
+    recommendedAction: string;
+    confidencePercentage: number;
+  };
+  evidencePool: Array<{
+    id: string;
+    timestamp: string;
+    source: string;
+    eventType: string;
+    summary: string;
+  }>;
+  actionOptions: Array<{
+    id: string;
+    label: string;
+    description: string;
+  }>;
+}
+
+export type LearnerAiDecision = 'ACCEPT_AI' | 'CHALLENGE_AI';
+export type VerificationOutcomeStatus =
+  | 'AI_FAILURE_DETECTED'
+  | 'AI_CLAIM_NOT_VERIFIED'
+  | 'AI_CLAIM_CORRECTLY_ACCEPTED'
+  | 'INCORRECT_AI_CHALLENGE';
+
+export interface ClientSafeAiVerificationResult {
+  attemptId: string;
+  claimId: string;
+  outcome: VerificationOutcomeStatus;
+  isAiFailureDetected: boolean;
+  evidenceVerified: boolean;
+  headline: string;
+  explanation: string;
+  detectedFailurePattern?: FailurePatternType;
+  evidenceDigest: string;
+  verifiedAt: string;
+}
+
+export interface LearnerAiClaimVerificationRequest {
+  attemptId: string;
+  missionId: string;
+  claimId: string;
+  learnerDecision: LearnerAiDecision;
+  selectedEvidenceIds: string[];
+  learnerReasoning?: string;
+  clientClaimedLearnerId?: string;
+  forgedIsUnsupportedPlantedTrap?: boolean;
+  forgedCorrect?: boolean;
+  forgedFailureMode?: FailurePatternType;
+}
+
+
+

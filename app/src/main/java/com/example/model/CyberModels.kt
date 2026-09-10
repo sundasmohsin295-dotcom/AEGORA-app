@@ -206,7 +206,8 @@ data class IncidentSimulation(
   val containmentOptions: List<String>,
   val correctContainmentIndex: Int,
   val mitreMapping: String,
-  val learningOutcome: String
+  val learningOutcome: String,
+  val aiAnalystOutput: AiAnalystClaim? = null
 )
 
 data class ProjectBlueprint(
@@ -368,10 +369,47 @@ data class AiAnalystClaim(
   val claimText: String,
   val assertedIocs: List<String> = emptyList(),
   val recommendedAction: String,
-  val confidenceScore: Int = 89,
-  // Note: planted trap field is author-defined. It must never be exposed to learner UI.
-  val isUnsupportedTrap: Boolean = false
+  val confidenceScore: Int = 89
 )
+
+enum class LearnerAiDecision {
+  ACCEPT_AI,
+  CHALLENGE_AI
+}
+
+enum class VerificationOutcomeStatus {
+  AI_FAILURE_DETECTED,
+  AI_CLAIM_NOT_VERIFIED,
+  AI_CLAIM_CORRECTLY_ACCEPTED,
+  INCORRECT_AI_CHALLENGE
+}
+
+data class ClientSafeAiVerificationResult(
+  val attemptId: String,
+  val claimId: String,
+  val outcome: VerificationOutcomeStatus,
+  val isAiFailureDetected: Boolean,
+  val evidenceVerified: Boolean,
+  val headline: String,
+  val explanation: String,
+  val detectedFailurePattern: FailureModeType? = null,
+  val evidenceDigest: String,
+  val verifiedAt: String
+)
+
+data class LearnerAiClaimVerificationRequest(
+  val attemptId: String,
+  val missionId: String,
+  val claimId: String,
+  val learnerDecision: LearnerAiDecision,
+  val selectedEvidenceIds: List<String>,
+  val learnerReasoning: String = "",
+  val clientClaimedLearnerId: String? = null,
+  val forgedIsUnsupportedPlantedTrap: Boolean? = null,
+  val forgedCorrect: Boolean? = null,
+  val forgedFailureMode: FailureModeType? = null
+)
+
 
 data class InvestigationLab(
   val id: String,

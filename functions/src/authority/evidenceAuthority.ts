@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { CloudEvidenceItem, AuthoritativeMetadata } from '../models/types';
+import { CloudEvidenceItem, AuthoritativeMetadata, CloudFailurePattern, FailurePatternType } from '../models/types';
 import { AuthVerificationService } from '../auth/authVerification';
 
 const ALLOWED_EVIDENCE_TYPES = new Set([
@@ -175,4 +175,71 @@ export class ServerEvidenceAuthority {
 
     return verifiedRecord;
   }
+
+  /**
+   * Authoritative evaluation and persistence of Failure Patterns.
+   * Client-supplied failure labels or confidence scores are IGNORED.
+   * Scoped strictly to authenticated UID.
+   */
+  public async evaluateAndPersistFailurePatterns(
+    authenticatedUid: string,
+    missionId: string,
+    detectedPatterns: FailurePatternType[],
+    supportingEvidenceIds: string[] = []
+  ): Promise<CloudFailurePattern[]> {
+    if (!authenticatedUid || typeof authenticatedUid !== 'string') {
+      throw new HttpsError('unauthenticated', 'Authenticated UID is required.');
+    }
+
+    const now = new Date().toISOString();
+    const updatedPatterns: CloudFailurePattern[] = [];
+
+    for (const patternType of detectedPatterns) {
+      const patternDocId = `${patternType.toLowerCase()}`;
+      const patternRef = this.db.doc(`learners/${authenticatedUid}/failure_patterns/${patternDocId}`);
+
+      const existingSnap = await patternRef.get();
+      let observationCount = 1;
+      let firstObservedAt = now;
+      let existingSupporting: string[] = [];
+
+      if (existingSnap.exists) {
+        const existingData = existingSnap.data() as CloudFailurePattern;
+        observationCount = (existingData.observationCount || 1) + 1;
+        firstObservedAt = existingData.firstObservedAt || now;
+        existingSupporting = existingData.supportingEvidenceIds || [];
+      }
+
+      // Authoritative confidence score calculation (deterministic based on occurrences)
+      const confidenceScore = observationCount >= 3 ? 90 : observationCount === 2 ? 65 : 40;
+
+      const mergedEvidenceIds = Array.from(new Set([...existingSupporting, ...supportingEvidenceIds]));
+
+      const patternRecord: CloudFailurePattern = {
+        patternId: patternDocId,
+        ownerAuthUid: authenticatedUid,
+        patternType,
+        confidenceScore,
+        observationCount,
+        lastObservedMissionId: missionId,
+        lastObservedAt: now,
+        firstObservedAt,
+        supportingEvidenceIds: mergedEvidenceIds,
+        decayHalfLifeDays: 14,
+        authorityMetadata: {
+          authoritySource: 'SERVER',
+          verifiedAt: now,
+          verifiedBy: 'AEGORA_FAILURE_AUTHORITY_V2',
+          algorithmVersion: '2.0.0',
+          sourceEvidenceIds: mergedEvidenceIds
+        }
+      };
+
+      await patternRef.set(patternRecord, { merge: true });
+      updatedPatterns.push(patternRecord);
+    }
+
+    return updatedPatterns;
+  }
 }
+

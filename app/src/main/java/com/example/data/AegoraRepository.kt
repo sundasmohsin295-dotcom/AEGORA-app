@@ -1089,6 +1089,14 @@ echo "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbg
             fullExplanation = "Revoking active OAuth/Kerberos session tokens, triggering an immediate credential reset with MFA requirement, and blacklisting the attacker IP prevents further lateral movement."
           )
         )
+      ),
+      aiAnalystOutput = AiAnalystClaim(
+        claimId = "claim_login_malicious_ip",
+        analystName = "AEGORA Tier-2 SOC AI Co-Pilot",
+        claimText = "The login is confirmed malicious because the source IP 185.91.x.x is associated with the attack.",
+        assertedIocs = listOf("185.91.x.x", "DC-PRIMARY-01"),
+        recommendedAction = "Blacklist external subnet 185.91.0.0/16 and close incident ticket.",
+        confidenceScore = 94
       )
     ),
     InvestigationLab(

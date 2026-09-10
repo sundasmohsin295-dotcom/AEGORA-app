@@ -643,6 +643,58 @@ private fun NextMoveHeroSection(
 
       Spacer(modifier = Modifier.height(10.dp))
 
+      // Adaptive Adversary targeted weakness banner if present
+      if (action.category.contains("Remediation", ignoreCase = true) || action.primaryReason.contains("Remediation", ignoreCase = true) || action.reasoningTags.any { it.contains("Bias") || it.contains("Correlation") || it.contains("Escalation") || it.contains("Gate") }) {
+        Surface(
+          shape = RoundedCornerShape(6.dp),
+          color = CyberAmber.copy(alpha = 0.12f),
+          border = BorderStroke(1.dp, CyberAmber.copy(alpha = 0.5f)),
+          modifier = Modifier.fillMaxWidth().testTag("adaptive_adversary_callout")
+        ) {
+          Column(modifier = Modifier.padding(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(
+                Icons.Default.Security,
+                contentDescription = null,
+                tint = CyberAmber,
+                modifier = Modifier.size(16.dp)
+              )
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = "ADAPTIVE AI ADVERSARY • TARGETED CHALLENGE",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Black,
+                  letterSpacing = 0.8.sp,
+                  fontSize = 10.sp
+                ),
+                color = CyberAmber
+              )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+              text = "AEGORA identified a reasoning weakness in your previous investigation.",
+              style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.Medium
+              ),
+              color = AegoraTextPrimary
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+              text = "Your next challenge targets: ${action.telemetryMetric.ifBlank { action.title }}",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.5.sp
+              ),
+              color = CyberCyan
+            )
+          }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+      }
+
       // Dominant action title
       Text(
         text = action.title.uppercase(),

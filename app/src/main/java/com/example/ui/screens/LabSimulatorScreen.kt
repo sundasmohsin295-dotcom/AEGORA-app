@@ -276,6 +276,34 @@ fun LabSimulatorScreen(
         )
       }
 
+      // Flagship AI Hallucination Detection / Human Verification Mechanic
+      if (simulation.aiAnalystOutput != null) {
+        item {
+          CyberSectionHeader(
+            title = "AI Analyst Verification Mechanic",
+            subtitle = "Audit AI conclusions against authoritative telemetry before executing action"
+          )
+          Spacer(modifier = Modifier.height(6.dp))
+          AiHallucinationVerificationCard(
+            claim = simulation.aiAnalystOutput,
+            availableEvidence = simulation.logs,
+            missionId = simulation.id,
+            onVerificationComplete = { res ->
+              AegoraRepository.logReasoningStep(
+                ReasoningGraphStep(
+                  stepId = "step_ai_verify_${System.currentTimeMillis()}",
+                  nodeLabel = "AI Claim Verification",
+                  nodeType = "AI_VERIFICATION",
+                  actionDescription = "${res.outcome}: ${res.headline}",
+                  timeOffsetSeconds = 25,
+                  isOptimalStep = res.isAiFailureDetected
+                )
+              )
+            }
+          )
+        }
+      }
+
       // Containment Decision Matrix
       item {
         CyberSectionHeader(

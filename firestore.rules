@@ -95,6 +95,24 @@ service cloud.firestore {
         allow read: if isOwner(authUid);
         allow write: if false;
       }
+
+      // 9. Server-Authoritative Failure Patterns (Clients can read their own; cannot write/forge patterns or confidence)
+      match /failure_patterns/{patternId} {
+        allow read: if isOwner(authUid);
+        allow write: if false;
+      }
+
+      // 10. Server-Authoritative Adaptive Challenges (Clients can read their own generated challenges; cannot write/forge traps or targets)
+      match /adaptive_challenges/{challengeId} {
+        allow read: if isOwner(authUid);
+        allow write: if false;
+      }
+
+      // 11. Server-Authoritative AI Claim Verifications (Clients can read their own results; cannot write/forge outcomes or trap states)
+      match /ai_verifications/{verificationId} {
+        allow read: if isOwner(authUid);
+        allow write: if false;
+      }
     }
 
     // Deny all other paths

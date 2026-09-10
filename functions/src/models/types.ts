@@ -204,3 +204,117 @@ export interface AuthoritativeSubscriptionState {
   sourceEventId?: string;
   authorityMetadata: AuthoritativeMetadata;
 }
+
+export type AdaptiveChallengeTier = 'OBSERVED' | 'REPEATED' | 'HIGH_CONFIDENCE';
+
+export interface AdaptiveChallengePolicy {
+  targetFailureMode: FailurePatternType;
+  challengeTier: AdaptiveChallengeTier;
+  policyObjective: string;
+  adversaryRole: string;
+  recoveryCriteria: string;
+  evidenceRequirements: string[];
+}
+
+export interface LearnerSafeAdaptiveChallenge {
+  challengeId: string;
+  targetFailureMode: FailurePatternType;
+  challengeTier: AdaptiveChallengeTier;
+  weaknessNarrative: string;
+  targetedSkill: string;
+  scenarioTitle: string;
+  scenarioBriefing: string;
+  aiAnalystClaim: {
+    analystName: string;
+    claimText: string;
+    assertedEvidenceIds: string[];
+    recommendedAction: string;
+    confidencePercentage: number;
+  };
+  evidencePool: Array<{
+    id: string;
+    timestamp: string;
+    source: string;
+    eventType: string;
+    summary: string;
+  }>;
+  actionOptions: Array<{
+    id: string;
+    label: string;
+    description: string;
+  }>;
+}
+
+export interface AuthoritativeAdaptiveChallengeState {
+  challengeId: string;
+  ownerAuthUid: string;
+  sourceFailurePatternId: string;
+  targetFailureMode: FailurePatternType;
+  challengeTier: AdaptiveChallengeTier;
+  policy: AdaptiveChallengePolicy;
+  createdAt: string;
+  isUnsupportedPlantedTrap: boolean;
+  authoritativeCorrectActionId: string;
+  authoritativeRequiredEvidenceIds: string[];
+  plantedTrapRationale: string;
+  learnerSafePayload: LearnerSafeAdaptiveChallenge;
+  authorityMetadata: AuthoritativeMetadata;
+}
+
+export type LearnerAiDecision = 'ACCEPT_AI' | 'CHALLENGE_AI';
+export type AuthoritativeAiClaimStatus = 'UNSUPPORTED' | 'SUPPORTED';
+export type VerificationOutcomeStatus =
+  | 'AI_FAILURE_DETECTED'
+  | 'AI_CLAIM_NOT_VERIFIED'
+  | 'AI_CLAIM_CORRECTLY_ACCEPTED'
+  | 'INCORRECT_AI_CHALLENGE';
+
+export interface LearnerAiClaimVerificationRequest {
+  attemptId: string;
+  missionId: string;
+  claimId: string;
+  learnerDecision: LearnerAiDecision;
+  selectedEvidenceIds: string[];
+  learnerReasoning?: string;
+  clientClaimedLearnerId?: string;
+  // Attack vectors/forged flags (Must be rejected/ignored by server)
+  forgedIsUnsupportedPlantedTrap?: boolean;
+  forgedCorrect?: boolean;
+  forgedFailureMode?: FailurePatternType;
+}
+
+export interface ClientSafeAiVerificationResult {
+  attemptId: string;
+  claimId: string;
+  outcome: VerificationOutcomeStatus;
+  isAiFailureDetected: boolean;
+  evidenceVerified: boolean;
+  headline: string;
+  explanation: string;
+  detectedFailurePattern?: FailurePatternType;
+  evidenceDigest: string;
+  verifiedAt: string;
+}
+
+export interface AuthoritativeAiClaimVerificationRecord {
+  verificationId: string;
+  attemptId: string;
+  missionId: string;
+  claimId: string;
+  ownerAuthUid: string;
+  learnerDecision: LearnerAiDecision;
+  selectedEvidenceIds: string[];
+  learnerReasoning?: string;
+  authoritativeClaimStatus: AuthoritativeAiClaimStatus;
+  authoritativeIsUnsupportedTrap: boolean;
+  authoritativeRequiredEvidenceIds: string[];
+  outcome: VerificationOutcomeStatus;
+  isAiFailureDetected: boolean;
+  evidenceVerified: boolean;
+  derivedFailureMode?: FailurePatternType;
+  evidenceDigest: string;
+  verifiedAt: string;
+  authorityMetadata: AuthoritativeMetadata;
+}
+
+

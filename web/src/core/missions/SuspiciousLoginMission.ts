@@ -119,6 +119,16 @@ export const SUSPICIOUS_LOGIN_MISSION: MissionState = {
   ]
 };
 
+export const SUSPICIOUS_LOGIN_AI_CLAIM = {
+  claimId: 'claim_login_malicious_ip',
+  analystName: 'AEGORA Tier-2 SOC AI Co-Pilot',
+  claimText:
+    'The login is confirmed malicious because the source IP 185.91.x.x is associated with the attack.',
+  assertedIocs: ['185.91.x.x', 'DC-PRIMARY-01'],
+  recommendedAction: 'Blacklist external subnet 185.91.0.0/16 and close incident ticket.',
+  confidenceScore: 94
+};
+
 /**
  * Validates the web mission execution authoritatively.
  * Client UI cannot fabricate passing verification without meeting the rubric.
@@ -169,3 +179,100 @@ export function validateWebMission(
       'Decision triage failed to contain the active adversary session. Re-examine the timeline logs.'
   };
 }
+
+/**
+ * Authoritative web client verification of an AI Analyst claim decision.
+ * Deterministic rubric mirroring Cloud Function ServerAiHallucinationAuthority.
+ */
+export function evaluateWebAiClaimChallenge(
+  attemptId: string,
+  claimId: string,
+  decision: 'ACCEPT_AI' | 'CHALLENGE_AI',
+  selectedEvidenceIds: string[],
+  reasoning: string = ''
+): {
+  attemptId: string;
+  claimId: string;
+  outcome: 'AI_FAILURE_DETECTED' | 'AI_CLAIM_NOT_VERIFIED' | 'AI_CLAIM_CORRECTLY_ACCEPTED' | 'INCORRECT_AI_CHALLENGE';
+  isAiFailureDetected: boolean;
+  evidenceVerified: boolean;
+  headline: string;
+  explanation: string;
+  detectedFailurePattern?: string;
+  evidenceDigest: string;
+  verifiedAt: string;
+} {
+  const validEvidencePool = ['tl_01', 'tl_02', 'tl_03', 'tl_04'];
+  for (const evi of selectedEvidenceIds) {
+    if (!validEvidencePool.includes(evi)) {
+      throw new Error(`Foreign evidence '${evi}' rejected.`);
+    }
+  }
+
+  const now = new Date().toISOString();
+  const evidenceDigest = `sha256:aegora_web_ai_claim_${claimId}_${Date.now()}`;
+
+  if (claimId === 'claim_login_malicious_ip') {
+    // The claim is UNSUPPORTED (trap)
+    if (decision === 'CHALLENGE_AI') {
+      const hasRelevantEvidence = selectedEvidenceIds.some(id => ['tl_01', 'tl_02', 'tl_03'].includes(id));
+      return {
+        attemptId,
+        claimId,
+        outcome: 'AI_FAILURE_DETECTED',
+        isAiFailureDetected: true,
+        evidenceVerified: hasRelevantEvidence || selectedEvidenceIds.length > 0,
+        headline: 'AI FAILURE DETECTED ✓',
+        explanation: 'The AI analyst made an unsupported claim. You detected it using authoritative evidence.',
+        evidenceDigest,
+        verifiedAt: now
+      };
+    } else {
+      // Learner incorrectly accepted the unsupported claim
+      return {
+        attemptId,
+        claimId,
+        outcome: 'AI_CLAIM_NOT_VERIFIED',
+        isAiFailureDetected: false,
+        evidenceVerified: false,
+        headline: 'AI CLAIM NOT VERIFIED',
+        explanation: 'Evidence does not support the analyst\'s conclusion. Telemetry does not establish that attribution.',
+        detectedFailurePattern: 'EVIDENCE_OVERWEIGHTING',
+        evidenceDigest,
+        verifiedAt: now
+      };
+    }
+  }
+
+  if (claimId === 'claim_login_supported_geo') {
+    if (decision === 'ACCEPT_AI') {
+      return {
+        attemptId,
+        claimId,
+        outcome: 'AI_CLAIM_CORRECTLY_ACCEPTED',
+        isAiFailureDetected: false,
+        evidenceVerified: true,
+        headline: 'EVIDENCE VERIFIED ✓',
+        explanation: 'Correct. The analyst\'s conclusion is grounded directly in the supplied telemetry events.',
+        evidenceDigest,
+        verifiedAt: now
+      };
+    } else {
+      return {
+        attemptId,
+        claimId,
+        outcome: 'INCORRECT_AI_CHALLENGE',
+        isAiFailureDetected: false,
+        evidenceVerified: false,
+        headline: 'INCORRECT CHALLENGE',
+        explanation: 'The AI analyst claim was rigorously supported by the telemetry events.',
+        detectedFailurePattern: 'INSUFFICIENT_CORRELATION',
+        evidenceDigest,
+        verifiedAt: now
+      };
+    }
+  }
+
+  throw new Error(`Unknown claim '${claimId}'`);
+}
+
