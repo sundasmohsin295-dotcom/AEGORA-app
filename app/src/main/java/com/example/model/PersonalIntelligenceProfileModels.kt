@@ -112,7 +112,15 @@ enum class FailureModeType(val label: String, val badgeColorHex: String) {
   OVERCONFIDENCE("Overconfidence Calibration", "#F97316"),
   UNCERTAINTY_PARALYSIS("Uncertainty Paralysis", "#6B7280"),
   INCOMPLETE_INVESTIGATION("Incomplete Investigation", "#10B981"),
-  PREMATURE_CONCLUSION("Premature Conclusion", "#E11D48")
+  PREMATURE_CONCLUSION("Premature Conclusion", "#E11D48"),
+  // Observable Task-Behavior Categories (Phase 2 Deterministic Failure Patterns)
+  PREMATURE_ESCALATION("Premature Escalation", "#DC2626"),
+  EVIDENCE_OVERWEIGHTING("Evidence Overweighting", "#D97706"),
+  CONFIRMATION_BIAS("Confirmation Bias", "#7C3AED"),
+  INSUFFICIENT_CORRELATION("Insufficient Correlation", "#2563EB"),
+  WEAK_UNCERTAINTY_HANDLING("Weak Uncertainty Handling", "#4B5563"),
+  CONTEXT_IGNORANCE("Context Ignorance", "#EA580C"),
+  INCORRECT_PRIORITIZATION("Incorrect Prioritization", "#059669")
 }
 
 /**

@@ -201,3 +201,34 @@ export interface CloudNextAction {
   expiresAt: number;
 }
 
+export type FailurePatternType =
+  | 'PREMATURE_ESCALATION'
+  | 'EVIDENCE_OVERWEIGHTING'
+  | 'CONFIRMATION_BIAS'
+  | 'INSUFFICIENT_CORRELATION'
+  | 'WEAK_UNCERTAINTY_HANDLING'
+  | 'CONTEXT_IGNORANCE'
+  | 'INCORRECT_PRIORITIZATION'
+  | 'KNOWLEDGE_GAP'
+  | 'REASONING_ERROR'
+  | 'PROCEDURAL_ERROR'
+  | 'PATTERN_RECOGNITION_ERROR'
+  | 'TRANSFER_FAILURE'
+  | 'OVERCONFIDENCE'
+  | 'UNCERTAINTY_PARALYSIS'
+  | 'INCOMPLETE_INVESTIGATION'
+  | 'PREMATURE_CONCLUSION';
+
+export interface CloudFailurePattern {
+  patternId: string;
+  ownerAuthUid: string;
+  patternType: FailurePatternType;
+  confidenceScore: number; // 0 - 100
+  observationCount: number;
+  lastObservedMissionId: string;
+  lastObservedAt: string;
+  firstObservedAt: string;
+  supportingEvidenceIds: string[];
+  decayHalfLifeDays: number;
+}
+

@@ -44,6 +44,8 @@ class AegoraCommandCenterDashboardTest {
 
     // 2. Dominant "NEXT MOVE" Hero ("What should I do next?")
     composeTestRule.onNodeWithTag("home_next_move_hero").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("home_command_center_list")
+      .performScrollToNode(hasTestTag("home_btn_start_next_move"))
     composeTestRule.onNodeWithTag("home_btn_start_next_move").assertIsDisplayed()
 
     // 3. Compact Cyber Twin ("What can I do?")
@@ -97,6 +99,8 @@ class AegoraCommandCenterDashboardTest {
     }
 
     // Click START on NEXT MOVE
+    composeTestRule.onNodeWithTag("home_command_center_list")
+      .performScrollToNode(hasTestTag("home_btn_start_next_move"))
     composeTestRule.onNodeWithTag("home_btn_start_next_move").performClick()
 
     // Mission Execution Sheet should now be displayed

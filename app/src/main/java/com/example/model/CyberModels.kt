@@ -362,6 +362,17 @@ data class InvestigationTimelineEvent(
   val isSuspicious: Boolean
 )
 
+data class AiAnalystClaim(
+  val claimId: String,
+  val analystName: String = "AEGORA Tier-2 SOC AI Co-Pilot",
+  val claimText: String,
+  val assertedIocs: List<String> = emptyList(),
+  val recommendedAction: String,
+  val confidenceScore: Int = 89,
+  // Note: planted trap field is author-defined. It must never be exposed to learner UI.
+  val isUnsupportedTrap: Boolean = false
+)
+
 data class InvestigationLab(
   val id: String,
   val title: String,
@@ -374,7 +385,8 @@ data class InvestigationLab(
   val timelineEvents: List<InvestigationTimelineEvent>,
   val questions: List<InvestigationQuestion>,
   val isCompleted: Boolean = false,
-  val bestScore: Int = 0
+  val bestScore: Int = 0,
+  val aiAnalystOutput: AiAnalystClaim? = null
 )
 
 data class LabScorecard(

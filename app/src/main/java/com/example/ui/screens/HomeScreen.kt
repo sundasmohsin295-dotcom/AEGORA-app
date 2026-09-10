@@ -575,22 +575,6 @@ private fun NextMoveHeroSection(
   action: PredictiveNextAction,
   onStart: () -> Unit
 ) {
-  var isVisible by remember { mutableStateOf(false) }
-  LaunchedEffect(Unit) {
-    isVisible = true
-  }
-
-  val alphaAnim by androidx.compose.animation.core.animateFloatAsState(
-    targetValue = if (isVisible) 1f else 0f,
-    animationSpec = androidx.compose.animation.core.tween(durationMillis = 380, easing = androidx.compose.animation.core.FastOutSlowInEasing),
-    label = "next_move_fade"
-  )
-  val scaleAnim by androidx.compose.animation.core.animateFloatAsState(
-    targetValue = if (isVisible) 1.0f else 0.97f,
-    animationSpec = androidx.compose.animation.core.tween(durationMillis = 380, easing = androidx.compose.animation.core.FastOutSlowInEasing),
-    label = "next_move_scale"
-  )
-
   Card(
     shape = RoundedCornerShape(12.dp),
     colors = CardDefaults.cardColors(
@@ -599,11 +583,6 @@ private fun NextMoveHeroSection(
     border = BorderStroke(1.dp, AegoraCyanVerified.copy(alpha = 0.7f)),
     modifier = Modifier
       .fillMaxWidth()
-      .graphicsLayer {
-        alpha = alphaAnim
-        scaleX = scaleAnim
-        scaleY = scaleAnim
-      }
       .testTag("home_next_move_hero")
   ) {
     Column(
