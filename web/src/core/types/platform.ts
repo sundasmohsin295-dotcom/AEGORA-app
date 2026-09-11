@@ -279,6 +279,18 @@ export type VerificationOutcomeStatus =
   | 'AI_CLAIM_CORRECTLY_ACCEPTED'
   | 'INCORRECT_AI_CHALLENGE';
 
+export interface LearnerFailureAutopsy {
+  yourDecision: string;
+  aiClaim: string;
+  evidenceYouUsed: string[];
+  evidenceThatMattered: string[];
+  whatWentWrong: string;
+  canonicalFailureMode: FailurePatternType;
+  betterReasoning: string;
+  nextChallengeTitle: string;
+  nextChallengeId?: string;
+}
+
 export interface ClientSafeAiVerificationResult {
   attemptId: string;
   claimId: string;
@@ -288,8 +300,23 @@ export interface ClientSafeAiVerificationResult {
   headline: string;
   explanation: string;
   detectedFailurePattern?: FailurePatternType;
+  failureAutopsy?: LearnerFailureAutopsy;
   evidenceDigest: string;
   verifiedAt: string;
+}
+
+export interface AuthoritativeAdaptiveEvaluationResult {
+  challengeId: string;
+  targetFailureMode: FailurePatternType;
+  isPassed: boolean;
+  isImprovementVerified: boolean;
+  headline: string;
+  explanation: string;
+  demonstratedImprovementSummary?: string;
+  previousFailureMode?: FailurePatternType;
+  evidenceDigest: string;
+  verifiedAt: string;
+  verifiedProofArtifactId?: string;
 }
 
 export interface LearnerAiClaimVerificationRequest {

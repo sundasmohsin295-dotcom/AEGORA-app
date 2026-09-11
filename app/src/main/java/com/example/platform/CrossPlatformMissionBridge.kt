@@ -114,6 +114,17 @@ object CrossPlatformMissionBridge {
         )
       } else {
         // Learner incorrectly accepted the unsupported claim
+        val autopsy = com.example.model.LearnerFailureAutopsy(
+          yourDecision = "Accepted AI Claim (Recommended Action: Blacklist 185.91.0.0/16 and close incident ticket)",
+          aiClaim = "The login is confirmed malicious because the source IP 185.91.x.x is associated with the attack.",
+          evidenceYouUsed = selectedEvidenceIds,
+          evidenceThatMattered = listOf("tl_01", "tl_02", "tl_03"),
+          whatWentWrong = "Evidence Overweighting: You accepted the AI's conclusion without verifying whether IP 185.91.x.x actually appeared anywhere in the supplied authentication telemetry.",
+          canonicalFailureMode = com.example.model.FailureModeType.EVIDENCE_OVERWEIGHTING,
+          betterReasoning = "Correlate each claimed IOC against raw telemetry logs (Event ID 4624/4625) before approving containment actions.",
+          nextChallengeTitle = "Targeted follow-up unlocked: Threat Intel Anchor vs System Truth",
+          nextChallengeId = "chal_evidence_overweighting"
+        )
         com.example.model.ClientSafeAiVerificationResult(
           attemptId = attemptId,
           claimId = claimId,
@@ -123,6 +134,7 @@ object CrossPlatformMissionBridge {
           headline = "AI CLAIM NOT VERIFIED",
           explanation = "Evidence does not support the analyst's conclusion. Telemetry does not establish that attribution.",
           detectedFailurePattern = com.example.model.FailureModeType.EVIDENCE_OVERWEIGHTING,
+          failureAutopsy = autopsy,
           evidenceDigest = digest,
           verifiedAt = now
         )
@@ -144,6 +156,17 @@ object CrossPlatformMissionBridge {
           verifiedAt = now
         )
       } else {
+        val autopsy = com.example.model.LearnerFailureAutopsy(
+          yourDecision = "Challenged AI Claim (Questioned impossible travel finding)",
+          aiClaim = "The sequential logins from Moscow and Austin within 7 minutes represent an impossible travel anomaly.",
+          evidenceYouUsed = selectedEvidenceIds,
+          evidenceThatMattered = listOf("tl_03", "tl_04"),
+          whatWentWrong = "Insufficient Correlation: You failed to correlate the timestamp delta (7 minutes) with geographic distance (~9,000 km) between successive Event ID 4624 logons.",
+          canonicalFailureMode = com.example.model.FailureModeType.INSUFFICIENT_CORRELATION,
+          betterReasoning = "Calculate geographic travel velocity across sequential authentications for the same user identity before dismissing anomalies.",
+          nextChallengeTitle = "Targeted follow-up unlocked: Cross-Host Lateral Correlation",
+          nextChallengeId = "chal_insufficient_correlation"
+        )
         com.example.model.ClientSafeAiVerificationResult(
           attemptId = attemptId,
           claimId = claimId,
@@ -153,6 +176,7 @@ object CrossPlatformMissionBridge {
           headline = "INCORRECT CHALLENGE",
           explanation = "The AI analyst claim was rigorously supported by the telemetry events.",
           detectedFailurePattern = com.example.model.FailureModeType.INSUFFICIENT_CORRELATION,
+          failureAutopsy = autopsy,
           evidenceDigest = digest,
           verifiedAt = now
         )

@@ -2,12 +2,12 @@ import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import { HttpsError } from 'firebase-functions/v2/https';
 import {
-  LearnerAiDecision,
   AuthoritativeAiClaimStatus,
   LearnerAiClaimVerificationRequest,
   ClientSafeAiVerificationResult,
   AuthoritativeAiClaimVerificationRecord,
   FailurePatternType,
+  LearnerFailureAutopsy,
   AuthoritativeMetadata
 } from '../models/types';
 import { ServerEvidenceAuthority } from './evidenceAuthority';
@@ -231,6 +231,33 @@ export class ServerAiHallucinationAuthority {
       }
     }
 
+    let failureAutopsy: LearnerFailureAutopsy | undefined = undefined;
+    if (derivedFailureMode === 'EVIDENCE_OVERWEIGHTING') {
+      failureAutopsy = {
+        yourDecision: 'Accepted AI Claim (Recommended Action: Blacklist 185.91.0.0/16 and close incident ticket)',
+        aiClaim: groundTruth.claimText,
+        evidenceYouUsed: submittedEvidence,
+        evidenceThatMattered: groundTruth.requiredEvidenceIds,
+        whatWentWrong: 'Evidence Overweighting: You accepted the AI\'s conclusion without verifying whether IP 185.91.x.x actually appeared anywhere in the supplied authentication telemetry.',
+        canonicalFailureMode: 'EVIDENCE_OVERWEIGHTING',
+        betterReasoning: 'Correlate each claimed IOC against raw telemetry logs (Event ID 4624/4625) before approving containment actions.',
+        nextChallengeTitle: 'Targeted follow-up unlocked: Threat Intel Anchor vs System Truth',
+        nextChallengeId: 'chal_evidence_overweighting'
+      };
+    } else if (derivedFailureMode === 'INSUFFICIENT_CORRELATION') {
+      failureAutopsy = {
+        yourDecision: 'Challenged AI Claim (Questioned impossible travel finding)',
+        aiClaim: groundTruth.claimText,
+        evidenceYouUsed: submittedEvidence,
+        evidenceThatMattered: groundTruth.requiredEvidenceIds,
+        whatWentWrong: 'Insufficient Correlation: You failed to correlate the timestamp delta (7 minutes) with geographic distance (~9,000 km) between successive Event ID 4624 logons.',
+        canonicalFailureMode: 'INSUFFICIENT_CORRELATION',
+        betterReasoning: 'Calculate geographic travel velocity across sequential authentications for the same user identity before dismissing anomalies.',
+        nextChallengeTitle: 'Targeted follow-up unlocked: Cross-Host Lateral Correlation',
+        nextChallengeId: 'chal_insufficient_correlation'
+      };
+    }
+
     const now = new Date().toISOString();
     const digestContent = `${authenticatedUid}:${req.attemptId}:${req.claimId}:${outcome}:${now}`;
     const evidenceDigest = `sha256:${crypto.createHash('sha256').update(digestContent).digest('hex')}`;
@@ -260,6 +287,7 @@ export class ServerAiHallucinationAuthority {
       isAiFailureDetected,
       evidenceVerified,
       derivedFailureMode,
+      failureAutopsy,
       evidenceDigest,
       verifiedAt: now,
       authorityMetadata
@@ -288,6 +316,7 @@ export class ServerAiHallucinationAuthority {
       headline,
       explanation,
       detectedFailurePattern: derivedFailureMode,
+      failureAutopsy,
       evidenceDigest,
       verifiedAt: now
     };

@@ -183,5 +183,14 @@ export const verifyAiClaimDecision = onCall(async (request) => {
   return await aiHallucinationAuthority.verifyAiClaimDecision(authenticatedUid, request.data);
 });
 
+/**
+ * 13. SERVER-AUTHORITATIVE ADAPTIVE CHALLENGE EVALUATION & IMPROVEMENT PROOF
+ * Client cannot forge passed state or verified improvement. Evaluates submission against authoritative ground truth.
+ */
+export const evaluateAuthoritativeAdaptiveChallenge = onCall(async (request) => {
+  const authenticatedUid = AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+  return await adversaryAuthority.evaluateAdaptiveChallengeSubmission(authenticatedUid, request.data);
+});
+
 
 

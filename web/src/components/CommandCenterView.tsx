@@ -129,7 +129,7 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
         </div>
       </section>
 
-      {/* 2. DOMINANT NEXT MOVE HERO */}
+      {/* 2. DOMINANT NEXT MOVE HERO // SECTION 14 CYBER REALITY SPECIFICATION */}
       <section
         style={{
           padding: '24px',
@@ -142,8 +142,8 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
           overflow: 'hidden'
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ flex: '1 1 500px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+          <div style={{ flex: '1 1 540px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <span
                 style={{
@@ -157,48 +157,83 @@ export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
                   border: '1px solid var(--accent-cyan)'
                 }}
               >
-                CRITICAL NEXT MOVE // BOTTLENECK RESOLUTION
+                FLAGSHIP EXPERIENCE // CYBER REALITY
               </span>
               <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 GATE: {nextMove.primaryGateTargeted}
               </span>
             </div>
 
-            <h2 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px' }}>
-              {nextMove.title}
-            </h2>
-
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '12px' }}>
-              {nextMove.reason}
+            <h1 style={{ fontSize: '32px', fontWeight: 900, marginBottom: '6px', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+              CYBER REALITY
+            </h1>
+            <p style={{ fontSize: '15px', color: 'var(--accent-cyan)', fontWeight: 600, marginBottom: '16px', lineHeight: 1.4 }}>
+              Investigate real security situations with AI. Learn when to trust it — and when to challenge it.
             </p>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'var(--text-muted)' }}>
-              <span>Category: <strong>{nextMove.category}</strong></span>
-              <span>•</span>
-              <span>Estimated Duration: <strong>{nextMove.estimatedMinutes} min</strong></span>
-              <span>•</span>
-              <span>Expected Impact: <strong style={{ color: 'var(--accent-emerald)' }}>{nextMove.expectedImpact}</strong></span>
+            <div style={{ padding: '14px 18px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                PRIMARY MISSION
+              </div>
+              <h2 style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
+                SUSPICIOUS LOGIN INVESTIGATION
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>
+                {nextMove.reason}
+              </p>
+            </div>
+
+            {/* Section 14 Triad: Current Capability, Current Weakness, Next Move */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
+              <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  CURRENT CAPABILITY
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-cyan)', marginTop: '3px' }}>
+                  AI-Augmented Investigation
+                </div>
+              </div>
+
+              <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  CURRENT WEAKNESS
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-amber)', marginTop: '3px' }}>
+                  Evidence Correlation
+                </div>
+              </div>
+
+              <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  NEXT MOVE
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-emerald)', marginTop: '3px' }}>
+                  Challenge the AI with evidence
+                </div>
+              </div>
             </div>
           </div>
 
           <button
-            onClick={() => onLaunchMission(nextMove.missionId)}
+            onClick={() => onLaunchMission('mission_suspicious_login_reality')}
             style={{
-              padding: '14px 28px',
+              padding: '16px 32px',
               backgroundColor: 'var(--accent-cyan)',
               color: '#0a0e17',
               fontWeight: 800,
-              fontSize: '14px',
+              fontSize: '15px',
               borderRadius: 'var(--radius-sm)',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
               alignSelf: 'center',
-              boxShadow: 'var(--shadow-sm)'
+              boxShadow: 'var(--shadow-md)',
+              cursor: 'pointer',
+              border: 'none'
             }}
           >
-            <span>START INVESTIGATION</span>
-            <ArrowRight size={18} />
+            <span>START MISSION</span>
+            <ArrowRight size={20} />
           </button>
         </div>
       </section>

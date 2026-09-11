@@ -283,6 +283,18 @@ export interface LearnerAiClaimVerificationRequest {
   forgedFailureMode?: FailurePatternType;
 }
 
+export interface LearnerFailureAutopsy {
+  yourDecision: string;
+  aiClaim: string;
+  evidenceYouUsed: string[];
+  evidenceThatMattered: string[];
+  whatWentWrong: string;
+  canonicalFailureMode: FailurePatternType;
+  betterReasoning: string;
+  nextChallengeTitle: string;
+  nextChallengeId?: string;
+}
+
 export interface ClientSafeAiVerificationResult {
   attemptId: string;
   claimId: string;
@@ -292,8 +304,32 @@ export interface ClientSafeAiVerificationResult {
   headline: string;
   explanation: string;
   detectedFailurePattern?: FailurePatternType;
+  failureAutopsy?: LearnerFailureAutopsy;
   evidenceDigest: string;
   verifiedAt: string;
+}
+
+export interface AdaptiveChallengeSubmissionRequest {
+  challengeId: string;
+  selectedActionId: string;
+  selectedEvidenceIds: string[];
+  reasoning?: string;
+  forgedPassed?: boolean;
+  forgedImprovement?: boolean;
+}
+
+export interface AuthoritativeAdaptiveEvaluationResult {
+  challengeId: string;
+  targetFailureMode: FailurePatternType;
+  isPassed: boolean;
+  isImprovementVerified: boolean;
+  headline: string;
+  explanation: string;
+  demonstratedImprovementSummary?: string;
+  previousFailureMode?: FailurePatternType;
+  evidenceDigest: string;
+  verifiedAt: string;
+  verifiedProofArtifactId?: string;
 }
 
 export interface AuthoritativeAiClaimVerificationRecord {
@@ -312,6 +348,7 @@ export interface AuthoritativeAiClaimVerificationRecord {
   isAiFailureDetected: boolean;
   evidenceVerified: boolean;
   derivedFailureMode?: FailurePatternType;
+  failureAutopsy?: LearnerFailureAutopsy;
   evidenceDigest: string;
   verifiedAt: string;
   authorityMetadata: AuthoritativeMetadata;

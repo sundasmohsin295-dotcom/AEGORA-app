@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Header } from './components/Header';
+import { Header, AppView } from './components/Header';
 import { LandingView } from './components/LandingView';
 import { CommandCenterView } from './components/CommandCenterView';
 import { MissionInvestigationView } from './components/MissionInvestigationView';
 import { CareerPassportView } from './components/CareerPassportView';
+import { SectionPlaceholderView } from './components/SectionPlaceholderView';
 import { SecurityStatusModal } from './components/SecurityStatusModal';
 import { authClient, AuthState } from './core/auth/CrossPlatformAuthClient';
 
 export function App() {
-  const [currentView, setCurrentView] = useState<'landing' | 'command_center' | 'mission' | 'passport'>(
-    'landing'
-  );
+  const [currentView, setCurrentView] = useState<AppView>('landing');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [authState, setAuthState] = useState<AuthState>(authClient.getState());
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState<boolean>(false);
@@ -65,6 +64,19 @@ export function App() {
         {currentView === 'passport' && (
           <CareerPassportView
             authState={authState}
+            onReturnToCommandCenter={() => setCurrentView('command_center')}
+          />
+        )}
+
+        {(currentView === 'learn' ||
+          currentView === 'practice' ||
+          currentView === 'bounty' ||
+          currentView === 'roadmap' ||
+          currentView === 'tools' ||
+          currentView === 'intelligence') && (
+          <SectionPlaceholderView
+            section={currentView}
+            onLaunchMission={() => setCurrentView('mission')}
             onReturnToCommandCenter={() => setCurrentView('command_center')}
           />
         )}

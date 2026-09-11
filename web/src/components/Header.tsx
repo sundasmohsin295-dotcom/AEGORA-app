@@ -2,14 +2,44 @@ import React from 'react';
 import { Shield, Moon, Sun, Lock, Laptop, Terminal } from 'lucide-react';
 import { AuthState } from '../core/auth/CrossPlatformAuthClient';
 
+export type AppView =
+  | 'landing'
+  | 'command_center'
+  | 'learn'
+  | 'practice'
+  | 'mission'
+  | 'bounty'
+  | 'roadmap'
+  | 'tools'
+  | 'intelligence'
+  | 'passport';
+
 interface HeaderProps {
-  currentView: 'landing' | 'command_center' | 'mission' | 'passport';
-  onNavigate: (view: 'landing' | 'command_center' | 'mission' | 'passport') => void;
+  currentView: AppView;
+  onNavigate: (view: AppView) => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   authState: AuthState;
   onOpenSecurityStatus: () => void;
 }
+
+interface NavItem {
+  id: AppView;
+  label: string;
+  isFlagship?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'command_center', label: 'Command Center' },
+  { id: 'learn', label: 'Learn' },
+  { id: 'practice', label: 'Practice' },
+  { id: 'mission', label: 'Investigate', isFlagship: true },
+  { id: 'bounty', label: 'Bug Bounty' },
+  { id: 'roadmap', label: 'Roadmap' },
+  { id: 'tools', label: 'Tools' },
+  { id: 'intelligence', label: 'Intelligence' },
+  { id: 'passport', label: 'Proof' }
+];
 
 export const Header: React.FC<HeaderProps> = ({
   currentView,
@@ -84,33 +114,72 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Navigation Tabs */}
-        <nav style={{ display: 'flex', gap: '6px', marginLeft: '16px' }}>
-          {[
-            { id: 'command_center', label: 'Command Center' },
-            { id: 'mission', label: 'SOC Range Mission' },
-            { id: 'passport', label: 'Skill Passport' }
-          ].map(item => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id as any)}
-              style={{
-                padding: '6px 12px',
-                fontSize: '13px',
-                fontWeight: 600,
-                borderRadius: 'var(--radius-sm)',
-                color: currentView === item.id ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                backgroundColor:
-                  currentView === item.id ? 'var(--accent-cyan-subtle)' : 'transparent',
-                border:
-                  currentView === item.id
+        <nav
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            marginLeft: '12px',
+            overflowX: 'auto',
+            paddingBottom: '2px'
+          }}
+        >
+          {NAV_ITEMS.map(item => {
+            const isActive = currentView === item.id;
+            const isFlagship = item.isFlagship;
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: isFlagship ? '5px 12px' : '5px 10px',
+                  fontSize: '12px',
+                  fontWeight: isActive || isFlagship ? 700 : 500,
+                  borderRadius: 'var(--radius-sm)',
+                  color: isActive
+                    ? 'var(--accent-cyan)'
+                    : isFlagship
+                    ? 'var(--text-primary)'
+                    : 'var(--text-secondary)',
+                  backgroundColor: isActive
+                    ? 'var(--accent-cyan-subtle)'
+                    : isFlagship
+                    ? 'var(--bg-tertiary)'
+                    : 'transparent',
+                  border: isActive
                     ? '1px solid var(--accent-cyan)'
+                    : isFlagship
+                    ? '1px solid var(--border-strong)'
                     : '1px solid transparent',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span>{item.label}</span>
+                {isFlagship && (
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 800,
+                      padding: '1px 5px',
+                      borderRadius: '2px',
+                      backgroundColor: isActive ? 'var(--accent-cyan)' : 'var(--accent-cyan-subtle)',
+                      color: isActive ? '#000' : 'var(--accent-cyan)',
+                      letterSpacing: '0.04em'
+                    }}
+                  >
+                    CORE
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
       </div>
 

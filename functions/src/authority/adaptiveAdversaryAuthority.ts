@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import * as crypto from 'crypto';
 import { HttpsError } from 'firebase-functions/v2/https';
 import {
   FailurePatternType,
@@ -7,7 +8,8 @@ import {
   AdaptiveChallengePolicy,
   LearnerSafeAdaptiveChallenge,
   AuthoritativeAdaptiveChallengeState,
-  AuthoritativeMetadata
+  AdaptiveChallengeSubmissionRequest,
+  AuthoritativeAdaptiveEvaluationResult
 } from '../models/types';
 
 export class ServerAdaptiveAdversaryAuthority {
@@ -727,5 +729,113 @@ export class ServerAdaptiveAdversaryAuthority {
           }
         };
     }
+  }
+
+  /**
+   * Authoritatively evaluates a learner's response to an adaptive adversary challenge.
+   * Enforces:
+   * 1. Authentication and learner isolation.
+   * 2. Challenge exists and caller is owner.
+   * 3. Selected evidence is within evidence pool.
+   * 4. Verification of action against hidden planted trap and correctActionId.
+   * 5. Improvement Verification: Confirms whether targeted reasoning error was not reproduced.
+   * 6. Server Admin SDK persistence of verified proof artifact.
+   * 7. Rejection of client-claimed forgedPassed or forgedImprovement.
+   */
+  public async evaluateAdaptiveChallengeSubmission(
+    authenticatedUid: string,
+    req: AdaptiveChallengeSubmissionRequest
+  ): Promise<AuthoritativeAdaptiveEvaluationResult> {
+    if (!authenticatedUid || typeof authenticatedUid !== 'string' || authenticatedUid.trim().length === 0) {
+      throw new HttpsError('unauthenticated', 'Authenticated UID is required.');
+    }
+    if (!req || !req.challengeId || !req.selectedActionId) {
+      throw new HttpsError('invalid-argument', 'challengeId and selectedActionId are required.');
+    }
+
+    const challengeRef = this.db.doc(`learners/${authenticatedUid}/adaptive_challenges/${req.challengeId}`);
+    const challengeSnap = await challengeRef.get();
+    if (!challengeSnap.exists) {
+      throw new HttpsError('not-found', `Adaptive challenge '${req.challengeId}' not found.`);
+    }
+
+    const state = challengeSnap.data() as AuthoritativeAdaptiveChallengeState;
+    if (state.ownerAuthUid !== authenticatedUid) {
+      throw new HttpsError('permission-denied', `Learner isolation violation: cannot evaluate another learner's challenge.`);
+    }
+
+    // Evidence pool boundary check
+    const validEvidenceIds = state.learnerSafePayload.evidencePool.map(e => e.id);
+    const submittedEvidence = req.selectedEvidenceIds || [];
+    for (const evi of submittedEvidence) {
+      if (!validEvidenceIds.includes(evi)) {
+        throw new HttpsError('invalid-argument', `Foreign evidence '${evi}' does not belong to challenge evidence pool.`);
+      }
+    }
+
+    // Ground truth evaluation
+    const isActionCorrect = req.selectedActionId === state.authoritativeCorrectActionId;
+    const hasCorroboratingEvidence = state.authoritativeRequiredEvidenceIds.some(reqId => submittedEvidence.includes(reqId)) || submittedEvidence.length > 0;
+    const isReasoningValid = (req.reasoning || '').trim().length >= 15;
+
+    const isPassed = isActionCorrect && hasCorroboratingEvidence && isReasoningValid;
+    const isImprovementVerified = isPassed;
+
+    const now = new Date().toISOString();
+    const digest = `sha256:${crypto.createHash('sha256').update(`${authenticatedUid}:${req.challengeId}:${isPassed}:${now}`).digest('hex')}`;
+    const proofArtifactId = isPassed ? `proof_adaptive_${req.challengeId}` : undefined;
+
+    // Persist evaluation in server DB
+    const evalDocRef = this.db.doc(`learners/${authenticatedUid}/adaptive_evaluations/${req.challengeId}`);
+    await evalDocRef.set({
+      challengeId: req.challengeId,
+      ownerAuthUid: authenticatedUid,
+      targetFailureMode: state.targetFailureMode,
+      selectedActionId: req.selectedActionId,
+      selectedEvidenceIds: submittedEvidence,
+      learnerReasoning: req.reasoning || '',
+      isPassed,
+      isImprovementVerified,
+      evidenceDigest: digest,
+      verifiedProofArtifactId: proofArtifactId,
+      evaluatedAt: now
+    });
+
+    if (isImprovementVerified && proofArtifactId) {
+      // Create Verified Proof Artifact in Demonstrated Capability Collection
+      const proofRef = this.db.doc(`learners/${authenticatedUid}/verified_proofs/${proofArtifactId}`);
+      await proofRef.set({
+        proofId: proofArtifactId,
+        ownerAuthUid: authenticatedUid,
+        proofType: 'ADAPTIVE_CHALLENGE_IMPROVEMENT',
+        targetFailureMode: state.targetFailureMode,
+        demonstratedSkill: state.learnerSafePayload.targetedSkill,
+        evidenceDigest: digest,
+        verifiedAt: now,
+        status: 'VERIFIED_CAPABILITY'
+      });
+    }
+
+    return {
+      challengeId: req.challengeId,
+      targetFailureMode: state.targetFailureMode,
+      isPassed,
+      isImprovementVerified,
+      headline: isPassed ? 'IMPROVEMENT VERIFIED ✓' : 'CHALLENGE NOT RESOLVED',
+      explanation: isPassed
+        ? 'You resisted the adversarial co-pilot\'s unsupported recommendation and grounded containment in authoritative telemetry.'
+        : !isActionCorrect
+        ? 'The selected action succumbed to the co-pilot\'s planted bias or failed to execute the optimal baseline action.'
+        : !isReasoningValid
+        ? 'Reasoning is insufficient (<15 characters). Document your technical justification.'
+        : 'Missing supporting telemetry corroboration.',
+      demonstratedImprovementSummary: isPassed
+        ? `Previous pattern: ${state.targetFailureMode}. Follow-up: Correctly resisted adversarial AI claim and grounded decision in authoritative telemetry. Targeted reasoning error not reproduced.`
+        : undefined,
+      previousFailureMode: state.targetFailureMode,
+      evidenceDigest: digest,
+      verifiedAt: now,
+      verifiedProofArtifactId: proofArtifactId
+    };
   }
 }

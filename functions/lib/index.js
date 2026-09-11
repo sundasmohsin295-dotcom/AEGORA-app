@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.evaluateFullLearnerState = exports.generateAuthoritativeNextMove = exports.evaluateAndGrantCyberTreasure = exports.calculateAuthoritativeReadiness = exports.evaluateAuthoritativeMastery = exports.evaluateAuthoritativeCapability = exports.verifyAndIngestEvidence = void 0;
+exports.evaluateAuthoritativeAdaptiveChallenge = exports.verifyAiClaimDecision = exports.generateAuthoritativeAdaptiveChallenge = exports.recordAuthoritativeFailurePatterns = exports.revenuecatWebhook = exports.getOrSyncSubscriptionState = exports.evaluateFullLearnerState = exports.generateAuthoritativeNextMove = exports.evaluateAndGrantCyberTreasure = exports.calculateAuthoritativeReadiness = exports.evaluateAuthoritativeMastery = exports.evaluateAuthoritativeCapability = exports.verifyAndIngestEvidence = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const authVerification_1 = require("./auth/authVerification");
@@ -43,6 +43,10 @@ const masteryAuthority_1 = require("./authority/masteryAuthority");
 const readinessAuthority_1 = require("./authority/readinessAuthority");
 const cyberTreasureAuthority_1 = require("./authority/cyberTreasureAuthority");
 const nextMoveAuthority_1 = require("./authority/nextMoveAuthority");
+const subscriptionAuthority_1 = require("./authority/subscriptionAuthority");
+const adaptiveAdversaryAuthority_1 = require("./authority/adaptiveAdversaryAuthority");
+const aiHallucinationAuthority_1 = require("./authority/aiHallucinationAuthority");
+const https_2 = require("firebase-functions/v2/https");
 // Initialize Firebase Admin SDK ONLY inside trusted server execution environment.
 // Never expose Admin credentials to clients or commit private keys.
 if (!admin.apps.length) {
@@ -54,6 +58,9 @@ const masteryAuthority = new masteryAuthority_1.ServerMasteryAuthority();
 const readinessAuthority = new readinessAuthority_1.ServerReadinessAuthority();
 const treasureAuthority = new cyberTreasureAuthority_1.ServerCyberTreasureAuthority();
 const nextMoveAuthority = new nextMoveAuthority_1.ServerNextMoveAuthority();
+const subscriptionAuthority = new subscriptionAuthority_1.SubscriptionAuthority();
+const adversaryAuthority = new adaptiveAdversaryAuthority_1.ServerAdaptiveAdversaryAuthority();
+const aiHallucinationAuthority = new aiHallucinationAuthority_1.ServerAiHallucinationAuthority(undefined, evidenceAuthority);
 /**
  * 1. SERVER-SIDE EVIDENCE INGESTION & VERIFICATION
  */
@@ -121,5 +128,76 @@ exports.evaluateFullLearnerState = (0, https_1.onCall)(async (request) => {
         readiness,
         nextMove
     };
+});
+/**
+ * 8. SERVER-AUTHORITATIVE SUBSCRIPTION STATE VERIFICATION
+ * Never trusts client-reported tier or entitlements. Derives state directly from
+ * authoritative Firestore record or verified server lookup.
+ */
+exports.getOrSyncSubscriptionState = (0, https_1.onCall)(async (request) => {
+    const authenticatedUid = authVerification_1.AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+    return await subscriptionAuthority.getAuthoritativeSubscription(authenticatedUid);
+});
+/**
+ * 9. REVENUECAT SERVER-TO-SERVER WEBHOOK HANDLER
+ * Idempotent, tamper-proof webhook processor that persists authoritative subscription state.
+ */
+exports.revenuecatWebhook = (0, https_2.onRequest)(async (req, res) => {
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
+        return;
+    }
+    const authHeader = req.headers.authorization || req.headers['x-revenuecat-webhook-auth'];
+    const result = await subscriptionAuthority.processRevenueCatWebhook(req.body, authHeader);
+    if (!result.success) {
+        if (result.reason === 'UNAUTHORIZED_WEBHOOK') {
+            res.status(401).json({ error: 'UNAUTHORIZED' });
+            return;
+        }
+        res.status(400).json({ error: result.reason || 'BAD_REQUEST' });
+        return;
+    }
+    res.status(200).json({ status: 'OK', processed: result.processed, reason: result.reason });
+});
+/**
+ * 10. SERVER-AUTHORITATIVE FAILURE PATTERNS
+ * Derives and records failure patterns strictly within caller's authenticated learner scope.
+ * Client claims of confidence or forged failure types are discarded.
+ */
+exports.recordAuthoritativeFailurePatterns = (0, https_1.onCall)(async (request) => {
+    const authenticatedUid = authVerification_1.AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+    const missionId = request.data?.missionId;
+    const detectedPatterns = request.data?.detectedPatterns || [];
+    const supportingEvidenceIds = request.data?.supportingEvidenceIds || [];
+    if (!missionId) {
+        throw new https_1.HttpsError('invalid-argument', 'missionId is required.');
+    }
+    return await evidenceAuthority.evaluateAndPersistFailurePatterns(authenticatedUid, missionId, detectedPatterns, supportingEvidenceIds);
+});
+/**
+ * 11. SERVER-AUTHORITATIVE ADAPTIVE CHALLENGE GENERATION
+ * Derives challenge strictly from caller's authoritative failure patterns.
+ * Client claims of difficulty, target failure mode, or trap states are rejected.
+ */
+exports.generateAuthoritativeAdaptiveChallenge = (0, https_1.onCall)(async (request) => {
+    const authenticatedUid = authVerification_1.AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+    return await adversaryAuthority.generateAuthoritativeAdaptiveChallenge(authenticatedUid);
+});
+/**
+ * 12. SERVER-AUTHORITATIVE AI HALLUCINATION & CLAIM VERIFICATION
+ * Client is NEVER authoritative for claim verification, hidden trap state, or ground truth.
+ * Validates learner accept/challenge against authoritative mission evidence.
+ */
+exports.verifyAiClaimDecision = (0, https_1.onCall)(async (request) => {
+    const authenticatedUid = authVerification_1.AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+    return await aiHallucinationAuthority.verifyAiClaimDecision(authenticatedUid, request.data);
+});
+/**
+ * 13. SERVER-AUTHORITATIVE ADAPTIVE CHALLENGE EVALUATION & IMPROVEMENT PROOF
+ * Client cannot forge passed state or verified improvement. Evaluates submission against authoritative ground truth.
+ */
+exports.evaluateAuthoritativeAdaptiveChallenge = (0, https_1.onCall)(async (request) => {
+    const authenticatedUid = authVerification_1.AuthVerificationService.verifyCaller(request, request.data?.targetAuthUid);
+    return await adversaryAuthority.evaluateAdaptiveChallengeSubmission(authenticatedUid, request.data);
 });
 //# sourceMappingURL=index.js.map

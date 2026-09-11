@@ -75,6 +75,9 @@ class AuthVerificationService {
             throw new https_1.HttpsError('unauthenticated', `ID Token verification failed: ${err.message}`);
         }
     }
+    static generateDigest(rawString) {
+        return 'sha256:' + crypto.createHash('sha256').update(rawString, 'utf8').digest('hex');
+    }
     /**
      * Evaluates SHA-256 integrity digest for evidence payload.
      * NOTE: SHA-256 IS STRICTLY INTEGRITY/TAMPER-DETECTION.

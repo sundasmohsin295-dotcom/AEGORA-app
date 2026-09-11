@@ -1,6 +1,10 @@
 import {
   MissionState,
-  MissionValidationOutcome
+  MissionValidationOutcome,
+  LearnerFailureAutopsy,
+  LearnerSafeAdaptiveChallenge,
+  AuthoritativeAdaptiveEvaluationResult,
+  ClientSafeAiVerificationResult
 } from '../types/platform';
 
 export const SUSPICIOUS_LOGIN_MISSION: MissionState = {
@@ -190,18 +194,7 @@ export function evaluateWebAiClaimChallenge(
   decision: 'ACCEPT_AI' | 'CHALLENGE_AI',
   selectedEvidenceIds: string[],
   reasoning: string = ''
-): {
-  attemptId: string;
-  claimId: string;
-  outcome: 'AI_FAILURE_DETECTED' | 'AI_CLAIM_NOT_VERIFIED' | 'AI_CLAIM_CORRECTLY_ACCEPTED' | 'INCORRECT_AI_CHALLENGE';
-  isAiFailureDetected: boolean;
-  evidenceVerified: boolean;
-  headline: string;
-  explanation: string;
-  detectedFailurePattern?: string;
-  evidenceDigest: string;
-  verifiedAt: string;
-} {
+): ClientSafeAiVerificationResult {
   const validEvidencePool = ['tl_01', 'tl_02', 'tl_03', 'tl_04'];
   for (const evi of selectedEvidenceIds) {
     if (!validEvidencePool.includes(evi)) {
@@ -229,6 +222,17 @@ export function evaluateWebAiClaimChallenge(
       };
     } else {
       // Learner incorrectly accepted the unsupported claim
+      const failureAutopsy: LearnerFailureAutopsy = {
+        yourDecision: 'Accepted AI Claim (Recommended Action: Blacklist 185.91.0.0/16 and close incident ticket)',
+        aiClaim: 'The login is confirmed malicious because the source IP 185.91.x.x is associated with the attack.',
+        evidenceYouUsed: selectedEvidenceIds,
+        evidenceThatMattered: ['tl_01', 'tl_02', 'tl_03'],
+        whatWentWrong: 'Evidence Overweighting: You accepted the AI\'s conclusion without verifying whether IP 185.91.x.x actually appeared anywhere in the supplied authentication telemetry.',
+        canonicalFailureMode: 'EVIDENCE_OVERWEIGHTING',
+        betterReasoning: 'Correlate each claimed IOC against raw telemetry logs (Event ID 4624/4625) before approving containment actions.',
+        nextChallengeTitle: 'Targeted follow-up unlocked: Threat Intel Anchor vs System Truth',
+        nextChallengeId: 'chal_evidence_overweighting'
+      };
       return {
         attemptId,
         claimId,
@@ -238,6 +242,7 @@ export function evaluateWebAiClaimChallenge(
         headline: 'AI CLAIM NOT VERIFIED',
         explanation: 'Evidence does not support the analyst\'s conclusion. Telemetry does not establish that attribution.',
         detectedFailurePattern: 'EVIDENCE_OVERWEIGHTING',
+        failureAutopsy,
         evidenceDigest,
         verifiedAt: now
       };
@@ -258,6 +263,17 @@ export function evaluateWebAiClaimChallenge(
         verifiedAt: now
       };
     } else {
+      const failureAutopsy: LearnerFailureAutopsy = {
+        yourDecision: 'Challenged AI Claim (Questioned impossible travel finding)',
+        aiClaim: 'The sequential logins from Moscow and Austin within 7 minutes represent an impossible travel anomaly.',
+        evidenceYouUsed: selectedEvidenceIds,
+        evidenceThatMattered: ['tl_03', 'tl_04'],
+        whatWentWrong: 'Insufficient Correlation: You failed to correlate the timestamp delta (7 minutes) with geographic distance (~9,000 km) between successive Event ID 4624 logons.',
+        canonicalFailureMode: 'INSUFFICIENT_CORRELATION',
+        betterReasoning: 'Calculate geographic travel velocity across sequential authentications for the same user identity before dismissing anomalies.',
+        nextChallengeTitle: 'Targeted follow-up unlocked: Cross-Host Lateral Correlation',
+        nextChallengeId: 'chal_insufficient_correlation'
+      };
       return {
         attemptId,
         claimId,
@@ -267,6 +283,7 @@ export function evaluateWebAiClaimChallenge(
         headline: 'INCORRECT CHALLENGE',
         explanation: 'The AI analyst claim was rigorously supported by the telemetry events.',
         detectedFailurePattern: 'INSUFFICIENT_CORRELATION',
+        failureAutopsy,
         evidenceDigest,
         verifiedAt: now
       };
@@ -274,5 +291,119 @@ export function evaluateWebAiClaimChallenge(
   }
 
   throw new Error(`Unknown claim '${claimId}'`);
+}
+
+/**
+ * Targeted Adaptive Challenge for EVIDENCE_OVERWEIGHTING weakness recovery.
+ */
+export const TARGETED_ADAPTIVE_CHALLENGE_OVERWEIGHTING: LearnerSafeAdaptiveChallenge = {
+  challengeId: 'chal_evidence_overweighting',
+  targetFailureMode: 'EVIDENCE_OVERWEIGHTING',
+  challengeTier: 'OBSERVED',
+  weaknessNarrative: 'Tendency to overweight external intelligence/claims over concrete local telemetry.',
+  targetedSkill: 'Threat Intel Anchor vs System Telemetry Correlation',
+  scenarioTitle: 'Threat Intel Anchor vs System Truth',
+  scenarioBriefing: 'An external threat feed flags an IP address as an active APT command-and-control server. The co-pilot recommends immediate domain-wide credential revoking and host blacklisting based exclusively on this report.',
+  aiAnalystClaim: {
+    analystName: 'Sentinel-CoPilot AI',
+    claimText: 'External threat intel matches IP 198.51.100.99 with APT29. Blacklist all host routing and revoke enterprise domain tokens immediately.',
+    assertedEvidenceIds: ['evi_threat_feed_01'],
+    recommendedAction: 'Immediate enterprise-wide containment and user lockout.',
+    confidencePercentage: 96
+  },
+  evidencePool: [
+    {
+      id: 'evi_feed_01',
+      timestamp: '2026-09-10 10:00:00 UTC',
+      source: 'Global Threat Intelligence Feed',
+      eventType: 'THREAT_FEED_ALERT',
+      summary: 'Public advisory reports IP 198.51.100.99 as suspected scanner 14 days ago.'
+    },
+    {
+      id: 'evi_proxy_01',
+      timestamp: '2026-09-10 10:05:00 UTC',
+      source: 'Corporate Web Gateway Proxy',
+      eventType: 'OUTBOUND_HTTP_LOG',
+      summary: 'Host WIN-10-DEV initiated outbound GET request to 198.51.100.99:80 - returned HTTP 404 (0 bytes transferred).'
+    },
+    {
+      id: 'evi_dns_01',
+      timestamp: '2026-09-10 10:05:02 UTC',
+      source: 'Internal DNS Resolver',
+      eventType: 'DNS_QUERY',
+      summary: 'Standard telemetry update check for local developer utility tool.'
+    }
+  ],
+  actionOptions: [
+    {
+      id: 'act_blind_blacklist',
+      label: 'Execute Domain-Wide Lockout as Recommended by AI',
+      description: 'Accept the co-pilot\'s high confidence attribution and trigger emergency credential revoking.'
+    },
+    {
+      id: 'act_correlate_telemetry',
+      label: 'Correlate Local Telemetry First (Reject False Positive Escalation)',
+      description: 'Audit proxy 404 zero-transfer status; classify as non-malicious connectivity check and avoid disruptive outage.'
+    },
+    {
+      id: 'act_ignore_completely',
+      label: 'Close Alert and Delete Logs',
+      description: 'Ignore both threat intelligence feed and proxy events without documentation.'
+    }
+  ]
+};
+
+/**
+ * Authoritative evaluation of the targeted adaptive adversary challenge.
+ */
+export function evaluateWebAdaptiveChallengeSubmission(
+  challengeId: string,
+  selectedActionId: string,
+  selectedEvidenceIds: string[],
+  reasoning: string = ''
+): AuthoritativeAdaptiveEvaluationResult {
+  if (challengeId !== 'chal_evidence_overweighting') {
+    throw new Error(`Adaptive challenge '${challengeId}' not found.`);
+  }
+
+  const validEvidencePool = ['evi_feed_01', 'evi_proxy_01', 'evi_dns_01'];
+  for (const evi of selectedEvidenceIds) {
+    if (!validEvidencePool.includes(evi)) {
+      throw new Error(`Foreign evidence '${evi}' rejected.`);
+    }
+  }
+
+  const isActionCorrect = selectedActionId === 'act_correlate_telemetry';
+  const hasCorroboratingEvidence = selectedEvidenceIds.includes('evi_proxy_01') || selectedEvidenceIds.length > 0;
+  const isReasoningValid = reasoning.trim().length >= 15;
+
+  const isPassed = isActionCorrect && hasCorroboratingEvidence && isReasoningValid;
+  const isImprovementVerified = isPassed;
+
+  const now = new Date().toISOString();
+  const digest = `sha256:aegora_web_adaptive_eval_${challengeId}_${Date.now()}`;
+  const proofArtifactId = isPassed ? `proof_adaptive_${challengeId}` : undefined;
+
+  return {
+    challengeId,
+    targetFailureMode: 'EVIDENCE_OVERWEIGHTING',
+    isPassed,
+    isImprovementVerified,
+    headline: isPassed ? 'IMPROVEMENT VERIFIED ✓' : 'CHALLENGE NOT RESOLVED',
+    explanation: isPassed
+      ? 'You resisted the adversarial co-pilot\'s unsupported recommendation and grounded containment in authoritative telemetry.'
+      : !isActionCorrect
+      ? 'The selected action succumbed to the co-pilot\'s planted bias or failed to execute the optimal baseline action.'
+      : !isReasoningValid
+      ? 'Reasoning is insufficient (<15 characters). Document your technical justification.'
+      : 'Missing supporting telemetry corroboration.',
+    demonstratedImprovementSummary: isPassed
+      ? 'Previous pattern: EVIDENCE_OVERWEIGHTING. Follow-up: Correctly resisted adversarial AI claim and grounded decision in authoritative telemetry. Targeted reasoning error not reproduced.'
+      : undefined,
+    previousFailureMode: 'EVIDENCE_OVERWEIGHTING',
+    evidenceDigest: digest,
+    verifiedAt: now,
+    verifiedProofArtifactId: proofArtifactId
+  };
 }
 

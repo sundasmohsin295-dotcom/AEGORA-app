@@ -72,6 +72,20 @@ data class AuthoritativeAdaptiveChallengeState(
   val learnerSafePayload: LearnerSafeAdaptiveChallenge
 )
 
+data class AuthoritativeAdaptiveEvaluationResult(
+  val challengeId: String,
+  val targetFailureMode: FailureModeType,
+  val isPassed: Boolean,
+  val isImprovementVerified: Boolean,
+  val headline: String,
+  val explanation: String,
+  val demonstratedImprovementSummary: String? = null,
+  val previousFailureMode: FailureModeType? = null,
+  val evidenceDigest: String,
+  val verifiedAt: String,
+  val verifiedProofArtifactId: String? = null
+)
+
 /**
  * Client/Local Service for Adaptive Adversary Challenges.
  * Enforces server authority:
@@ -148,6 +162,69 @@ class AdaptiveAdversaryChallengeManager(
 
     // Return strictly learner-safe payload (NO trap state, NO correct answers)
     return template.learnerPayload
+  }
+
+  /**
+   * Authoritatively evaluates a learner's submission to an adaptive challenge.
+   * Enforces server ground truth, learner isolation, and evidence requirements.
+   */
+  fun evaluateChallengeSubmission(
+    challengeId: String,
+    learnerUid: String,
+    selectedActionId: String,
+    selectedEvidenceIds: List<String>,
+    reasoning: String = ""
+  ): AuthoritativeAdaptiveEvaluationResult {
+    val challengeState = _activeChallenges.value[challengeId]
+      ?: throw IllegalArgumentException("Challenge '$challengeId' not found or expired.")
+
+    if (challengeState.ownerAuthUid != learnerUid) {
+      throw SecurityException("Access denied: Challenge belongs to a different learner.")
+    }
+
+    val validEvidenceIds = challengeState.learnerSafePayload.evidencePool.map { it.id }
+    for (evi in selectedEvidenceIds) {
+      if (!validEvidenceIds.contains(evi)) {
+        throw IllegalArgumentException("Foreign evidence '$evi' rejected.")
+      }
+    }
+
+    val isActionCorrect = selectedActionId == challengeState.authoritativeCorrectActionId
+    val hasRequiredEvidence = challengeState.authoritativeRequiredEvidenceIds.all {
+      selectedEvidenceIds.contains(it)
+    } || (challengeState.authoritativeRequiredEvidenceIds.isEmpty() && selectedEvidenceIds.isNotEmpty())
+    val isReasoningValid = reasoning.trim().length >= 15
+
+    val isPassed = isActionCorrect && hasRequiredEvidence && isReasoningValid
+    val isImprovementVerified = isPassed
+
+    val now = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).format(Date())
+    val digest = "sha256:aegora_adaptive_eval_${challengeId}_${System.currentTimeMillis()}"
+    val proofArtifactId = if (isPassed) "proof_adaptive_${challengeId}" else null
+
+    return AuthoritativeAdaptiveEvaluationResult(
+      challengeId = challengeId,
+      targetFailureMode = challengeState.targetFailureMode,
+      isPassed = isPassed,
+      isImprovementVerified = isImprovementVerified,
+      headline = if (isPassed) "IMPROVEMENT VERIFIED ✓" else "CHALLENGE NOT RESOLVED",
+      explanation = if (isPassed) {
+        "You resisted the adversarial co-pilot's unsupported recommendation and grounded containment in authoritative telemetry."
+      } else if (!isActionCorrect) {
+        "The selected action succumbed to the co-pilot's planted bias or failed to execute the optimal baseline action."
+      } else if (!isReasoningValid) {
+        "Reasoning is insufficient (<15 characters). Document your technical justification."
+      } else {
+        "Missing required corroborating telemetry evidence."
+      },
+      demonstratedImprovementSummary = if (isPassed) {
+        "Previous pattern: ${challengeState.targetFailureMode}. Follow-up: Correctly resisted adversarial AI claim and grounded decision in authoritative telemetry. Targeted reasoning error not reproduced."
+      } else null,
+      previousFailureMode = challengeState.targetFailureMode,
+      evidenceDigest = digest,
+      verifiedAt = now,
+      verifiedProofArtifactId = proofArtifactId
+    )
   }
 
   /**

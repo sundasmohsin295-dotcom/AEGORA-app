@@ -384,6 +384,18 @@ enum class VerificationOutcomeStatus {
   INCORRECT_AI_CHALLENGE
 }
 
+data class LearnerFailureAutopsy(
+  val yourDecision: String,
+  val aiClaim: String,
+  val evidenceYouUsed: List<String>,
+  val evidenceThatMattered: List<String>,
+  val whatWentWrong: String,
+  val canonicalFailureMode: FailureModeType,
+  val betterReasoning: String,
+  val nextChallengeTitle: String,
+  val nextChallengeId: String? = null
+)
+
 data class ClientSafeAiVerificationResult(
   val attemptId: String,
   val claimId: String,
@@ -393,6 +405,7 @@ data class ClientSafeAiVerificationResult(
   val headline: String,
   val explanation: String,
   val detectedFailurePattern: FailureModeType? = null,
+  val failureAutopsy: LearnerFailureAutopsy? = null,
   val evidenceDigest: String,
   val verifiedAt: String
 )
