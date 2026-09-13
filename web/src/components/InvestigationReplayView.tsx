@@ -42,13 +42,13 @@ export const InvestigationReplayView: React.FC<InvestigationReplayViewProps> = (
       {/* Header */}
       <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Clock size={16} color="var(--accent-cyan)" />
+          <Clock size={16} color="var(--color-home)" />
           <span
             style={{
               fontSize: '11px',
               fontFamily: 'var(--font-mono)',
               fontWeight: 800,
-              color: 'var(--accent-cyan)'
+              color: 'var(--color-home)'
             }}
           >
             INVESTIGATION REPLAY // COGNITIVE TRACE
@@ -86,7 +86,7 @@ export const InvestigationReplayView: React.FC<InvestigationReplayViewProps> = (
               fontSize: '11px',
               fontFamily: 'var(--font-mono)',
               fontWeight: 800,
-              color: 'var(--accent-cyan)',
+              color: 'var(--color-home)',
               marginBottom: '12px'
             }}
           >
@@ -157,7 +157,7 @@ export const InvestigationReplayView: React.FC<InvestigationReplayViewProps> = (
               fontSize: '11px',
               fontFamily: 'var(--font-mono)',
               fontWeight: 800,
-              color: 'var(--accent-emerald)',
+              color: 'var(--color-practice)',
               marginBottom: '12px'
             }}
           >
@@ -173,8 +173,8 @@ export const InvestigationReplayView: React.FC<InvestigationReplayViewProps> = (
                   style={{
                     padding: '10px',
                     borderRadius: 'var(--radius-sm)',
-                    backgroundColor: wasUsed ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-secondary)',
-                    border: wasUsed ? '1px solid var(--accent-emerald)' : '1px solid var(--border-subtle)',
+                    backgroundColor: wasUsed ? 'rgba(53, 211, 154, 0.08)' : 'var(--bg-secondary)',
+                    border: wasUsed ? '1px solid var(--color-practice)' : '1px solid var(--border-subtle)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between'
@@ -186,7 +186,7 @@ export const InvestigationReplayView: React.FC<InvestigationReplayViewProps> = (
                         fontSize: '11px',
                         fontFamily: 'var(--font-mono)',
                         fontWeight: 700,
-                        color: wasUsed ? 'var(--accent-emerald)' : 'var(--text-primary)'
+                        color: wasUsed ? 'var(--color-practice)' : 'var(--text-primary)'
                       }}
                     >
                       {eviId}
@@ -204,10 +204,10 @@ export const InvestigationReplayView: React.FC<InvestigationReplayViewProps> = (
                         fontSize: '9px',
                         fontFamily: 'var(--font-mono)',
                         fontWeight: 800,
-                        color: 'var(--accent-emerald)',
+                        color: 'var(--color-practice)',
                         padding: '2px 6px',
                         borderRadius: '2px',
-                        backgroundColor: 'rgba(16, 185, 129, 0.15)'
+                        backgroundColor: 'rgba(53, 211, 154, 0.15)'
                       }}
                     >
                       UTILIZED ✓
@@ -245,13 +245,13 @@ export const InvestigationReplayView: React.FC<InvestigationReplayViewProps> = (
         <div
           style={{
             backgroundColor: divergence.hasDivergence
-              ? 'rgba(239, 68, 68, 0.06)'
-              : 'rgba(16, 185, 129, 0.06)',
+              ? 'rgba(255, 92, 103, 0.06)'
+              : 'rgba(53, 211, 154, 0.06)',
             padding: '16px',
             borderRadius: 'var(--radius-sm)',
             border: divergence.hasDivergence
-              ? '1px solid var(--accent-rose)'
-              : '1px solid var(--accent-emerald)',
+              ? '1px solid var(--color-investigate)'
+              : '1px solid var(--color-practice)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between'
@@ -260,16 +260,16 @@ export const InvestigationReplayView: React.FC<InvestigationReplayViewProps> = (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               {divergence.hasDivergence ? (
-                <GitFork size={16} color="var(--accent-rose)" />
+                <GitFork size={16} color="var(--color-investigate)" />
               ) : (
-                <CheckCircle2 size={16} color="var(--accent-emerald)" />
+                <CheckCircle2 size={16} color="var(--color-practice)" />
               )}
               <div
                 style={{
                   fontSize: '11px',
                   fontFamily: 'var(--font-mono)',
                   fontWeight: 800,
-                  color: divergence.hasDivergence ? 'var(--accent-rose)' : 'var(--accent-emerald)'
+                  color: divergence.hasDivergence ? 'var(--color-investigate)' : 'var(--color-practice)'
                 }}
               >
                 WHERE YOUR REASONING DIVERGED
@@ -297,7 +297,7 @@ export const InvestigationReplayView: React.FC<InvestigationReplayViewProps> = (
                 lineHeight: 1.4
               }}
             >
-              <strong style={{ color: 'var(--accent-cyan)' }}>Optimal Forensic Path:</strong>
+              <strong style={{ color: 'var(--color-home)' }}>Optimal Forensic Path:</strong>
               <div style={{ marginTop: '4px', color: 'var(--text-secondary)' }}>
                 {divergence.correctReasoningPath}
               </div>

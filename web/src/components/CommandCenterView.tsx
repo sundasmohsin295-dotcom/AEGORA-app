@@ -1,529 +1,608 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Terminal,
-  Shield,
-  Activity,
   ArrowRight,
-  TrendingUp,
-  Award,
+  Shield,
+  Play,
+  CheckCircle2,
   AlertTriangle,
-  Lock,
-  Cpu,
-  Target,
-  ExternalLink,
-  ChevronRight
+  Sparkles,
+  Award,
+  ChevronRight,
+  TrendingUp,
+  FileCheck2,
+  Clock
 } from 'lucide-react';
-import { WebCapabilityEngine } from '../core/intelligence/DemonstratedCapabilityEngine';
 import { AuthState } from '../core/auth/CrossPlatformAuthClient';
+import { AppView } from './NavigationSidebar';
 
 interface CommandCenterViewProps {
   authState: AuthState;
   onLaunchMission: (missionId: string) => void;
   onViewPassport: () => void;
   onOpenSecurityModal: () => void;
+  onNavigateSection?: (section: AppView) => void;
 }
 
 export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
   authState,
   onLaunchMission,
   onViewPassport,
-  onOpenSecurityModal
+  onOpenSecurityModal,
+  onNavigateSection
 }) => {
-  const clusters = WebCapabilityEngine.getAuthoritativeClusters();
-  const nextMove = WebCapabilityEngine.getPredictiveNextMove();
-  const careerSignal = WebCapabilityEngine.getCareerSignal();
-  const cyberTreasure = WebCapabilityEngine.getCyberTreasure();
+  const [activeTab, setActiveTab] = useState<'all' | 'verified' | 'remediated'>('all');
+  const [showNextMoveWhy, setShowNextMoveWhy] = useState(false);
 
-  const operatorId = authState.identity
+  const rawId = authState.identity
     ? authState.identity.canonicalLearnerId
-    : 'operator_guest_mode';
+    : 'Sundas';
+  const displayName = rawId.includes('@')
+    ? rawId.split('@')[0]
+    : rawId.startsWith('op_')
+    ? 'Sundas'
+    : rawId;
+
+  // 4–5 Compact Metrics
+  const CAPABILITY_METRICS = [
+    { label: 'Investigation', value: 82, color: 'var(--color-investigate)' },
+    { label: 'Evidence Reasoning', value: 76, color: 'var(--color-practice)' },
+    { label: 'AI Judgment', value: 71, color: 'var(--color-ai)' },
+    { label: 'Decision Quality', value: 74, color: 'var(--color-home)' },
+    { label: 'Readiness', value: 68, color: 'var(--color-proof)' }
+  ];
+
+  // 2–4 Important Active Work items
+  const ACTIVE_WORK = [
+    {
+      id: 'work_mission',
+      tag: 'ACTIVE MISSION',
+      tagColor: 'var(--color-investigate)',
+      title: 'Suspicious Login: Host vs. Network Telemetry',
+      subtitle: 'Corroborate Sysmon ID 3 with Suricata external alert',
+      actionLabel: 'Resume',
+      onClick: () => onLaunchMission('mission_suspicious_login_reality')
+    },
+    {
+      id: 'work_adversary',
+      tag: 'ADAPTIVE CHALLENGE',
+      tagColor: 'var(--color-error)',
+      title: 'Detect Premature Conclusion in Auth Logs',
+      subtitle: 'Catch flawed AI attributing external compromise prematurely',
+      actionLabel: 'Challenge',
+      onClick: () => onNavigateSection?.('adversary')
+    },
+    {
+      id: 'work_proof',
+      tag: 'PENDING PROOF',
+      tagColor: 'var(--color-proof)',
+      title: 'Authentication Triage Cryptographic Digest',
+      subtitle: 'Ready for cryptographic signing into verified dossier',
+      actionLabel: 'Sign & View',
+      onClick: () => onNavigateSection?.('verified_proof')
+    },
+    {
+      id: 'work_skill',
+      tag: 'RECOMMENDED SKILL',
+      tagColor: 'var(--color-learn)',
+      title: 'Active Directory Kerberos Ticket Anomalies',
+      subtitle: 'Event ID 4624 Type 3 & anomalous ticket requests',
+      actionLabel: 'Explore',
+      onClick: () => onNavigateSection?.('learn')
+    }
+  ];
+
+  // Recent Activity Timeline
+  const RECENT_ACTIVITY = [
+    {
+      id: 'act_1',
+      title: 'Evidence Verified',
+      detail: 'Sysmon Event ID 3 correlation confirmed against IP 198.51.100.24',
+      status: 'VERIFIED',
+      statusColor: 'var(--color-success)',
+      time: '2 hours ago'
+    },
+    {
+      id: 'act_2',
+      title: 'AI Failure Detected',
+      detail: 'Caught AI analyst Premature Conclusion asserting external breach without payload confirmation',
+      status: 'DEFENDED',
+      statusColor: 'var(--color-ai)',
+      time: '5 hours ago'
+    },
+    {
+      id: 'act_3',
+      title: 'Capability Improvement Verified',
+      detail: '+6% Decision Quality demonstrated in Active Defense cluster',
+      status: '+6% GAIN',
+      statusColor: 'var(--color-home)',
+      time: 'Yesterday'
+    }
+  ];
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px' }}>
-      {/* 1. OPERATOR HUD */}
+    <div style={{ maxWidth: '980px', margin: '0 auto', padding: '28px 24px 64px 24px' }}>
+      {/* 1. WELCOME / STATUS — Small, Compact */}
       <section
         style={{
-          padding: '20px',
-          borderRadius: 'var(--radius-md)',
-          backgroundColor: 'var(--bg-secondary)',
-          border: '1px solid var(--border-subtle)',
-          marginBottom: '24px',
           display: 'flex',
-          flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '16px'
+          flexWrap: 'wrap',
+          gap: '12px',
+          paddingBottom: '20px',
+          borderBottom: '1px solid var(--border-subtle)',
+          marginBottom: '24px'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div>
           <div
             style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: 'var(--radius-sm)',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--accent-cyan)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent-cyan)'
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)'
             }}
           >
-            <Terminal size={24} />
+            GOOD EVENING, {displayName.toUpperCase()}
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                OPERATOR //
-              </span>
-              <span style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
-                {operatorId}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '2px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                Target: <strong>{careerSignal.targetRole}</strong>
-              </span>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>•</span>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--accent-emerald)',
-                  fontWeight: 600
-                }}
-              >
-                PLATFORM CONTINUITY ACTIVE
-              </span>
-            </div>
+          <div
+            style={{
+              fontSize: '15px',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              marginTop: '2px'
+            }}
+          >
+            Your next capability target is ready.
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-              READINESS
-            </div>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--accent-cyan)' }}>
-              {careerSignal.currentReadinessScore}%
-            </div>
-          </div>
-          <div style={{ width: '1px', height: '32px', backgroundColor: 'var(--border-subtle)' }} />
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-              VERIFIED PROOFS
-            </div>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--accent-emerald)' }}>
-              {careerSignal.verifiedProofCount}
-            </div>
-          </div>
-          <div style={{ width: '1px', height: '32px', backgroundColor: 'var(--border-subtle)' }} />
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-              EST. DAYS
-            </div>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--accent-amber)' }}>
-              {careerSignal.daysToReadiness}d
-            </div>
-          </div>
-        </div>
+        <button
+          onClick={() => onLaunchMission('mission_suspicious_login_reality')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            backgroundColor: 'var(--bg-tertiary)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '13px',
+            fontWeight: 600,
+            color: 'var(--text-primary)'
+          }}
+        >
+          <span>Continue Mission</span>
+          <ArrowRight size={14} color="var(--color-home)" />
+        </button>
       </section>
 
-      {/* 2. DOMINANT NEXT MOVE HERO // SECTION 14 CYBER REALITY SPECIFICATION */}
+      {/* 2. NEXT MOVE — ONE DOMINANT ACTIONABLE RECOMMENDATION */}
       <section
         style={{
-          padding: '24px',
-          borderRadius: 'var(--radius-md)',
-          backgroundColor: 'var(--bg-card)',
-          border: '1px solid var(--accent-cyan)',
-          boxShadow: 'var(--shadow-md)',
+          backgroundColor: 'var(--bg-secondary)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '24px 28px',
+          boxShadow: 'var(--shadow-sm)',
           marginBottom: '28px',
           position: 'relative',
           overflow: 'hidden'
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
-          <div style={{ flex: '1 1 540px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <span
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '10px'
+          }}
+        >
+          <div
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--color-home)'
+            }}
+          />
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--color-home)'
+            }}
+          >
+            NEXT MOVE
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '20px'
+          }}
+        >
+          <div style={{ flex: '1 1 480px' }}>
+            <h2
+              style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                marginBottom: '6px'
+              }}
+            >
+              Evidence Validation: Detect Unsupported AI Claims
+            </h2>
+
+            {/* Innovation C: Collapsible Contextual "Why This?" Toggle */}
+            <div>
+              <button
+                onClick={() => setShowNextMoveWhy(!showNextMoveWhy)}
                 style={{
-                  fontSize: '11px',
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: 700,
-                  padding: '2px 8px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--accent-cyan-subtle)',
-                  color: 'var(--accent-cyan)',
-                  border: '1px solid var(--accent-cyan)'
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: 'var(--color-home)',
+                  padding: '2px 0'
                 }}
               >
-                FLAGSHIP EXPERIENCE // CYBER REALITY
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                GATE: {nextMove.primaryGateTargeted}
-              </span>
-            </div>
+                <span>{showNextMoveWhy ? 'Hide Reason' : 'Why this?'}</span>
+                <ChevronRight
+                  size={12}
+                  style={{
+                    transform: showNextMoveWhy ? 'rotate(90deg)' : 'none',
+                    transition: 'transform 0.15s ease'
+                  }}
+                />
+              </button>
 
-            <h1 style={{ fontSize: '32px', fontWeight: 900, marginBottom: '6px', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-              CYBER REALITY
-            </h1>
-            <p style={{ fontSize: '15px', color: 'var(--accent-cyan)', fontWeight: 600, marginBottom: '16px', lineHeight: 1.4 }}>
-              Investigate real security situations with AI. Learn when to trust it — and when to challenge it.
-            </p>
-
-            <div style={{ padding: '14px 18px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
-              <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                PRIMARY MISSION
-              </div>
-              <h2 style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
-                SUSPICIOUS LOGIN INVESTIGATION
-              </h2>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>
-                {nextMove.reason}
-              </p>
-            </div>
-
-            {/* Section 14 Triad: Current Capability, Current Weakness, Next Move */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
-              <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  CURRENT CAPABILITY
+              {showNextMoveWhy && (
+                <div
+                  style={{
+                    marginTop: '6px',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: 'var(--bg-primary)',
+                    border: '1px solid var(--border-subtle)',
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.4
+                  }}
+                >
+                  <strong style={{ color: 'var(--text-primary)' }}>Recommendation logic:</strong> Targets the capability with the highest current improvement value (+14% Decision Quality projected).
                 </div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-cyan)', marginTop: '3px' }}>
-                  AI-Augmented Investigation
-                </div>
-              </div>
-
-              <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  CURRENT WEAKNESS
-                </div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-amber)', marginTop: '3px' }}>
-                  Evidence Correlation
-                </div>
-              </div>
-
-              <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  NEXT MOVE
-                </div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-emerald)', marginTop: '3px' }}>
-                  Challenge the AI with evidence
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
           <button
             onClick={() => onLaunchMission('mission_suspicious_login_reality')}
             style={{
-              padding: '16px 32px',
-              backgroundColor: 'var(--accent-cyan)',
-              color: '#0a0e17',
-              fontWeight: 800,
-              fontSize: '15px',
-              borderRadius: 'var(--radius-sm)',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '10px',
-              alignSelf: 'center',
-              boxShadow: 'var(--shadow-md)',
+              padding: '12px 24px',
+              backgroundColor: 'var(--color-home)',
+              color: '#FFFFFF',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '14px',
+              fontWeight: 700,
+              boxShadow: '0 2px 8px rgba(77, 141, 255, 0.28)',
               cursor: 'pointer',
-              border: 'none'
+              flexShrink: 0
             }}
           >
-            <span>START MISSION</span>
-            <ArrowRight size={20} />
+            <span>EXECUTE</span>
+            <ArrowRight size={16} />
           </button>
         </div>
       </section>
 
-      {/* 2-COLUMN MAIN CONTENT: Cyber Twin (Left) + Career & Treasure (Right) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '24px' }}>
-        {/* LEFT COLUMN: CYBER TWIN 6.0 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Cyber Twin Header Card */}
-          <div
+      {/* 3. CAPABILITY SNAPSHOT — 4–5 COMPACT METRICS MAX */}
+      <section
+        style={{
+          backgroundColor: 'var(--bg-secondary)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '20px 24px',
+          marginBottom: '28px'
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '16px'
+          }}
+        >
+          <span
             style={{
-              padding: '20px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)'
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Cpu size={20} color="var(--accent-cyan)" />
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>
-                  Cyber Twin 6.0 // Authoritative Cognitive Clusters
-                </h3>
-              </div>
-              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                7-GATE RUBRIC VERIFIED
-              </span>
-            </div>
-
-            {/* 4 Authoritative Clusters */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {clusters.map((cluster, i) => (
-                <div
-                  key={i}
-                  style={{
-                    padding: '14px',
-                    borderRadius: 'var(--radius-sm)',
-                    backgroundColor: 'var(--bg-tertiary)',
-                    border:
-                      cluster.status === 'BOTTLENECK'
-                        ? '1px solid var(--accent-amber)'
-                        : '1px solid var(--border-subtle)'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '14px' }}>{cluster.name}</span>
-                      {cluster.status === 'BOTTLENECK' && (
-                        <span
-                          style={{
-                            fontSize: '10px',
-                            fontFamily: 'var(--font-mono)',
-                            padding: '1px 6px',
-                            borderRadius: 'var(--radius-sm)',
-                            backgroundColor: 'var(--accent-amber-subtle)',
-                            color: 'var(--accent-amber)',
-                            fontWeight: 700
-                          }}
-                        >
-                          BOTTLENECK
-                        </span>
-                      )}
-                    </div>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontWeight: 700,
-                        fontSize: '14px',
-                        color:
-                          cluster.score >= 80
-                            ? 'var(--accent-emerald)'
-                            : cluster.score >= 70
-                            ? 'var(--accent-cyan)'
-                            : 'var(--accent-amber)'
-                      }}
-                    >
-                      {cluster.score}/100
-                    </span>
-                  </div>
-
-                  {/* Progress Meter */}
-                  <div
-                    style={{
-                      height: '6px',
-                      borderRadius: '3px',
-                      backgroundColor: 'var(--bg-primary)',
-                      overflow: 'hidden',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${cluster.score}%`,
-                        backgroundColor:
-                          cluster.status === 'BOTTLENECK'
-                            ? 'var(--accent-amber)'
-                            : cluster.score >= 80
-                            ? 'var(--accent-emerald)'
-                            : 'var(--accent-cyan)',
-                        borderRadius: '3px'
-                      }}
-                    />
-                  </div>
-
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {cluster.subtitle}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Zero -> Job Ready Pipeline */}
-          <div
+            CAPABILITY SNAPSHOT
+          </span>
+          <button
+            onClick={onViewPassport}
             style={{
-              padding: '20px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)'
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'var(--color-home)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
             }}
           >
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
-              Zero → Job Ready Career Pipeline
-            </h4>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-              {[
-                { label: 'Foundation', done: true },
-                { label: 'Triage Operator', done: true },
-                { label: 'Incident Responder', current: true },
-                { label: 'Detection Specialist', done: false },
-                { label: 'Job Ready', done: false }
-              ].map((step, idx) => (
-                <div key={idx} style={{ textAlign: 'center', flex: 1 }}>
-                  <div
-                    style={{
-                      height: '4px',
-                      borderRadius: '2px',
-                      backgroundColor: step.done
-                        ? 'var(--accent-emerald)'
-                        : step.current
-                        ? 'var(--accent-cyan)'
-                        : 'var(--border-subtle)',
-                      marginBottom: '6px'
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: step.current ? 700 : 500,
-                      color: step.current
-                        ? 'var(--accent-cyan)'
-                        : step.done
-                        ? 'var(--text-primary)'
-                        : 'var(--text-muted)'
-                    }}
-                  >
-                    {step.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+            <span>View Skill Passport</span>
+            <ChevronRight size={14} />
+          </button>
         </div>
 
-        {/* RIGHT COLUMN: CAREER SIGNAL + CYBER TREASURE */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Career Signal Card */}
-          <div
-            style={{
-              padding: '20px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Target size={20} color="var(--accent-emerald)" />
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>
-                  Career Signal // {careerSignal.targetRole}
-                </h3>
-              </div>
-              <button
-                onClick={onViewPassport}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: '16px'
+          }}
+        >
+          {CAPABILITY_METRICS.map(metric => (
+            <div
+              key={metric.label}
+              style={{
+                backgroundColor: 'var(--bg-primary)',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px 14px',
+                border: '1px solid var(--border-subtle)'
+              }}
+            >
+              <div
                 style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  marginBottom: '8px'
+                }}
+              >
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  {metric.label}
+                </span>
+                <span
+                  style={{
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-mono)'
+                  }}
+                >
+                  {metric.value}%
+                </span>
+              </div>
+              <div
+                style={{
+                  height: '4px',
+                  backgroundColor: 'var(--border-subtle)',
+                  borderRadius: '2px',
+                  overflow: 'hidden'
+                }}
+              >
+                <div
+                  style={{
+                    width: `${metric.value}%`,
+                    height: '100%',
+                    backgroundColor: metric.color,
+                    borderRadius: '2px'
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. ACTIVE WORK — 2–4 IMPORTANT ITEMS ONLY */}
+      <section style={{ marginBottom: '28px' }}>
+        <div
+          style={{
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            marginBottom: '12px'
+          }}
+        >
+          ACTIVE WORK
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '14px'
+          }}
+        >
+          {ACTIVE_WORK.map(work => (
+            <div
+              key={work.id}
+              onClick={work.onClick}
+              style={{
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    color: work.tagColor,
+                    marginBottom: '4px',
+                    display: 'inline-block'
+                  }}
+                >
+                  {work.tag}
+                </span>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  {work.title}
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-muted)',
+                    marginTop: '2px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  {work.subtitle}
+                </div>
+              </div>
+
+              <button
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '6px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-subtle)',
                   fontSize: '12px',
-                  color: 'var(--accent-cyan)',
+                  fontWeight: 600,
+                  color: 'var(--text-primary)',
+                  flexShrink: 0
+                }}
+              >
+                <span>{work.actionLabel}</span>
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5. RECENT ACTIVITY — COMPACT TIMELINE / LIST (NOT GIANT CARDS) */}
+      <section
+        style={{
+          backgroundColor: 'var(--bg-secondary)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '20px 24px'
+        }}
+      >
+        <div
+          style={{
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            marginBottom: '14px'
+          }}
+        >
+          RECENT ACTIVITY
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {RECENT_ACTIVITY.map(act => (
+            <div
+              key={act.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px',
+                padding: '10px 12px',
+                backgroundColor: 'var(--bg-primary)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-subtle)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    padding: '2px 8px',
+                    borderRadius: 'var(--radius-full)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-subtle)',
+                    color: act.statusColor,
+                    flexShrink: 0
+                  }}
+                >
+                  {act.status}
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {act.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      color: 'var(--text-muted)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {act.detail}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  fontWeight: 600
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                  flexShrink: 0
                 }}
               >
-                <span>View Passport</span>
-                <ChevronRight size={14} />
-              </button>
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                CRITICAL CAPABILITY GAPS:
+                <Clock size={12} />
+                <span>{act.time}</span>
               </div>
-              <ul style={{ paddingLeft: '18px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                {careerSignal.criticalGaps.map((gap, i) => (
-                  <li key={i} style={{ marginBottom: '4px' }}>{gap}</li>
-                ))}
-              </ul>
             </div>
-
-            <div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                NEXT UNLOCKS:
-              </div>
-              <ul style={{ paddingLeft: '18px', fontSize: '13px', color: 'var(--accent-emerald)' }}>
-                {careerSignal.nextMilestones.map((ms, i) => (
-                  <li key={i} style={{ marginBottom: '4px' }}>{ms}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Cyber Treasure (Verified Capital) */}
-          <div
-            style={{
-              padding: '20px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Award size={20} color="var(--accent-amber)" />
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>
-                  Cyber Treasure // Cryptographic Proofs
-                </h3>
-              </div>
-              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                TAMPER-RESISTANT
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {cyberTreasure.map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    padding: '12px',
-                    borderRadius: 'var(--radius-sm)',
-                    backgroundColor: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border-subtle)'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600, fontSize: '13px' }}>{item.title}</span>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        fontFamily: 'var(--font-mono)',
-                        color: 'var(--accent-emerald)',
-                        fontWeight: 700
-                      }}
-                    >
-                      {item.demonstratedScore}/100
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    {item.category} • Verified: {item.unlockedAt}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: '6px',
-                      fontSize: '10px',
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--text-muted)',
-                      wordBreak: 'break-all',
-                      backgroundColor: 'var(--bg-primary)',
-                      padding: '4px 6px',
-                      borderRadius: '2px'
-                    }}
-                  >
-                    {item.evidenceHash}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

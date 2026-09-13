@@ -21,9 +21,9 @@ export const LandingView: React.FC<LandingViewProps> = ({
             gap: '8px',
             padding: '4px 12px',
             borderRadius: 'var(--radius-sm)',
-            backgroundColor: 'var(--accent-cyan-subtle)',
-            border: '1px solid var(--accent-cyan)',
-            color: 'var(--accent-cyan)',
+            backgroundColor: 'rgba(77, 141, 255, 0.1)',
+            border: '1px solid rgba(77, 141, 255, 0.3)',
+            color: 'var(--color-home)',
             fontSize: '12px',
             fontFamily: 'var(--font-mono)',
             fontWeight: 600,
@@ -45,7 +45,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
           }}
         >
           Learn. Operate. Prove. <br />
-          <span style={{ color: 'var(--accent-cyan)' }}>Become Job Ready.</span>
+          <span style={{ color: 'var(--color-home)' }}>Become Job Ready.</span>
         </h1>
 
         <p
@@ -69,12 +69,12 @@ export const LandingView: React.FC<LandingViewProps> = ({
               alignItems: 'center',
               gap: '10px',
               padding: '12px 28px',
-              backgroundColor: 'var(--accent-cyan)',
-              color: '#0a0e17',
+              backgroundColor: 'var(--color-home)',
+              color: '#FFFFFF',
               fontWeight: 700,
               fontSize: '15px',
               borderRadius: 'var(--radius-sm)',
-              boxShadow: 'var(--shadow-md)',
+              boxShadow: '0 4px 14px rgba(77, 141, 255, 0.35)',
               transition: 'transform 0.15s ease'
             }}
           >
@@ -97,7 +97,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               borderRadius: 'var(--radius-sm)'
             }}
           >
-            <Shield size={16} color="var(--accent-emerald)" />
+            <Shield size={16} color="var(--color-investigate)" />
             <span>EXECUTE LIVE MISSION // SUSPICIOUS LOGIN</span>
           </button>
         </div>
@@ -131,22 +131,22 @@ export const LandingView: React.FC<LandingViewProps> = ({
         >
           {[
             {
-              icon: <Terminal color="var(--accent-cyan)" size={24} />,
+              icon: <Terminal color="var(--color-home)" size={24} />,
               title: 'Real Telemetry Missions',
               desc: 'Live incident simulations with authentic Windows Event logs (4624/4625), memory dumps, and PCAP data.'
             },
             {
-              icon: <Cpu color="var(--accent-indigo)" size={24} />,
+              icon: <Cpu color="var(--color-learn)" size={24} />,
               title: 'Cyber Twin 6.0 Engine',
               desc: 'Evaluates your capability across 4 authoritative cognitive clusters without fake point gamification.'
             },
             {
-              icon: <Lock color="var(--accent-emerald)" size={24} />,
+              icon: <Lock color="var(--color-practice)" size={24} />,
               title: 'Cryptographic Proof',
               desc: 'Every demonstrated skill generates an immutable evidence hash tied authoritatively to your canonical identity.'
             },
             {
-              icon: <Award color="var(--accent-amber)" size={24} />,
+              icon: <Award color="var(--color-proof)" size={24} />,
               title: 'Verifiable Skill Passport',
               desc: 'Translates technical triage into measurable employer readiness metrics for Senior SOC and Detection roles.'
             }
@@ -199,7 +199,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Database size={22} color="var(--accent-cyan)" />
+          <Database size={22} color="var(--color-home)" />
           <h3 style={{ fontSize: '18px', fontWeight: 700 }}>
             Android + Web Synchronized Ecosystem
           </h3>
@@ -219,19 +219,19 @@ export const LandingView: React.FC<LandingViewProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle2 size={16} color="var(--accent-emerald)" />
+            <CheckCircle2 size={16} color="var(--color-practice)" />
             <span>Shared Canonical Identity</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle2 size={16} color="var(--accent-emerald)" />
+            <CheckCircle2 size={16} color="var(--color-practice)" />
             <span>Zero-Trust Client Authorization</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle2 size={16} color="var(--accent-emerald)" />
+            <CheckCircle2 size={16} color="var(--color-practice)" />
             <span>Real 7-Gate Rubric Evaluation</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle2 size={16} color="var(--accent-emerald)" />
+            <CheckCircle2 size={16} color="var(--color-practice)" />
             <span>Tamper-Resistant Proof Hashes</span>
           </div>
         </div>

@@ -22,15 +22,15 @@ export const EpistemicAuditView: React.FC<EpistemicAuditViewProps> = ({ signals 
   const getStatusColor = (status: EpistemicStatus) => {
     switch (status) {
       case 'FACT':
-        return 'var(--accent-indigo)';
+        return 'var(--color-learn)';
       case 'EVIDENCE':
-        return 'var(--accent-cyan)';
+        return 'var(--color-home)';
       case 'INFERENCE':
-        return 'var(--accent-emerald)';
+        return 'var(--color-practice)';
       case 'ASSUMPTION':
-        return 'var(--accent-rose)';
+        return 'var(--color-investigate)';
       case 'UNKNOWN':
-        return 'var(--accent-amber)';
+        return 'var(--color-warning)';
     }
   };
 
@@ -54,10 +54,10 @@ export const EpistemicAuditView: React.FC<EpistemicAuditViewProps> = ({ signals 
               fontSize: '10px',
               fontFamily: 'var(--font-mono)',
               fontWeight: 800,
-              color: 'var(--accent-cyan)',
+              color: 'var(--color-home)',
               padding: '2px 6px',
               borderRadius: 'var(--radius-sm)',
-              backgroundColor: 'var(--accent-cyan-subtle)'
+              backgroundColor: 'rgba(77, 141, 255, 0.12)'
             }}
           >
             CONTROLLED UNCERTAINTY & REASONING AUDIT
@@ -81,27 +81,27 @@ export const EpistemicAuditView: React.FC<EpistemicAuditViewProps> = ({ signals 
       >
         <EpistemicLegendItem
           status="FACT"
-          color="var(--accent-indigo)"
+          color="var(--color-learn)"
           desc="Immutable ground reality (User ID, Ground Clock)"
         />
         <EpistemicLegendItem
           status="EVIDENCE"
-          color="var(--accent-cyan)"
+          color="var(--color-home)"
           desc="Recorded audit logs (Event 4624/4625 payload)"
         />
         <EpistemicLegendItem
           status="INFERENCE"
-          color="var(--accent-emerald)"
+          color="var(--color-practice)"
           desc="Valid mathematical deduction (Velocity delta)"
         />
         <EpistemicLegendItem
           status="ASSUMPTION"
-          color="var(--accent-rose)"
+          color="var(--color-investigate)"
           desc="Uncorroborated claim (AI asserted IP)"
         />
         <EpistemicLegendItem
           status="UNKNOWN"
-          color="var(--accent-amber)"
+          color="var(--color-warning)"
           desc="Limits of evidence (Compromise vector)"
         />
       </div>
@@ -127,7 +127,7 @@ export const EpistemicAuditView: React.FC<EpistemicAuditViewProps> = ({ signals 
                   padding: '12px',
                   borderRadius: 'var(--radius-sm)',
                   backgroundColor: isSelected ? 'var(--bg-tertiary)' : 'var(--bg-primary)',
-                  border: isSelected ? '1px solid var(--accent-cyan)' : '1px solid var(--border-subtle)',
+                  border: isSelected ? '1px solid var(--color-home)' : '1px solid var(--border-subtle)',
                   cursor: 'pointer'
                 }}
               >
@@ -209,7 +209,7 @@ export const EpistemicAuditView: React.FC<EpistemicAuditViewProps> = ({ signals 
 
               {activeSignal.corroboratingEventIds.length > 0 ? (
                 <div>
-                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontWeight: 700, marginBottom: '6px' }}>
+                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--color-home)', fontWeight: 700, marginBottom: '6px' }}>
                     GROUND TELEMETRY CORROBORATION:
                   </div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -222,8 +222,8 @@ export const EpistemicAuditView: React.FC<EpistemicAuditViewProps> = ({ signals 
                           padding: '3px 8px',
                           borderRadius: '2px',
                           backgroundColor: 'var(--bg-primary)',
-                          border: '1px solid var(--accent-cyan)',
-                          color: 'var(--accent-cyan)'
+                          border: '1px solid var(--color-home)',
+                          color: 'var(--color-home)'
                         }}
                       >
                         {id} VERIFIED
@@ -236,9 +236,9 @@ export const EpistemicAuditView: React.FC<EpistemicAuditViewProps> = ({ signals 
                   style={{
                     padding: '10px 12px',
                     borderRadius: 'var(--radius-sm)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid var(--accent-rose)',
-                    color: 'var(--accent-rose)',
+                    backgroundColor: 'rgba(255, 92, 103, 0.08)',
+                    border: '1px solid var(--color-investigate)',
+                    color: 'var(--color-investigate)',
                     fontSize: '11px',
                     lineHeight: 1.4
                   }}

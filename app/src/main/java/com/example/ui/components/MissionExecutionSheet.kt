@@ -31,6 +31,8 @@ import com.example.model.MistakeIntelligenceRecord
 import com.example.model.PredictiveNextAction
 import com.example.model.TwinDimensionV12
 import com.example.ui.theme.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -408,6 +410,9 @@ private fun MissionStepExecution(
   onSelectChoice: (Int) -> Unit,
   onSubmitChoice: (MissionExecutionChoice) -> Unit
 ) {
+  val coroutineScope = rememberCoroutineScope()
+  var isChallengingAi by remember { mutableStateOf(false) }
+
   val choices = remember {
     listOf(
       MissionExecutionChoice(
@@ -443,6 +448,7 @@ private fun MissionStepExecution(
     modifier = Modifier
       .fillMaxSize()
       .padding(vertical = 4.dp)
+      .verticalScroll(rememberScrollState())
   ) {
     Text(
       text = "OPERATIONAL DECISION CHALLENGE",
@@ -461,6 +467,142 @@ private fun MissionStepExecution(
       style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
       color = TextPrimaryDark
     )
+
+    Spacer(modifier = Modifier.height(10.dp))
+
+    // Red Team Adversary: AI Analyst Proposed Verdict Card
+    Surface(
+      shape = RoundedCornerShape(10.dp),
+      color = Color(0xFF131127),
+      border = BorderStroke(1.dp, CyberPurple.copy(alpha = 0.5f)),
+      modifier = Modifier.fillMaxWidth()
+    ) {
+      Column(modifier = Modifier.padding(12.dp)) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Psychology, contentDescription = null, tint = CyberPurple, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = "AI ANALYST ADVERSARIAL ASSESSMENT",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 9.sp
+              ),
+              color = CyberPurple
+            )
+          }
+          Text(
+            text = "CONFIDENCE: 94%",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontSize = 8.5.sp,
+              fontWeight = FontWeight.Bold
+            ),
+            color = CyberAmber
+          )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+          text = "\"Attributing 10.0.4.15 as external APT29 infrastructure based on PowerShell beaconing. Recommend immediate null-route of entire 10.0.0.0/16 internal subnet.\"",
+          style = MaterialTheme.typography.bodySmall.copy(
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
+            color = TextPrimaryDark
+          )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Dual Telemetry Bar
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+          Text(
+            text = "AI Confidence: 94%",
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 8.5.sp),
+            color = CyberAmber
+          )
+          Text(
+            text = "Evidence Grounding: 31% (Gap: 63% - Hallucination Alert)",
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 8.5.sp),
+            color = CyberCyan
+          )
+        }
+        Spacer(modifier = Modifier.height(3.dp))
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(6.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .background(CyberBorder)
+        ) {
+          Box(
+            modifier = Modifier
+              .fillMaxHeight()
+              .fillMaxWidth(0.94f)
+              .background(CyberAmber)
+          )
+          Box(
+            modifier = Modifier
+              .fillMaxHeight()
+              .fillMaxWidth(0.31f)
+              .background(CyberCyan)
+          )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+          onClick = {
+            coroutineScope.launch {
+              isChallengingAi = true
+              kotlinx.coroutines.delay(320)
+              isChallengingAi = false
+              onSelectChoice(0) // Selects optimal ground truth
+              onSubmitChoice(choices[0])
+            }
+          },
+          colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF0052D4),
+            contentColor = Color.White
+          ),
+          shape = RoundedCornerShape(8.dp),
+          modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 40.dp)
+            .testTag("btn_challenge_ai_mission")
+        ) {
+          if (isChallengingAi) {
+            CircularProgressIndicator(modifier = Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = "[CORROBORATING HOST & NETWORK TELEMETRY...]",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 9.sp
+              )
+            )
+          } else {
+            Text(
+              text = "⚡ CHALLENGE AI CLAIM (RECONCILE TELEMETRY)",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Black,
+                fontSize = 9.5.sp
+              )
+            )
+          }
+        }
+      }
+    }
 
     Spacer(modifier = Modifier.height(14.dp))
 
@@ -499,7 +641,7 @@ private fun MissionStepExecution(
       }
     }
 
-    Spacer(modifier = Modifier.weight(1f))
+    Spacer(modifier = Modifier.height(16.dp))
 
     Button(
       onClick = {
@@ -593,6 +735,123 @@ private fun MissionStepResolution(
     Spacer(modifier = Modifier.height(14.dp))
 
     if (isSuccess) {
+      // 1. REVEALED TELEMETRY STATUS BANNER
+      Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = CyberEmerald.copy(alpha = 0.15f),
+        border = BorderStroke(1.dp, CyberEmerald),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = CyberEmerald, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+              text = "AI FAILURE DETECTED ✓ | EVIDENCE VERIFIED ✓",
+              style = MaterialTheme.typography.labelMedium.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Black,
+                fontSize = 11.5.sp
+              ),
+              color = CyberEmerald
+            )
+          }
+          Spacer(modifier = Modifier.height(4.dp))
+          Text(
+            text = "HUMAN OPERATOR DECISION CORRECT ✓ • HALLUCINATION CONFIRMED",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.Bold,
+              fontSize = 9.sp
+            ),
+            color = CyberCyan
+          )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      // 2. FAILURE AUTOPSY (AI COGNITIVE PROFILE)
+      Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = Color(0xFF131127),
+        border = BorderStroke(1.dp, CyberPurple.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(Icons.Default.Psychology, contentDescription = null, tint = CyberPurple, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = "FAILURE AUTOPSY: AI COGNITIVE BREAKDOWN",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Black,
+                  fontSize = 9.5.sp
+                ),
+                color = CyberPurple
+              )
+            }
+            Surface(
+              shape = RoundedCornerShape(4.dp),
+              color = CyberCrimson.copy(alpha = 0.2f),
+              border = BorderStroke(0.8.dp, CyberCrimson)
+            ) {
+              Text(
+                text = "PREMATURE_CONCLUSION",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontSize = 8.sp,
+                  fontWeight = FontWeight.Bold
+                ),
+                color = CyberCrimson,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+              )
+            }
+          }
+
+          Spacer(modifier = Modifier.height(6.dp))
+
+          Text(
+            text = "The AI Analyst rushed to attribute internal 10.0.4.15 bastion traffic to external APT29 infrastructure based solely on reflective DLL presence, ignoring internal rsync tasks. Operator oversight prevented catastrophic internal network outage.",
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
+            color = TextPrimaryDark
+          )
+
+          Spacer(modifier = Modifier.height(8.dp))
+
+          Surface(
+            shape = RoundedCornerShape(6.dp),
+            color = CyberCyan.copy(alpha = 0.1f),
+            border = BorderStroke(0.8.dp, CyberCyan.copy(alpha = 0.3f)),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Row(
+              modifier = Modifier.padding(8.dp),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Icon(Icons.Default.TrendingUp, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(14.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = "Adaptive Follow-up: Bastion Jump-Box Integrity & Token Triage (+350 XP)",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontSize = 9.sp,
+                  color = CyberCyan
+                )
+              )
+            }
+          }
+        }
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
       // Real Cryptographic Proof Signature Card
       Surface(
         shape = RoundedCornerShape(10.dp),
@@ -706,6 +965,123 @@ private fun MissionStepResolution(
             delta = "+1 Artifact",
             color = TextPrimaryDark
           )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(12.dp))
+
+      // 3. SHAREABLE PUBLIC PROOF DOSSIER PREVIEW
+      var linkCopied by remember { mutableStateOf(false) }
+      Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFF030712),
+        border = BorderStroke(1.dp, CyberCyan.copy(alpha = 0.5f)),
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("shareable_proof_dossier_card")
+      ) {
+        Column(
+          modifier = Modifier.padding(14.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(Icons.Default.Share, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = "TAMPER-EVIDENT PUBLIC PROOF DOSSIER",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Black,
+                  fontSize = 9.sp
+                ),
+                color = CyberCyan
+              )
+            }
+
+            Surface(
+              shape = RoundedCornerShape(4.dp),
+              color = CyberCyan.copy(alpha = 0.15f),
+              border = BorderStroke(0.8.dp, CyberCyan)
+            ) {
+              Text(
+                text = "OPERATOR: OP-7X-9821",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontSize = 8.sp,
+                  fontWeight = FontWeight.Bold
+                ),
+                color = CyberCyan,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+              )
+            }
+          }
+
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+          ) {
+            listOf("MITRE_T1059: 96%", "EVIDENCE_VERIFIED", "AI_OVERSIGHT: 94%").forEach { chip ->
+              Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = CyberEmerald.copy(alpha = 0.12f),
+                border = BorderStroke(0.8.dp, CyberEmerald.copy(alpha = 0.4f))
+              ) {
+                Text(
+                  text = chip,
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold
+                  ),
+                  color = CyberEmerald,
+                  modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+              }
+            }
+          }
+
+          Text(
+            text = "Verification URL: https://aegora.io/verify/proof-${(outcome?.proofHash ?: "7f4ae91b").takeLast(8)}",
+            style = MaterialTheme.typography.bodySmall.copy(
+              fontFamily = FontFamily.Monospace,
+              fontSize = 9.5.sp
+            ),
+            color = Color(0xFF38BDF8)
+          )
+
+          Button(
+            onClick = { linkCopied = true },
+            colors = ButtonDefaults.buttonColors(
+              containerColor = if (linkCopied) CyberEmerald else CyberSurfaceElevated,
+              contentColor = if (linkCopied) Color.Black else CyberCyan
+            ),
+            border = BorderStroke(1.dp, if (linkCopied) CyberEmerald else CyberCyan.copy(alpha = 0.6f)),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+              .fillMaxWidth()
+              .heightIn(min = 40.dp)
+              .testTag("btn_copy_proof_link")
+          ) {
+            Icon(
+              if (linkCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+              contentDescription = null,
+              modifier = Modifier.size(14.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = if (linkCopied) "PROOF LINK COPIED TO CLIPBOARD ✓" else "COPY RECRUITER VERIFICATION LINK",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Black,
+                fontSize = 9.5.sp
+              )
+            )
+          }
         }
       }
     } else {

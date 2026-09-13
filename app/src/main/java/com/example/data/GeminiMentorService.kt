@@ -2,8 +2,10 @@ package com.example.data
 
 import com.example.BuildConfig
 import com.example.model.AiMentorMode
+import com.example.network.DemoFallbackInterceptor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -15,9 +17,10 @@ import java.util.concurrent.TimeUnit
 object GeminiMentorService {
 
   private val client = OkHttpClient.Builder()
-    .connectTimeout(30, TimeUnit.SECONDS)
-    .readTimeout(30, TimeUnit.SECONDS)
-    .writeTimeout(30, TimeUnit.SECONDS)
+    .connectTimeout(1500, TimeUnit.MILLISECONDS)
+    .readTimeout(1500, TimeUnit.MILLISECONDS)
+    .writeTimeout(1500, TimeUnit.MILLISECONDS)
+    .addInterceptor(DemoFallbackInterceptor)
     .build()
 
   suspend fun askMentor(

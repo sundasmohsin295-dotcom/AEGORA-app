@@ -1,18 +1,25 @@
-import React from 'react';
-import { Shield, Moon, Sun, Lock, Laptop, Terminal } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Shield, Moon, Sun, Lock, Terminal, Sparkles, ChevronDown } from 'lucide-react';
 import { AuthState } from '../core/auth/CrossPlatformAuthClient';
 
 export type AppView =
   | 'landing'
   | 'command_center'
   | 'learn'
-  | 'practice'
-  | 'mission'
-  | 'bounty'
   | 'roadmap'
-  | 'tools'
+  | 'practice'
+  | 'investigate'
+  | 'cyber_reality'
   | 'intelligence'
-  | 'passport';
+  | 'ai_analyst'
+  | 'adversary'
+  | 'passport'
+  | 'verified_proof'
+  | 'tools'
+  | 'settings'
+  | 'mission'
+  | 'ai_mentor'
+  | 'bounty';
 
 interface HeaderProps {
   currentView: AppView;
@@ -26,19 +33,26 @@ interface HeaderProps {
 interface NavItem {
   id: AppView;
   label: string;
-  isFlagship?: boolean;
+  color: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'command_center', label: 'Command Center' },
-  { id: 'learn', label: 'Learn' },
-  { id: 'practice', label: 'Practice' },
-  { id: 'mission', label: 'Investigate', isFlagship: true },
-  { id: 'bounty', label: 'Bug Bounty' },
-  { id: 'roadmap', label: 'Roadmap' },
-  { id: 'tools', label: 'Tools' },
-  { id: 'intelligence', label: 'Intelligence' },
-  { id: 'passport', label: 'Proof' }
+const PRIMARY_NAV: NavItem[] = [
+  { id: 'command_center', label: 'Command', color: 'var(--color-home)' },
+  { id: 'learn', label: 'Learn', color: 'var(--color-learn)' },
+  { id: 'practice', label: 'Operate', color: 'var(--color-practice)' },
+  { id: 'intelligence', label: 'Intelligence', color: 'var(--color-intel)' },
+  { id: 'passport', label: 'Proof', color: 'var(--color-proof)' }
+];
+
+const SECONDARY_NAV: NavItem[] = [
+  { id: 'roadmap', label: 'Roadmap', color: 'var(--color-roadmap)' },
+  { id: 'investigate', label: 'Investigate', color: 'var(--color-investigate)' },
+  { id: 'cyber_reality', label: 'Cyber Reality', color: 'var(--color-investigate)' },
+  { id: 'adversary', label: 'Adaptive Adversary', color: 'var(--color-error)' },
+  { id: 'ai_analyst', label: 'AI Analyst', color: 'var(--color-ai)' },
+  { id: 'verified_proof', label: 'Verified Proof', color: 'var(--color-proof)' },
+  { id: 'tools', label: 'Tools', color: 'var(--color-tools)' },
+  { id: 'settings', label: 'Settings', color: 'var(--text-secondary)' }
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -49,9 +63,22 @@ export const Header: React.FC<HeaderProps> = ({
   authState,
   onOpenSecurityStatus
 }) => {
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
+        setIsMoreOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const operatorLabel = authState.identity
     ? authState.identity.canonicalLearnerId
-    : 'operator_guest_mode';
+    : 'operator';
 
   return (
     <header
@@ -59,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '12px 24px',
+        padding: '12px 28px',
         borderBottom: '1px solid var(--border-subtle)',
         backgroundColor: 'var(--bg-secondary)',
         position: 'sticky',
@@ -67,67 +94,65 @@ export const Header: React.FC<HeaderProps> = ({
         zIndex: 50
       }}
     >
-      {/* Brand & Platform Identifier */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {/* Brand & Primary Navigation */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
         <button
           onClick={() => onNavigate('landing')}
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            textAlign: 'left'
+          }}
         >
           <div
             style={{
               width: '32px',
               height: '32px',
               borderRadius: 'var(--radius-sm)',
-              backgroundColor: 'var(--accent-cyan-subtle)',
-              border: '1px solid var(--accent-cyan)',
+              backgroundColor: 'rgba(77, 141, 255, 0.12)',
+              border: '1px solid var(--color-home)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--accent-cyan)'
+              color: 'var(--color-home)'
             }}
           >
             <Shield size={18} />
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '0.05em' }}>
-                AEGORA
-              </span>
-              <span
-                style={{
-                  fontSize: '10px',
-                  fontFamily: 'var(--font-mono)',
-                  padding: '2px 6px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--accent-indigo-subtle)',
-                  color: 'var(--accent-indigo)',
-                  fontWeight: 600
-                }}
-              >
-                WEB CLIENT // v1.4
-              </span>
-            </div>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Cybersecurity Capability OS
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span
+              style={{
+                fontWeight: 800,
+                fontSize: '17px',
+                letterSpacing: '0.02em',
+                color: 'var(--text-primary)'
+              }}
+            >
+              AEGORA
+            </span>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 500,
+                color: 'var(--text-muted)'
+              }}
+            >
+              Cyber Reality
             </span>
           </div>
         </button>
 
-        {/* Navigation Tabs */}
+        {/* Primary Clean Navigation */}
         <nav
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
-            marginLeft: '12px',
-            overflowX: 'auto',
-            paddingBottom: '2px'
+            gap: '6px'
           }}
         >
-          {NAV_ITEMS.map(item => {
+          {PRIMARY_NAV.map(item => {
             const isActive = currentView === item.id;
-            const isFlagship = item.isFlagship;
-
             return (
               <button
                 key={item.id}
@@ -136,56 +161,108 @@ export const Header: React.FC<HeaderProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: isFlagship ? '5px 12px' : '5px 10px',
-                  fontSize: '12px',
-                  fontWeight: isActive || isFlagship ? 700 : 500,
-                  borderRadius: 'var(--radius-sm)',
-                  color: isActive
-                    ? 'var(--accent-cyan)'
-                    : isFlagship
-                    ? 'var(--text-primary)'
-                    : 'var(--text-secondary)',
+                  padding: '6px 14px',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  borderRadius: 'var(--radius-full)',
+                  color: isActive ? item.color : 'var(--text-secondary)',
                   backgroundColor: isActive
-                    ? 'var(--accent-cyan-subtle)'
-                    : isFlagship
-                    ? 'var(--bg-tertiary)'
+                    ? `color-mix(in srgb, ${item.color} 12%, transparent)`
                     : 'transparent',
                   border: isActive
-                    ? '1px solid var(--accent-cyan)'
-                    : isFlagship
-                    ? '1px solid var(--border-strong)'
+                    ? `1px solid color-mix(in srgb, ${item.color} 30%, transparent)`
                     : '1px solid transparent',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  whiteSpace: 'nowrap'
+                  cursor: 'pointer'
                 }}
               >
                 <span>{item.label}</span>
-                {isFlagship && (
-                  <span
-                    style={{
-                      fontSize: '9px',
-                      fontFamily: 'var(--font-mono)',
-                      fontWeight: 800,
-                      padding: '1px 5px',
-                      borderRadius: '2px',
-                      backgroundColor: isActive ? 'var(--accent-cyan)' : 'var(--accent-cyan-subtle)',
-                      color: isActive ? '#000' : 'var(--accent-cyan)',
-                      letterSpacing: '0.04em'
-                    }}
-                  >
-                    CORE
-                  </span>
-                )}
               </button>
             );
           })}
+
+          {/* More Navigation Dropdown */}
+          <div ref={moreRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setIsMoreOpen(!isMoreOpen)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '6px 12px',
+                fontSize: '13px',
+                fontWeight: SECONDARY_NAV.some(s => s.id === currentView) ? 600 : 500,
+                borderRadius: 'var(--radius-full)',
+                color: SECONDARY_NAV.some(s => s.id === currentView)
+                  ? 'var(--text-primary)'
+                  : 'var(--text-secondary)',
+                backgroundColor: SECONDARY_NAV.some(s => s.id === currentView)
+                  ? 'var(--bg-tertiary)'
+                  : 'transparent',
+                border: '1px solid transparent'
+              }}
+            >
+              <span>More</span>
+              <ChevronDown size={13} />
+            </button>
+
+            {isMoreOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '110%',
+                  left: 0,
+                  minWidth: '160px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: 'var(--shadow-lg)',
+                  padding: '6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                  zIndex: 100
+                }}
+              >
+                {SECONDARY_NAV.map(subItem => {
+                  const isSubActive = currentView === subItem.id;
+                  return (
+                    <button
+                      key={subItem.id}
+                      onClick={() => {
+                        onNavigate(subItem.id);
+                        setIsMoreOpen(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 12px',
+                        fontSize: '13px',
+                        fontWeight: isSubActive ? 600 : 400,
+                        color: isSubActive ? subItem.color : 'var(--text-secondary)',
+                        backgroundColor: isSubActive
+                          ? `color-mix(in srgb, ${subItem.color} 10%, transparent)`
+                          : 'transparent',
+                        borderRadius: 'var(--radius-sm)',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <span>{subItem.label}</span>
+                      {subItem.id === 'ai_mentor' && (
+                        <Sparkles size={13} color="var(--color-ai)" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
       </div>
 
       {/* Operator Status & Actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* Auth Honesty Status Badge */}
+        {/* Auth Status Pill */}
         <button
           onClick={onOpenSecurityStatus}
           style={{
@@ -193,18 +270,17 @@ export const Header: React.FC<HeaderProps> = ({
             alignItems: 'center',
             gap: '6px',
             padding: '4px 10px',
-            borderRadius: 'var(--radius-sm)',
-            backgroundColor: 'var(--accent-amber-subtle)',
-            border: '1px solid var(--accent-amber)',
+            borderRadius: 'var(--radius-full)',
+            backgroundColor: 'rgba(255, 184, 77, 0.1)',
+            border: '1px solid rgba(255, 184, 77, 0.3)',
             fontSize: '11px',
-            fontFamily: 'var(--font-mono)',
-            color: 'var(--accent-amber)',
-            fontWeight: 600
+            color: 'var(--color-warning)',
+            fontWeight: 500
           }}
-          title="Click to view Security & Identity Architecture Details"
+          title="Security & System Details"
         >
           <Lock size={12} />
-          <span>AUTH: BLOCKED (NO FIREBASE CONFIG)</span>
+          <span>Local Authority</span>
         </button>
 
         {/* Operator Badge */}
@@ -213,17 +289,16 @@ export const Header: React.FC<HeaderProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '4px 10px',
-            borderRadius: 'var(--radius-sm)',
+            padding: '4px 12px',
+            borderRadius: 'var(--radius-full)',
             backgroundColor: 'var(--bg-tertiary)',
-            border: '1px solid var(--border-strong)',
-            fontSize: '11px',
-            fontFamily: 'var(--font-mono)',
-            color: 'var(--text-primary)'
+            border: '1px solid var(--border-subtle)',
+            fontSize: '12px',
+            color: 'var(--text-secondary)'
           }}
         >
-          <Terminal size={12} color="var(--accent-cyan)" />
-          <span>{operatorLabel}</span>
+          <Terminal size={12} color="var(--color-home)" />
+          <span style={{ fontFamily: 'var(--font-mono)' }}>{operatorLabel}</span>
         </div>
 
         {/* Theme Toggle */}
@@ -231,11 +306,12 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onToggleTheme}
           aria-label="Toggle dark/light theme"
           style={{
-            padding: '8px',
-            borderRadius: 'var(--radius-sm)',
+            width: '32px',
+            height: '32px',
+            borderRadius: 'var(--radius-full)',
             backgroundColor: 'var(--bg-tertiary)',
             border: '1px solid var(--border-subtle)',
-            color: 'var(--text-primary)',
+            color: 'var(--text-secondary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'

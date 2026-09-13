@@ -122,6 +122,7 @@ dependencies {
   implementation(libs.glance)
   implementation(libs.glance.appwidget)
   implementation(libs.glance.material3)
+  implementation(libs.revenuecat.purchases)
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)

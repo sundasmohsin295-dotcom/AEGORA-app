@@ -75,26 +75,35 @@ fun JourneyScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f, fill = false)) {
               Text(
                 text = "CAREER ROADMAP TRAJECTORY",
                 style = MaterialTheme.typography.labelSmall.copy(
                   fontFamily = FontFamily.Monospace,
                   fontWeight = FontWeight.Bold,
-                  color = CyberCyan
+                  color = CyberCyan,
+                  fontSize = 10.sp,
+                  lineHeight = 14.sp
                 )
               )
               Spacer(modifier = Modifier.height(2.dp))
               Text(
                 text = "SOC Analyst Master Track",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
+                style = MaterialTheme.typography.headlineSmall.copy(
+                  fontWeight = FontWeight.Black,
+                  fontSize = 20.sp,
+                  lineHeight = 26.sp
+                ),
                 color = TextPrimaryDark
               )
-              Spacer(modifier = Modifier.height(4.dp))
               Text(
-                text = "Paced at ${userProfile.dailyCommitment.label} • Target: ${userProfile.targetTimeline.label}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondaryDark
+                text = "Paced at ${userProfile.dailyCommitment.label.ifBlank { "1hr/day" }} • Target: ${userProfile.targetTimeline.label.ifBlank { "6 Months" }}",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                  fontSize = 13.sp,
+                  lineHeight = 18.sp
+                ),
+                color = TextSecondaryDark,
+                modifier = Modifier.padding(top = 4.dp)
               )
             }
 

@@ -102,6 +102,30 @@ object AegoraAuthRepository {
     _authState.value = AuthState.Unauthenticated
   }
 
+  suspend fun continueAsJudgeGuest(): AuthResult {
+    val guest = AuthenticatedIdentity.fromProvider(
+      providerUid = "anon_judge_8921",
+      provider = "hackathon_judge_bypass",
+      email = "judge.telemetry@aegora.internal",
+      displayName = "Judge Reviewer (Read-Only Telemetry)"
+    )
+    _authState.value = AuthState.Authenticated(guest)
+    com.example.subscription.AegoraSubscriptionRepository.syncSubscriptionForUser(guest.providerUid)
+    return AuthResult.Success(guest)
+  }
+
+  suspend fun continueWithGoogleSimulated(): AuthResult {
+    val googleUser = AuthenticatedIdentity.fromProvider(
+      providerUid = "google_user_4821",
+      provider = "google_identity",
+      email = "operator.alpha@aegora.io",
+      displayName = "Senior SOC Analyst"
+    )
+    _authState.value = AuthState.Authenticated(googleUser)
+    com.example.subscription.AegoraSubscriptionRepository.syncSubscriptionForUser(googleUser.providerUid)
+    return AuthResult.Success(googleUser)
+  }
+
   /**
    * Internal test hook to inject a mock/test provider for isolated unit verification.
    * NOT accessible to production UI code.

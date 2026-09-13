@@ -24,7 +24,10 @@ import com.example.capability.AuthoritativeAdaptiveEvaluationResult
 import com.example.capability.LearnerSafeAdaptiveChallenge
 import com.example.model.*
 import com.example.platform.CrossPlatformMissionBridge
+import com.example.subscription.AegoraSubscriptionRepository
 import com.example.ui.theme.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Flagship AI Hallucination & Human Verification Component.
@@ -240,74 +243,154 @@ fun AiHallucinationVerificationCard(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
       ) {
-        // Accept AI Button
-        OutlinedButton(
-          onClick = {
-            isEvaluating = true
-            val outcome = CrossPlatformMissionBridge.evaluateAiClaimDecision(
-              attemptId = "att_${System.currentTimeMillis()}",
-              missionId = missionId,
-              claimId = claim.claimId,
-              learnerDecision = LearnerAiDecision.ACCEPT_AI,
-              selectedEvidenceIds = selectedEvidenceIds.toList()
-            )
-            verificationResult = outcome
-            isEvaluating = false
-            onVerificationComplete(outcome)
-          },
-          shape = RoundedCornerShape(8.dp),
-          border = BorderStroke(1.dp, CyberBorder),
-          modifier = Modifier
-            .weight(1f)
-            .height(44.dp)
-            .testTag("btn_accept_ai_claim")
-        ) {
-          Icon(Icons.Default.Check, contentDescription = null, tint = TextSecondaryDark, modifier = Modifier.size(16.dp))
-          Spacer(modifier = Modifier.width(4.dp))
-          Text(
-            text = "ACCEPT AI",
-            style = MaterialTheme.typography.labelSmall.copy(
-              fontFamily = FontFamily.Monospace,
-              fontWeight = FontWeight.Bold,
-              fontSize = 10.5.sp
-            ),
-            color = TextPrimaryDark
-          )
+        val coroutineScope = rememberCoroutineScope()
+        var evaluationStatusText by remember { mutableStateOf("") }
+        var showUpgradePrompt by remember { mutableStateOf(false) }
+
+        if (showUpgradePrompt) {
+          Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = CyberAmber.copy(alpha = 0.15f),
+            border = BorderStroke(1.dp, CyberAmber),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+          ) {
+            Column(modifier = Modifier.padding(10.dp)) {
+              Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = CyberAmber, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                  text = "PRO CLEARANCE REQUIRED",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp
+                  ),
+                  color = CyberAmber
+                )
+              }
+              Spacer(modifier = Modifier.height(4.dp))
+              Text(
+                text = "You have used all 3 free AI Reality Check missions. Upgrade to PRO for unlimited adversarial challenges.",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                color = AegoraTextPrimary
+              )
+            }
+          }
         }
 
-        // Challenge AI Button
-        Button(
-          onClick = {
-            isEvaluating = true
-            val outcome = CrossPlatformMissionBridge.evaluateAiClaimDecision(
-              attemptId = "att_${System.currentTimeMillis()}",
-              missionId = missionId,
-              claimId = claim.claimId,
-              learnerDecision = LearnerAiDecision.CHALLENGE_AI,
-              selectedEvidenceIds = selectedEvidenceIds.toList()
+        if (isEvaluating) {
+          Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = CyberCyan.copy(alpha = 0.1f),
+            border = BorderStroke(1.dp, CyberCyan.copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+          ) {
+            Row(
+              modifier = Modifier.padding(12.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.Center
+            ) {
+              CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                color = CyberCyan,
+                strokeWidth = 2.dp
+              )
+              Spacer(modifier = Modifier.width(10.dp))
+              Text(
+                text = evaluationStatusText.ifEmpty { "[CORROBORATING HOST & NETWORK TELEMETRY...]" },
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 10.sp
+                ),
+                color = CyberCyan
+              )
+            }
+          }
+        } else {
+          // Accept AI Button
+          OutlinedButton(
+            onClick = {
+              coroutineScope.launch {
+                isEvaluating = true
+                evaluationStatusText = "[AUDITING EVIDENCE REPOSITORY...]"
+                delay(320)
+                val outcome = CrossPlatformMissionBridge.evaluateAiClaimDecision(
+                  attemptId = "att_${System.currentTimeMillis()}",
+                  missionId = missionId,
+                  claimId = claim.claimId,
+                  learnerDecision = LearnerAiDecision.ACCEPT_AI,
+                  selectedEvidenceIds = selectedEvidenceIds.toList()
+                )
+                verificationResult = outcome
+                isEvaluating = false
+                onVerificationComplete(outcome)
+              }
+            },
+            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, CyberBorder),
+            modifier = Modifier
+              .weight(1f)
+              .height(44.dp)
+              .testTag("btn_accept_ai_claim")
+          ) {
+            Icon(Icons.Default.Check, contentDescription = null, tint = TextSecondaryDark, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+              text = "ACCEPT AI",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.5.sp
+              ),
+              color = TextPrimaryDark
             )
-            verificationResult = outcome
-            isEvaluating = false
-            onVerificationComplete(outcome)
-          },
-          shape = RoundedCornerShape(8.dp),
-          colors = ButtonDefaults.buttonColors(containerColor = CyberCyan, contentColor = Color.Black),
-          modifier = Modifier
-            .weight(1f)
-            .height(44.dp)
-            .testTag("btn_challenge_ai_claim")
-        ) {
-          Icon(Icons.Default.Gavel, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
-          Spacer(modifier = Modifier.width(4.dp))
-          Text(
-            text = "CHALLENGE AI",
-            style = MaterialTheme.typography.labelSmall.copy(
-              fontFamily = FontFamily.Monospace,
-              fontWeight = FontWeight.Black,
-              fontSize = 10.5.sp
-            ),
-            color = Color.Black
-          )
+          }
+
+          // Challenge AI Button
+          Button(
+            onClick = {
+              if (!AegoraSubscriptionRepository.canAccessAiRealityCheck()) {
+                showUpgradePrompt = true
+                return@Button
+              }
+              showUpgradePrompt = false
+              coroutineScope.launch {
+                isEvaluating = true
+                evaluationStatusText = "[CORROBORATING HOST & NETWORK TELEMETRY...]"
+                delay(320)
+                val outcome = CrossPlatformMissionBridge.evaluateAiClaimDecision(
+                  attemptId = "att_${System.currentTimeMillis()}",
+                  missionId = missionId,
+                  claimId = claim.claimId,
+                  learnerDecision = LearnerAiDecision.CHALLENGE_AI,
+                  selectedEvidenceIds = selectedEvidenceIds.toList()
+                )
+                AegoraSubscriptionRepository.recordAiRealityMissionCompleted()
+                verificationResult = outcome
+                isEvaluating = false
+                onVerificationComplete(outcome)
+              }
+            },
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = CyberCyan, contentColor = Color.Black),
+            modifier = Modifier
+              .weight(1f)
+              .height(44.dp)
+              .testTag("btn_challenge_ai_claim")
+          ) {
+            Icon(Icons.Default.Gavel, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+              text = "CHALLENGE AI",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Black,
+                fontSize = 10.5.sp
+              ),
+              color = Color.Black
+            )
+          }
         }
       }
     } else {
@@ -326,15 +409,22 @@ fun AiHallucinationVerificationCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
           ) {
+            val headlineText = if (result.isAiFailureDetected) {
+              "AI FAILURE DETECTED ✓ | EVIDENCE VERIFIED ✓ | HUMAN DECISION CORRECT ✓"
+            } else {
+              result.headline
+            }
             Text(
-              text = result.headline,
+              text = headlineText,
               style = MaterialTheme.typography.titleMedium.copy(
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Black,
-                fontSize = 13.sp
+                fontSize = 11.5.sp
               ),
-              color = if (result.isAiFailureDetected) CyberEmerald else CyberRed
+              color = if (result.isAiFailureDetected) CyberEmerald else CyberRed,
+              modifier = Modifier.weight(1f, fill = false)
             )
+            Spacer(modifier = Modifier.width(8.dp))
             Surface(
               shape = RoundedCornerShape(12.dp),
               color = if (result.isAiFailureDetected) CyberEmerald.copy(alpha = 0.2f) else CyberRed.copy(alpha = 0.2f)

@@ -35,7 +35,7 @@ export const SecurityStatusModal: React.FC<SecurityStatusModalProps> = ({
           maxWidth: '640px',
           borderRadius: 'var(--radius-md)',
           backgroundColor: 'var(--bg-secondary)',
-          border: '1px solid var(--accent-amber)',
+          border: '1px solid var(--color-warning)',
           boxShadow: 'var(--shadow-lg)',
           padding: '24px',
           position: 'relative'
@@ -59,8 +59,8 @@ export const SecurityStatusModal: React.FC<SecurityStatusModalProps> = ({
             style={{
               padding: '8px',
               borderRadius: 'var(--radius-sm)',
-              backgroundColor: 'var(--accent-amber-subtle)',
-              color: 'var(--accent-amber)'
+              backgroundColor: 'rgba(255, 184, 77, 0.12)',
+              color: 'var(--color-warning)'
             }}
           >
             <Lock size={20} />
@@ -69,7 +69,7 @@ export const SecurityStatusModal: React.FC<SecurityStatusModalProps> = ({
             <h2 style={{ fontSize: '18px', fontWeight: 800 }}>
               Identity & Security Architecture Status
             </h2>
-            <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--accent-amber)', fontWeight: 700 }}>
+            <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--color-warning)', fontWeight: 700 }}>
               STATUS: AUTH BACKEND BLOCKED
             </div>
           </div>
@@ -136,9 +136,9 @@ export const SecurityStatusModal: React.FC<SecurityStatusModalProps> = ({
           <button
             onClick={onClose}
             style={{
-              padding: '8px 18px',
-              backgroundColor: 'var(--accent-cyan)',
-              color: '#0a0e17',
+              padding: '10px 20px',
+              backgroundColor: 'var(--color-home)',
+              color: '#FFFFFF',
               fontWeight: 700,
               fontSize: '13px',
               borderRadius: 'var(--radius-sm)'

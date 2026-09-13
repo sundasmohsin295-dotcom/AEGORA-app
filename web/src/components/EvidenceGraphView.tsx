@@ -49,33 +49,33 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
     switch (status) {
       case 'FACT':
         return {
-          bg: 'rgba(59, 130, 246, 0.15)',
-          color: 'var(--accent-indigo)',
-          border: '1px solid rgba(99, 102, 241, 0.4)'
+          bg: 'rgba(155, 124, 255, 0.12)',
+          color: 'var(--color-learn)',
+          border: '1px solid rgba(155, 124, 255, 0.3)'
         };
       case 'EVIDENCE':
         return {
-          bg: 'rgba(6, 182, 212, 0.15)',
-          color: 'var(--accent-cyan)',
-          border: '1px solid rgba(6, 182, 212, 0.4)'
+          bg: 'rgba(77, 141, 255, 0.12)',
+          color: 'var(--color-home)',
+          border: '1px solid rgba(77, 141, 255, 0.3)'
         };
       case 'INFERENCE':
         return {
-          bg: 'rgba(16, 185, 129, 0.15)',
-          color: 'var(--accent-emerald)',
-          border: '1px solid rgba(16, 185, 129, 0.4)'
+          bg: 'rgba(53, 211, 154, 0.12)',
+          color: 'var(--color-practice)',
+          border: '1px solid rgba(53, 211, 154, 0.3)'
         };
       case 'ASSUMPTION':
         return {
-          bg: 'rgba(239, 68, 68, 0.15)',
-          color: 'var(--accent-rose)',
-          border: '1px solid rgba(239, 68, 68, 0.4)'
+          bg: 'rgba(255, 92, 103, 0.12)',
+          color: 'var(--color-investigate)',
+          border: '1px solid rgba(255, 92, 103, 0.3)'
         };
       case 'UNKNOWN':
         return {
-          bg: 'rgba(245, 158, 11, 0.15)',
-          color: 'var(--accent-amber)',
-          border: '1px solid rgba(245, 158, 11, 0.4)'
+          bg: 'rgba(255, 184, 77, 0.12)',
+          color: 'var(--color-warning)',
+          border: '1px solid rgba(255, 184, 77, 0.3)'
         };
     }
   };
@@ -83,19 +83,19 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
   const getNodeIcon = (node: EvidenceNode) => {
     switch (node.type) {
       case 'USER':
-        return <User size={16} color="var(--accent-indigo)" />;
+        return <User size={16} color="var(--color-learn)" />;
       case 'LOGIN':
-        return <LogIn size={16} color="var(--accent-cyan)" />;
+        return <LogIn size={16} color="var(--color-home)" />;
       case 'DEVICE':
-        return <Laptop size={16} color="var(--accent-cyan)" />;
+        return <Laptop size={16} color="var(--color-home)" />;
       case 'IP':
-        return <Globe size={16} color="var(--accent-cyan)" />;
+        return <Globe size={16} color="var(--color-home)" />;
       case 'AUTH_EVENT':
-        return <FileCode2 size={16} color="var(--accent-amber)" />;
+        return <FileCode2 size={16} color="var(--color-warning)" />;
       case 'CLAIM':
-        return <AlertOctagon size={16} color="var(--accent-rose)" />;
+        return <AlertOctagon size={16} color="var(--color-investigate)" />;
       case 'INFERENCE':
-        return <AlertTriangle size={16} color="var(--accent-emerald)" />;
+        return <AlertTriangle size={16} color="var(--color-practice)" />;
       default:
         return <Info size={16} color="var(--text-muted)" />;
     }
@@ -150,10 +150,10 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
                 fontSize: '10px',
                 fontFamily: 'var(--font-mono)',
                 fontWeight: 800,
-                color: 'var(--accent-cyan)',
+                color: 'var(--color-home)',
                 padding: '2px 6px',
                 borderRadius: 'var(--radius-sm)',
-                backgroundColor: 'var(--accent-cyan-subtle)'
+                backgroundColor: 'rgba(77, 141, 255, 0.12)'
               }}
             >
               VISUAL INVESTIGATION MODEL
@@ -182,12 +182,12 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
                   borderRadius: 'var(--radius-sm)',
                   border:
                     filterEpistemic === filter
-                      ? '1px solid var(--accent-cyan)'
+                      ? '1px solid var(--color-home)'
                       : '1px solid var(--border-subtle)',
                   backgroundColor:
-                    filterEpistemic === filter ? 'var(--accent-cyan-subtle)' : 'var(--bg-tertiary)',
+                    filterEpistemic === filter ? 'rgba(77, 141, 255, 0.12)' : 'var(--bg-tertiary)',
                   color:
-                    filterEpistemic === filter ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                    filterEpistemic === filter ? 'var(--color-home)' : 'var(--text-secondary)',
                   cursor: 'pointer'
                 }}
               >
@@ -414,17 +414,17 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
                   padding: '6px 8px',
                   borderRadius: 'var(--radius-sm)',
                   backgroundColor: activeNode.isVerifiedByTelemetry
-                    ? 'rgba(16, 185, 129, 0.12)'
-                    : 'rgba(239, 68, 68, 0.12)',
+                    ? 'rgba(53, 211, 154, 0.12)'
+                    : 'rgba(255, 92, 103, 0.12)',
                   border: activeNode.isVerifiedByTelemetry
-                    ? '1px solid var(--accent-emerald)'
-                    : '1px solid var(--accent-rose)',
+                    ? '1px solid var(--color-practice)'
+                    : '1px solid var(--color-investigate)',
                   fontSize: '10px',
                   fontFamily: 'var(--font-mono)',
                   fontWeight: 700,
                   color: activeNode.isVerifiedByTelemetry
-                    ? 'var(--accent-emerald)'
-                    : 'var(--accent-rose)'
+                    ? 'var(--color-practice)'
+                    : 'var(--color-investigate)'
                 }}
               >
                 {activeNode.isVerifiedByTelemetry ? 'TELEMETRY VERIFIED ✓' : 'UNVERIFIED CLAIM ✗'}
@@ -454,7 +454,7 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
                   fontSize: '11px',
                   fontFamily: 'var(--font-mono)',
                   fontWeight: 700,
-                  color: 'var(--accent-cyan)',
+                  color: 'var(--color-home)',
                   marginBottom: '6px'
                 }}
               >
@@ -473,8 +473,8 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
                           justifyContent: 'space-between',
                           padding: '6px 10px',
                           borderRadius: 'var(--radius-sm)',
-                          backgroundColor: isSelected ? 'var(--accent-cyan-subtle)' : 'var(--bg-primary)',
-                          border: isSelected ? '1px solid var(--accent-cyan)' : '1px solid var(--border-subtle)',
+                          backgroundColor: isSelected ? 'rgba(77, 141, 255, 0.12)' : 'var(--bg-primary)',
+                          border: isSelected ? '1px solid var(--color-home)' : '1px solid var(--border-subtle)',
                           fontSize: '11px'
                         }}
                       >
@@ -487,8 +487,8 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
                             padding: '3px 8px',
                             borderRadius: '2px',
                             border: 'none',
-                            backgroundColor: isSelected ? 'var(--accent-cyan)' : 'var(--bg-tertiary)',
-                            color: isSelected ? '#000' : 'var(--text-secondary)',
+                            backgroundColor: isSelected ? 'var(--color-home)' : 'var(--bg-tertiary)',
+                            color: isSelected ? '#FFFFFF' : 'var(--text-secondary)',
                             fontSize: '10px',
                             fontWeight: 700,
                             cursor: 'pointer'
@@ -505,10 +505,10 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
                   style={{
                     padding: '8px 10px',
                     borderRadius: 'var(--radius-sm)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                    border: '1px dashed var(--accent-rose)',
+                    backgroundColor: 'rgba(255, 92, 103, 0.08)',
+                    border: '1px dashed var(--color-investigate)',
                     fontSize: '11px',
-                    color: 'var(--accent-rose)'
+                    color: 'var(--color-investigate)'
                   }}
                 >
                   Zero corroborating event logs found in system truth. This item is an unverified assumption.
@@ -544,7 +544,7 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
                       gap: '6px'
                     }}
                   >
-                    <ArrowRight size={12} color="var(--accent-cyan)" />
+                    <ArrowRight size={12} color="var(--color-home)" />
                     <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
                       {rel.label}
                     </span>
@@ -553,7 +553,7 @@ export const EvidenceGraphView: React.FC<EvidenceGraphViewProps> = ({
                         marginLeft: 'auto',
                         fontSize: '9px',
                         fontFamily: 'var(--font-mono)',
-                        color: rel.isVerifiedByTelemetry ? 'var(--accent-emerald)' : 'var(--accent-rose)'
+                        color: rel.isVerifiedByTelemetry ? 'var(--color-practice)' : 'var(--color-investigate)'
                       }}
                     >
                       {rel.isVerifiedByTelemetry ? 'VERIFIED' : 'UNVERIFIED'}
@@ -590,7 +590,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
       padding: '8px 12px',
       borderRadius: 'var(--radius-sm)',
       backgroundColor: isSelected ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-      border: isSelected ? '1px solid var(--accent-cyan)' : '1px solid var(--border-subtle)',
+      border: isSelected ? '1px solid var(--color-home)' : '1px solid var(--border-subtle)',
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',

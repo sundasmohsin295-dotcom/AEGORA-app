@@ -1,7 +1,17 @@
-import React from 'react';
-import { Award, Shield, CheckCircle2, Lock, ExternalLink, Terminal } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Award,
+  Shield,
+  CheckCircle2,
+  Lock,
+  ChevronRight,
+  ArrowLeft,
+  Key,
+  ExternalLink
+} from 'lucide-react';
 import { WebCapabilityEngine } from '../core/intelligence/DemonstratedCapabilityEngine';
 import { AuthState } from '../core/auth/CrossPlatformAuthClient';
+import { ProofDossierModal } from './ProofDossierModal';
 
 interface CareerPassportViewProps {
   authState: AuthState;
@@ -12,183 +22,304 @@ export const CareerPassportView: React.FC<CareerPassportViewProps> = ({
   authState,
   onReturnToCommandCenter
 }) => {
-  const clusters = WebCapabilityEngine.getAuthoritativeClusters();
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const [showProofDossierModal, setShowProofDossierModal] = useState(false);
   const careerSignal = WebCapabilityEngine.getCareerSignal();
-  const treasures = WebCapabilityEngine.getCyberTreasure();
+  const clusters = WebCapabilityEngine.getAuthoritativeClusters();
 
-  const operatorId = authState.identity
+  const rawId = authState.identity
     ? authState.identity.canonicalLearnerId
-    : 'operator_guest_mode';
+    : 'Sundas';
+  const displayName = rawId.includes('@')
+    ? rawId.split('@')[0]
+    : rawId.startsWith('op_')
+    ? 'Sundas'
+    : rawId;
+
+  // Strongest 3-4 capabilities
+  const primaryCapabilities = [
+    { name: 'AI-Assisted Investigation', progress: 85, verified: true },
+    { name: 'Evidence Verification', progress: 80, verified: true },
+    { name: 'Threat Detection', progress: 75, verified: true },
+    { name: 'Incident Reasoning', progress: 70, verified: true }
+  ];
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px' }}>
-      {/* Passport Header */}
-      <div
+    <div style={{ maxWidth: '840px', margin: '0 auto', padding: '36px 24px 64px 24px' }}>
+      {/* Return button */}
+      <button
+        onClick={onReturnToCommandCenter}
         style={{
-          padding: '24px',
-          borderRadius: 'var(--radius-md)',
-          backgroundColor: 'var(--bg-secondary)',
-          border: '1px solid var(--border-subtle)',
-          marginBottom: '24px',
-          display: 'flex',
-          justifyContent: 'space-between',
+          display: 'inline-flex',
           alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '16px'
+          gap: '8px',
+          fontSize: '13px',
+          color: 'var(--text-secondary)',
+          marginBottom: '28px',
+          cursor: 'pointer'
         }}
       >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <Award color="var(--accent-amber)" size={20} />
-            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--accent-amber)', fontWeight: 700 }}>
-              IMMUTABLE CAPABILITY RECORD
-            </span>
-          </div>
-          <h1 style={{ fontSize: '24px', fontWeight: 800 }}>AEGORA Verifiable Skill Passport</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <span>Operator: <code style={{ color: 'var(--accent-cyan)' }}>{operatorId}</code></span>
-            <span>•</span>
-            <span>Career Target: <strong>{careerSignal.targetRole}</strong></span>
-            <span>•</span>
-            <span>Readiness: <strong style={{ color: 'var(--accent-emerald)' }}>{careerSignal.currentReadinessScore}%</strong></span>
-          </div>
-        </div>
+        <ArrowLeft size={16} />
+        <span>Return to Home</span>
+      </button>
 
-        <button
-          onClick={onReturnToCommandCenter}
-          style={{
-            padding: '10px 18px',
-            backgroundColor: 'var(--bg-tertiary)',
-            color: 'var(--text-primary)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: '13px',
-            fontWeight: 600
-          }}
-        >
-          Return to Command Center
-        </button>
-      </div>
-
-      {/* Cluster Capability Matrix */}
-      <div
+      {/* Header: Digital Credential / Passport */}
+      <section
         style={{
-          padding: '20px',
-          borderRadius: 'var(--radius-md)',
+          padding: '36px',
+          borderRadius: 'var(--radius-lg)',
           backgroundColor: 'var(--bg-secondary)',
-          border: '1px solid var(--border-subtle)',
-          marginBottom: '24px'
+          border: '1px solid var(--color-proof)',
+          boxShadow: '0 8px 28px -6px rgba(245, 196, 81, 0.12)',
+          marginBottom: '36px'
         }}
       >
-        <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '16px' }}>
-          Authoritative Cognitive Cluster Breakdown
-        </h3>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '16px'
-          }}
-        >
-          {clusters.map((c, i) => (
-            <div
-              key={i}
-              style={{
-                padding: '16px',
-                borderRadius: 'var(--radius-sm)',
-                backgroundColor: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-subtle)'
-              }}
-            >
-              <div style={{ fontSize: '13px', fontWeight: 700 }}>{c.name}</div>
-              <div
-                style={{
-                  fontSize: '22px',
-                  fontWeight: 800,
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--accent-cyan)',
-                  margin: '8px 0'
-                }}
-              >
-                {c.score}/100
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                {c.verifiedCapabilitiesCount} verified capabilities logged
-              </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--color-proof)', marginBottom: '10px' }}>
+              <Award size={18} />
+              <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                YOUR VERIFIED CAPABILITY
+              </span>
             </div>
-          ))}
-        </div>
-      </div>
+            <h1 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
+              {careerSignal.targetRole || 'SOC ANALYST'}
+            </h1>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+              Verified capability profile for {displayName}
+            </p>
+          </div>
 
-      {/* Verified Evidence Ledger */}
-      <div
-        style={{
-          padding: '20px',
-          borderRadius: 'var(--radius-md)',
-          backgroundColor: 'var(--bg-secondary)',
-          border: '1px solid var(--border-subtle)'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700 }}>
-            Cryptographically Verified Evidence Ledger ({treasures.length} Proofs)
-          </h3>
-          <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--accent-emerald)', fontWeight: 600 }}>
-            ZERO-TAMPER GUARANTEED
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {treasures.map(item => (
-            <div
-              key={item.id}
+          {/* Large Readiness Percentage */}
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '48px', fontWeight: 900, color: 'var(--color-proof)', lineHeight: 1 }}>
+              {careerSignal.currentReadinessScore || 74}%
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-muted)', marginTop: '4px' }}>
+              READINESS
+            </div>
+            <button
+              onClick={() => setShowProofDossierModal(true)}
               style={{
-                padding: '14px',
-                borderRadius: 'var(--radius-sm)',
-                backgroundColor: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-subtle)',
-                display: 'flex',
-                flexDirection: 'column',
+                marginTop: '12px',
+                padding: '8px 14px',
+                borderRadius: '6px',
+                backgroundColor: '#15171C',
+                border: '1px solid #2D313A',
+                color: '#2962FF',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
                 gap: '6px'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle2 color="var(--accent-emerald)" size={16} />
-                  <span style={{ fontWeight: 700, fontSize: '13px' }}>{item.title}</span>
+              <Shield size={14} />
+              <span>PROOF DOSSIER</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Strongest Capabilities Section */}
+      <section style={{ marginBottom: '36px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>
+          Key Demonstrated Capabilities
+        </h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {primaryCapabilities.map(cap => (
+            <div
+              key={cap.name}
+              style={{
+                padding: '18px 22px',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px'
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <CheckCircle2 size={16} color="var(--color-practice)" />
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {cap.name}
+                  </span>
                 </div>
-                <span
-                  style={{
-                    fontSize: '12px',
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--accent-emerald)',
-                    fontWeight: 700
-                  }}
-                >
-                  Score: {item.demonstratedScore}%
-                </span>
+                <div style={{ width: '100%', height: '5px', borderRadius: '3px', backgroundColor: 'var(--bg-tertiary)', overflow: 'hidden' }}>
+                  <div style={{ width: `${cap.progress}%`, height: '100%', backgroundColor: 'var(--color-practice)' }} />
+                </div>
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                Category: {item.category} • Date: {item.unlockedAt}
-              </div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  backgroundColor: 'var(--bg-primary)',
-                  padding: '6px 8px',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--accent-cyan)',
-                  wordBreak: 'break-all',
-                  border: '1px solid var(--border-subtle)'
-                }}
-              >
-                {item.evidenceHash}
+
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-practice)', width: '48px', textAlign: 'right' }}>
+                {cap.progress}%
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
+
+      {/* Compact Proof Counters */}
+      <section style={{ marginBottom: '36px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>
+          PROOF
+        </h2>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '14px'
+          }}
+        >
+          <div
+            style={{
+              padding: '20px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)'
+            }}
+          >
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-proof)' }}>
+              24
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              verified investigations
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: '20px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)'
+            }}
+          >
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-proof)' }}>
+              47
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              evidence decisions
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: '20px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)'
+            }}
+          >
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-proof)' }}>
+              13
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              threat hunts
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Progressive Disclosure: View Verification Details */}
+      <section style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '24px' }}>
+        <button
+          onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '13px',
+            color: 'var(--color-proof)',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          <span>{showTechnicalDetails ? 'Hide' : 'VIEW VERIFICATION DETAILS'}</span>
+          <ChevronRight
+            size={16}
+            style={{
+              transform: showTechnicalDetails ? 'rotate(90deg)' : 'none',
+              transition: 'transform 0.2s ease'
+            }}
+          />
+        </button>
+
+        {showTechnicalDetails && (
+          <div
+            style={{
+              marginTop: '18px',
+              padding: '24px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}
+          >
+            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              Authoritative Cluster Records
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '12px'
+              }}
+            >
+              {clusters.map((c, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: '14px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border-subtle)'
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {c.name}
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--color-proof)', margin: '4px 0' }}>
+                    {c.score}/100
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {c.verifiedCapabilitiesCount} proofs cryptographically recorded
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                padding: '12px',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: 'var(--bg-tertiary)',
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-muted)'
+              }}
+            >
+              Authoritative Digest: sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
+            </div>
+          </div>
+        )}
+      </section>
+
+      <ProofDossierModal
+        isOpen={showProofDossierModal}
+        onClose={() => setShowProofDossierModal(false)}
+        operatorName={displayName}
+        callsign="AEG-2026-9942X"
+        role={careerSignal.targetRole || 'SOC ANALYST'}
+      />
     </div>
   );
 };

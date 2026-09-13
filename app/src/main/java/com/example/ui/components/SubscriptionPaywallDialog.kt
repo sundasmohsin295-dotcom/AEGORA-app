@@ -33,7 +33,8 @@ import kotlinx.coroutines.launch
 fun SubscriptionPaywallDialog(
   currentSubscription: AuthoritativeSubscriptionState,
   onDismiss: () -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  onOpenObsidianPaywall: (() -> Unit)? = null
 ) {
   val coroutineScope = rememberCoroutineScope()
   var isPurchasing by remember { mutableStateOf(false) }
@@ -155,6 +156,31 @@ fun SubscriptionPaywallDialog(
 
         // Restore purchases button
         Spacer(modifier = Modifier.height(10.dp))
+        if (onOpenObsidianPaywall != null) {
+          OutlinedButton(
+            onClick = onOpenObsidianPaywall,
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("open_obsidian_paywall_button"),
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+              containerColor = Color(0xFF15171C),
+              contentColor = Color(0xFF2962FF)
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2962FF).copy(alpha = 0.6f))
+          ) {
+            Icon(Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFF2962FF))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+              "OPEN OBSIDIAN PAYWALL (REVENUECAT)",
+              style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace
+              )
+            )
+          }
+          Spacer(modifier = Modifier.height(10.dp))
+        }
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween,

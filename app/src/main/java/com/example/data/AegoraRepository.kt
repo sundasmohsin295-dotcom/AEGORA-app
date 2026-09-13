@@ -792,6 +792,12 @@ echo "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbg
     scheduleReviewForLesson(lessonId)
   }
 
+  fun awardExperience(amount: Int) {
+    _userProfile.value = _userProfile.value.copy(
+      xp = _userProfile.value.xp + amount
+    )
+  }
+
   fun setUserRole(role: UserRole) {
     _userProfile.value = _userProfile.value.copy(role = role)
   }

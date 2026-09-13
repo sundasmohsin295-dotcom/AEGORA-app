@@ -24,12 +24,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
 
-enum class AegoraNavTab(val label: String, val activeIcon: ImageVector, val inactiveIcon: ImageVector) {
-  RADAR("Home", Icons.Filled.Radar, Icons.Outlined.Radar),
-  JOURNEY("Journey", Icons.Filled.Timeline, Icons.Outlined.Timeline),
-  LABS("Labs", Icons.Filled.Terminal, Icons.Outlined.Terminal),
-  AI_MENTOR("AI Mentor", Icons.Filled.Psychology, Icons.Outlined.Psychology),
-  PASSPORT("Passport", Icons.Filled.VerifiedUser, Icons.Outlined.VerifiedUser)
+val NavActiveCyan = Color(0xFF00E5FF)
+val NavMutedSlate = Color(0xFF5A718A)
+
+enum class AegoraNavTab(
+  val label: String,
+  val activeIcon: ImageVector,
+  val inactiveIcon: ImageVector,
+  val color: Color = NavActiveCyan
+) {
+  HOME("Home", Icons.Filled.Shield, Icons.Outlined.Shield),
+  LEARN("Learn", Icons.Filled.MenuBook, Icons.Outlined.MenuBook),
+  OPERATE("Operate", Icons.Filled.Terminal, Icons.Outlined.Terminal),
+  INTELLIGENCE("Intelligence", Icons.Filled.Psychology, Icons.Outlined.Psychology),
+  PROOF("Proof", Icons.Filled.VerifiedUser, Icons.Outlined.VerifiedUser),
+  TOOLS("Tools", Icons.Filled.Build, Icons.Outlined.Build),
+  ACCOUNT("Account", Icons.Filled.Person, Icons.Outlined.Person);
+
+  companion object {
+    val RADAR get() = HOME
+    val JOURNEY get() = LEARN
+    val LABS get() = OPERATE
+    val AI_MENTOR get() = INTELLIGENCE
+    val PASSPORT get() = PROOF
+  }
 }
 
 @Composable
@@ -42,42 +60,44 @@ fun AegoraBottomNav(
     modifier = modifier
       .fillMaxWidth()
       .windowInsetsPadding(WindowInsets.navigationBars),
-    color = CyberSurface,
+    color = AegoraSurface,
     tonalElevation = 4.dp,
-    border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorder)
+    border = androidx.compose.foundation.BorderStroke(1.dp, AegoraBorder)
   ) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 6.dp, vertical = 8.dp),
+        .padding(horizontal = 4.dp, vertical = 6.dp),
       horizontalArrangement = Arrangement.SpaceAround,
       verticalAlignment = Alignment.CenterVertically
     ) {
       AegoraNavTab.entries.forEach { tab ->
         val isSelected = tab == currentTab
+        val activeColor = NavActiveCyan
+        val inactiveColor = NavMutedSlate
         val iconColor by animateColorAsState(
-          targetValue = if (isSelected) CyberCyan else TextSecondaryDark,
+          targetValue = if (isSelected) activeColor else inactiveColor,
           label = "nav_icon_color"
         )
 
         Column(
           modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable { onTabSelected(tab) }
-            .padding(horizontal = 4.dp, vertical = 2.dp)
+            .padding(horizontal = 2.dp, vertical = 2.dp)
             .testTag("nav_tab_${tab.name.lowercase()}"),
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
           Box(
             modifier = Modifier
-              .height(32.dp)
-              .width(52.dp)
-              .clip(RoundedCornerShape(16.dp))
-              .background(if (isSelected) CyberCyan.copy(alpha = 0.18f) else Color.Transparent)
+              .height(28.dp)
+              .width(42.dp)
+              .clip(RoundedCornerShape(14.dp))
+              .background(if (isSelected) activeColor.copy(alpha = 0.12f) else Color.Transparent)
               .border(
-                1.dp,
-                if (isSelected) CyberCyan.copy(alpha = 0.5f) else Color.Transparent,
-                RoundedCornerShape(16.dp)
+                0.8.dp,
+                if (isSelected) activeColor.copy(alpha = 0.35f) else Color.Transparent,
+                RoundedCornerShape(14.dp)
               ),
             contentAlignment = Alignment.Center
           ) {
@@ -85,7 +105,7 @@ fun AegoraBottomNav(
               imageVector = if (isSelected) tab.activeIcon else tab.inactiveIcon,
               contentDescription = tab.label,
               tint = iconColor,
-              modifier = Modifier.size(20.dp)
+              modifier = Modifier.size(18.dp)
             )
           }
 
@@ -94,10 +114,21 @@ fun AegoraBottomNav(
           Text(
             text = tab.label,
             style = MaterialTheme.typography.labelSmall.copy(
-              fontSize = 10.sp,
-              fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+              fontSize = 9.sp,
+              fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+              letterSpacing = 0.2.sp
             ),
-            color = if (isSelected) CyberCyan else TextSecondaryDark
+            color = if (isSelected) activeColor else inactiveColor
+          )
+
+          Spacer(modifier = Modifier.height(2.dp))
+
+          // Subtle indicator dot for active item
+          Box(
+            modifier = Modifier
+              .size(3.dp)
+              .clip(CircleShape)
+              .background(if (isSelected) activeColor else Color.Transparent)
           )
         }
       }

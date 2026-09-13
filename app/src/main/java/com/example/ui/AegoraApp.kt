@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.dp
 import com.example.data.AegoraRepository
 import com.example.model.BreakpointClass
@@ -28,6 +29,7 @@ import com.example.ui.screens.*
 import com.example.ui.theme.*
 
 sealed class ScreenDestination {
+  data object Splash : ScreenDestination()
   data object MainHub : ScreenDestination()
   data object Onboarding : ScreenDestination()
   data object CyberAuth : ScreenDestination()
@@ -67,12 +69,21 @@ sealed class ScreenDestination {
   data object Community : ScreenDestination()
   data object UniversityAdmin : ScreenDestination()
   data object PersonalIntelligence : ScreenDestination()
+  data object LiveThreatIntel : ScreenDestination()
+  data object ForensicToolArbitrator : ScreenDestination()
+  data object AdaptiveSkillPassport : ScreenDestination()
+  data object VulnerabilityTriageArena : ScreenDestination()
+  data object DuelArena : ScreenDestination()
+  data object IntelligenceCodex : ScreenDestination()
+  data object OperatorDossier : ScreenDestination()
+  data object OsintAgentChat : ScreenDestination()
+  data object SubscriptionPaywall : ScreenDestination()
 }
 
 @Composable
 fun AegoraApp() {
   AegoraTheme {
-    var currentDestination by remember { mutableStateOf<ScreenDestination>(ScreenDestination.MainHub) }
+    var currentDestination by remember { mutableStateOf<ScreenDestination>(ScreenDestination.Splash) }
     var currentTab by remember { mutableStateOf(AegoraNavTab.RADAR) }
     val userProfile by AegoraRepository.userProfile.collectAsState()
     val syncStatus by AegoraRepository.networkSyncStatus.collectAsState()
@@ -87,10 +98,63 @@ fun AegoraApp() {
     val subscriptionState by com.example.subscription.AegoraSubscriptionRepository.subscriptionState.collectAsState()
 
     Surface(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier
+        .fillMaxSize()
+        .onPreviewKeyEvent { keyEvent ->
+          if (keyEvent.type == KeyEventType.KeyDown && keyEvent.isAltPressed) {
+            when (keyEvent.key) {
+              Key.L -> {
+                currentDestination = ScreenDestination.MainHub
+                currentTab = AegoraNavTab.LEARN
+                true
+              }
+              Key.P -> {
+                currentDestination = ScreenDestination.MainHub
+                currentTab = AegoraNavTab.OPERATE
+                true
+              }
+              Key.H, Key.C -> {
+                currentDestination = ScreenDestination.MainHub
+                currentTab = AegoraNavTab.HOME
+                true
+              }
+              Key.I -> {
+                currentDestination = ScreenDestination.MainHub
+                currentTab = AegoraNavTab.INTELLIGENCE
+                true
+              }
+              Key.R, Key.O -> {
+                currentDestination = ScreenDestination.MainHub
+                currentTab = AegoraNavTab.PROOF
+                true
+              }
+              Key.T -> {
+                currentDestination = ScreenDestination.MainHub
+                currentTab = AegoraNavTab.TOOLS
+                true
+              }
+              Key.A -> {
+                currentDestination = ScreenDestination.MainHub
+                currentTab = AegoraNavTab.ACCOUNT
+                true
+              }
+              else -> false
+            }
+          } else {
+            false
+          }
+        },
       color = CyberBackground
     ) {
       when (val dest = currentDestination) {
+        is ScreenDestination.Splash -> {
+          SplashScreen(
+            onSplashFinished = {
+              currentDestination = ScreenDestination.CyberAuth
+            }
+          )
+        }
+
         is ScreenDestination.Onboarding -> {
           OnboardingScreen(
             onOnboardingComplete = {
@@ -218,7 +282,7 @@ fun AegoraApp() {
         }
 
         is ScreenDestination.CyberAuth -> {
-          CyberAuthScreen(
+          ProAuthScreen(
             onAuthSuccess = { currentDestination = ScreenDestination.MainHub },
             onNavigateBack = { currentDestination = ScreenDestination.MainHub }
           )
@@ -304,6 +368,58 @@ fun AegoraApp() {
           )
         }
 
+        is ScreenDestination.LiveThreatIntel -> {
+          LiveThreatIntelScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.ForensicToolArbitrator -> {
+          ForensicToolArbitratorScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.AdaptiveSkillPassport -> {
+          AdaptiveSkillPassportScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.VulnerabilityTriageArena -> {
+          VulnerabilityTriageArenaScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
+        is ScreenDestination.DuelArena -> {
+          DuelArenaScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onShowPaywall = { showSubscriptionDialog = true }
+          )
+        }
+
+        is ScreenDestination.IntelligenceCodex -> {
+          IntelligenceCodexScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToDuel = { currentDestination = ScreenDestination.DuelArena }
+          )
+        }
+
+        is ScreenDestination.OperatorDossier -> {
+          OperatorDossierScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToDuel = { currentDestination = ScreenDestination.DuelArena },
+            onShowPaywall = { showSubscriptionDialog = true }
+          )
+        }
+
+        is ScreenDestination.OsintAgentChat -> {
+          OsintAgentChatScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+          )
+        }
+
         is ScreenDestination.ShadowRange -> {
           ShadowRangeScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub }
@@ -381,6 +497,21 @@ fun AegoraApp() {
           )
         }
 
+        is ScreenDestination.SubscriptionPaywall -> {
+          SubscriptionPaywallScreen(
+            onPurchaseSuccess = {
+              com.example.subscription.AegoraSubscriptionRepository.recordDirectPurchase(
+                tier = com.example.model.SubscriptionTier.PRO,
+                ownerAuthUid = userProfile.email
+              )
+              currentDestination = ScreenDestination.MainHub
+            },
+            onNavigateBack = {
+              currentDestination = ScreenDestination.MainHub
+            }
+          )
+        }
+
         is ScreenDestination.ProfileSettings -> {
           ProfileAndSettingsScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub },
@@ -431,20 +562,8 @@ fun AegoraApp() {
                 ) {
                   AegoraNavTab.entries.forEach { tab ->
                     val selected = currentTab == tab
-                    val icon: ImageVector = when (tab) {
-                      AegoraNavTab.RADAR -> Icons.Default.Radar
-                      AegoraNavTab.JOURNEY -> Icons.Default.Map
-                      AegoraNavTab.LABS -> Icons.Default.Terminal
-                      AegoraNavTab.AI_MENTOR -> Icons.Default.Psychology
-                      AegoraNavTab.PASSPORT -> Icons.Default.Badge
-                    }
-                    val label: String = when (tab) {
-                      AegoraNavTab.RADAR -> "Radar"
-                      AegoraNavTab.JOURNEY -> "Path"
-                      AegoraNavTab.LABS -> "Labs"
-                      AegoraNavTab.AI_MENTOR -> "Mentor"
-                      AegoraNavTab.PASSPORT -> "Passport"
-                    }
+                    val icon: ImageVector = if (selected) tab.activeIcon else tab.inactiveIcon
+                    val label: String = tab.label
                     NavigationRailItem(
                       selected = selected,
                       onClick = { currentTab = tab },
@@ -471,7 +590,7 @@ fun AegoraApp() {
                     performanceMode = performanceMode,
                     onSearchClick = { showSearchDialog = true },
                     onNotificationClick = { showNotificationDialog = true },
-                    onProfileClick = { currentDestination = ScreenDestination.ProfileSettings },
+                    onProfileClick = { currentDestination = ScreenDestination.OperatorDossier },
                     onSyncClick = { showSyncDialog = true },
                     onPerformanceClick = { showPerformanceDialog = true },
                     onSubscriptionClick = { showSubscriptionDialog = true }
@@ -481,12 +600,16 @@ fun AegoraApp() {
                   if (isCompact) {
                     AegoraBottomNav(
                       currentTab = currentTab,
-                      onTabSelected = { currentTab = it }
+                      onTabSelected = { selectedTab ->
+                        if (currentTab != selectedTab) {
+                          currentTab = selectedTab
+                        }
+                      }
                     )
                   }
                 },
                 containerColor = CyberBackground,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).imePadding()
               ) { innerPadding ->
                 Box(
                   modifier = Modifier
@@ -513,12 +636,12 @@ fun AegoraApp() {
                         .weight(1f)
                     ) {
                       when (currentTab) {
-                      AegoraNavTab.RADAR -> {
+                      AegoraNavTab.HOME -> {
                         HomeScreen(
-                          onNavigateToJourney = { currentTab = AegoraNavTab.JOURNEY },
-                          onNavigateToLabs = { currentTab = AegoraNavTab.LABS },
-                          onNavigateToAi = { currentTab = AegoraNavTab.AI_MENTOR },
-                          onNavigateToPassport = { currentTab = AegoraNavTab.PASSPORT },
+                          onNavigateToJourney = { currentTab = AegoraNavTab.LEARN },
+                          onNavigateToLabs = { currentTab = AegoraNavTab.OPERATE },
+                          onNavigateToAi = { currentTab = AegoraNavTab.INTELLIGENCE },
+                          onNavigateToPassport = { currentTab = AegoraNavTab.PROOF },
                           onNavigateToLesson = { lessonId ->
                             currentDestination = ScreenDestination.LessonDetail(lessonId)
                           },
@@ -614,17 +737,38 @@ fun AegoraApp() {
                           },
                           onNavigateToPersonalIntelligence = {
                             currentDestination = ScreenDestination.PersonalIntelligence
+                          },
+                          onNavigateToLiveThreatIntel = {
+                            currentDestination = ScreenDestination.LiveThreatIntel
+                          },
+                          onNavigateToForensicArbitrator = {
+                            currentDestination = ScreenDestination.ForensicToolArbitrator
+                          },
+                          onNavigateToAdaptiveSkillPassport = {
+                            currentDestination = ScreenDestination.AdaptiveSkillPassport
+                          },
+                          onNavigateToVulnerabilityTriageArena = {
+                            currentDestination = ScreenDestination.VulnerabilityTriageArena
+                          },
+                          onNavigateToDuel = {
+                            currentDestination = ScreenDestination.DuelArena
+                          },
+                          onNavigateToCodex = {
+                            currentDestination = ScreenDestination.IntelligenceCodex
+                          },
+                          onNavigateToDossier = {
+                            currentDestination = ScreenDestination.OperatorDossier
                           }
                         )
                       }
 
-                      AegoraNavTab.JOURNEY -> {
+                      AegoraNavTab.LEARN -> {
                         JourneyScreen(
                           onNavigateToLesson = { lessonId ->
                             currentDestination = ScreenDestination.LessonDetail(lessonId)
                           },
                           onNavigateToLab = {
-                            currentTab = AegoraNavTab.LABS
+                            currentTab = AegoraNavTab.OPERATE
                           },
                           onNavigateToProjects = {
                             currentDestination = ScreenDestination.Projects
@@ -632,19 +776,19 @@ fun AegoraApp() {
                         )
                       }
 
-                      AegoraNavTab.LABS -> {
+                      AegoraNavTab.OPERATE -> {
                         LabSimulatorScreen(
                           onNavigateToAiMentor = {
-                            currentTab = AegoraNavTab.AI_MENTOR
+                            currentTab = AegoraNavTab.INTELLIGENCE
                           }
                         )
                       }
 
-                      AegoraNavTab.AI_MENTOR -> {
+                      AegoraNavTab.INTELLIGENCE -> {
                         AegoraAiScreen()
                       }
 
-                      AegoraNavTab.PASSPORT -> {
+                      AegoraNavTab.PROOF -> {
                         SkillPassportScreen(
                           onNavigateToCareers = {
                             currentDestination = ScreenDestination.CareerCenter
@@ -655,6 +799,25 @@ fun AegoraApp() {
                           onNavigateToCognitiveProfile = {
                             currentDestination = ScreenDestination.CognitiveProfile
                           }
+                        )
+                      }
+
+                      AegoraNavTab.TOOLS -> {
+                        CyberTerminalScreen(
+                          onNavigateBack = { currentTab = AegoraNavTab.HOME }
+                        )
+                      }
+
+                      AegoraNavTab.ACCOUNT -> {
+                        ProfileAndSettingsScreen(
+                          onNavigateBack = { currentTab = AegoraNavTab.HOME },
+                          onRestartOnboarding = { currentDestination = ScreenDestination.Onboarding },
+                          onNavigateToVault = { currentDestination = ScreenDestination.KnowledgeVault },
+                          onNavigateToCommunity = { currentDestination = ScreenDestination.Community },
+                          onNavigateToUniversityAdmin = { currentDestination = ScreenDestination.UniversityAdmin },
+                          onNavigateToAuth = { currentDestination = ScreenDestination.CyberAuth },
+                          onNavigateToCognitiveProfile = { currentDestination = ScreenDestination.CognitiveProfile },
+                          onNavigateToSecurityCenter = { currentDestination = ScreenDestination.SecurityCenter }
                         )
                       }
                     }
@@ -752,7 +915,11 @@ fun AegoraApp() {
       if (showSubscriptionDialog) {
         com.example.ui.components.SubscriptionPaywallDialog(
           currentSubscription = subscriptionState,
-          onDismiss = { showSubscriptionDialog = false }
+          onDismiss = { showSubscriptionDialog = false },
+          onOpenObsidianPaywall = {
+            showSubscriptionDialog = false
+            currentDestination = ScreenDestination.SubscriptionPaywall
+          }
         )
       }
 

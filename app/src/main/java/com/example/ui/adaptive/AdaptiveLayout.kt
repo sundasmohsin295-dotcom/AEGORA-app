@@ -381,11 +381,13 @@ fun DesktopPersistentSidebar(
       AegoraNavTab.entries.forEach { tab ->
         val isSelected = currentTab == tab
         val (icon, title, desc) = when (tab) {
-          AegoraNavTab.RADAR -> Triple(Icons.Default.Radar, "Command Radar", "Live Telemetry & Missions")
-          AegoraNavTab.JOURNEY -> Triple(Icons.Default.Map, "Skill Path", "Roadmaps & Career Graph")
-          AegoraNavTab.LABS -> Triple(Icons.Default.Terminal, "Tactical Range", "SOC, Disassembler, Labs")
-          AegoraNavTab.AI_MENTOR -> Triple(Icons.Default.Psychology, "AI Cyber Mentor", "Socratic Security Tutor")
-          AegoraNavTab.PASSPORT -> Triple(Icons.Default.Badge, "Evidence Passport", "Verified Skills & DNA")
+          AegoraNavTab.HOME -> Triple(Icons.Default.Shield, "Command Radar", "Live Telemetry & Missions")
+          AegoraNavTab.LEARN -> Triple(Icons.Default.MenuBook, "Skill Path", "Roadmaps & Career Graph")
+          AegoraNavTab.OPERATE -> Triple(Icons.Default.Terminal, "Tactical Range", "SOC, Disassembler, Labs")
+          AegoraNavTab.INTELLIGENCE -> Triple(Icons.Default.Psychology, "AI Cyber Mentor", "Socratic Security Tutor")
+          AegoraNavTab.PROOF -> Triple(Icons.Default.VerifiedUser, "Evidence Passport", "Verified Skills & DNA")
+          AegoraNavTab.TOOLS -> Triple(Icons.Default.Build, "Cyber Tools", "Terminal & Disassembler Suite")
+          AegoraNavTab.ACCOUNT -> Triple(Icons.Default.Person, "Operator Account", "Profile, Access & Settings")
         }
 
         Surface(

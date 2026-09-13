@@ -141,8 +141,12 @@ fun LabSimulatorScreen(
           Spacer(modifier = Modifier.height(6.dp))
           Text(
             text = "Capture the sequence of your reasoning, dissect analytical mistakes, and train in high-noise alert fatigue and uncertainty environments.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondaryDark
+            style = MaterialTheme.typography.bodyMedium.copy(
+              fontSize = 13.sp,
+              lineHeight = 18.sp
+            ),
+            color = TextSecondaryDark,
+            modifier = Modifier.padding(bottom = 12.dp)
           )
         }
       }
@@ -204,48 +208,85 @@ fun LabSimulatorScreen(
               border = androidx.compose.foundation.BorderStroke(1.dp, CyberCrimson)
             ) {
               Text(
-                text = "ACTIVE SIMULATION #29",
-                style = MaterialTheme.typography.labelSmall,
+                text = "ACTIVE SIMULATION #26",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 10.sp
+                ),
                 color = CyberCrimson,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
               )
             }
-            Text(
-              text = simulation.threatActor,
-              style = MaterialTheme.typography.labelSmall,
-              color = CyberCyan
-            )
+            Surface(
+              shape = RoundedCornerShape(4.dp),
+              color = CyberCyan.copy(alpha = 0.12f),
+              border = androidx.compose.foundation.BorderStroke(0.8.dp, CyberCyan.copy(alpha = 0.4f))
+            ) {
+              Text(
+                text = "APT29 Cozy Bear",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 10.sp
+                ),
+                color = CyberCyan,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+              )
+            }
           }
 
           Spacer(modifier = Modifier.height(8.dp))
 
           Text(
             text = simulation.title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleMedium.copy(
+              fontWeight = FontWeight.Bold,
+              fontSize = 16.sp
+            ),
             color = TextPrimaryDark
           )
 
           Spacer(modifier = Modifier.height(4.dp))
 
           Text(
-            text = "Target Organization: ${simulation.targetOrg}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondaryDark
+            text = "Target Organization: ${simulation.targetOrg.ifBlank { "National Critical Infrastructure Sector (Energy Grid)" }}",
+            style = MaterialTheme.typography.bodySmall.copy(
+              fontSize = 12.sp,
+              lineHeight = 16.sp
+            ),
+            color = TextSecondaryDark,
+            maxLines = 1
           )
 
-          Spacer(modifier = Modifier.height(8.dp))
+          Spacer(modifier = Modifier.height(10.dp))
 
           Surface(
             shape = RoundedCornerShape(8.dp),
-            color = CyberSurfaceElevated,
+            color = Color(0xFF081326),
             border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorder)
           ) {
-            Text(
-              text = "Initial Alert: ${simulation.initialAlert}",
-              style = MaterialTheme.typography.bodyMedium,
-              color = CyberGold,
-              modifier = Modifier.padding(10.dp)
-            )
+            Column(modifier = Modifier.padding(8.dp)) {
+              Text(
+                text = "ALERT LOG // SIEM EVENT",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 9.sp,
+                  color = CyberGold
+                )
+              )
+              Spacer(modifier = Modifier.height(4.dp))
+              Text(
+                text = "Initial Alert: ${simulation.initialAlert}",
+                style = MaterialTheme.typography.bodySmall.copy(
+                  fontFamily = FontFamily.Monospace,
+                  fontSize = 11.5.sp,
+                  lineHeight = 16.sp,
+                  color = Color(0xFFFFD54F)
+                )
+              )
+            }
           }
         }
       }
