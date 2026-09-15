@@ -3260,6 +3260,16 @@ echo "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbg
   private val _networkSyncStatus = MutableStateFlow(NetworkSyncStatus.SYNCED)
   val networkSyncStatus: StateFlow<NetworkSyncStatus> = _networkSyncStatus.asStateFlow()
 
+  private val _isOfflineMode = MutableStateFlow(false)
+  val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
+
+  fun setOfflineMode(enabled: Boolean) {
+    _isOfflineMode.value = enabled
+    if (enabled) {
+      _networkSyncStatus.value = NetworkSyncStatus.OFFLINE
+    }
+  }
+
   private val _crossDeviceSession = MutableStateFlow(
     CrossDeviceSessionState(
       activeSessionId = "sess_v11_9942",

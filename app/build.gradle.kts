@@ -123,6 +123,8 @@ dependencies {
   implementation(libs.glance.appwidget)
   implementation(libs.glance.material3)
   implementation(libs.revenuecat.purchases)
+  implementation(libs.androidx.biometric)
+  implementation(libs.androidx.security.crypto)
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)

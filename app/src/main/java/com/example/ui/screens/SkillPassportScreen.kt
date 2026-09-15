@@ -50,11 +50,145 @@ fun SkillPassportScreen(
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
-      .background(CyberBackground)
+      .background(SpecCanvasBg)
       .padding(horizontal = 16.dp),
     contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
+    // 0. VERIFIED CAPABILITY PROOF PASSPORT HERO CARD
+    item {
+      Card(
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("proof_passport_hero_card"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, SpecBorder)
+      ) {
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column {
+              Text(
+                text = "VERIFIED CAPABILITY",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Black,
+                fontFamily = FontFamily.Monospace,
+                color = SpecHeadingWhite,
+                letterSpacing = 1.sp
+              )
+              Text(
+                text = "Evidence-backed • Cryptographically verified",
+                fontSize = 11.sp,
+                color = SpecSubtextSlate
+              )
+            }
+
+            Surface(
+              color = SpecEmeraldVerification.copy(alpha = 0.15f),
+              shape = RoundedCornerShape(6.dp),
+              border = androidx.compose.foundation.BorderStroke(1.dp, SpecEmeraldVerification.copy(alpha = 0.5f))
+            ) {
+              Text(
+                text = "REAL SKILLS. VERIFIED. NOT CLAIMED.",
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                color = SpecEmeraldVerification,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+              )
+            }
+          }
+
+          // Skill Passport Sub-card
+          Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = SpecElevatedBg,
+            shape = RoundedCornerShape(10.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, SpecBorder)
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Column {
+                Text(
+                  text = "Linux Forensics Analysis",
+                  fontSize = 13.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = SpecHeadingWhite
+                )
+                Text(
+                  text = "Verified on: Apr 28, 2026",
+                  fontSize = 11.sp,
+                  color = SpecSubtextSlate
+                )
+              }
+
+              Button(
+                onClick = { showShareDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = SpecPrimaryBlue),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Share,
+                  contentDescription = "Share",
+                  tint = Color.White,
+                  modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Share", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+              }
+            }
+          }
+
+          // Proof Link Container with Copy Icon
+          Surface(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable { copiedToClipboard = true },
+            color = SpecElevatedBg,
+            shape = RoundedCornerShape(8.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, SpecBorder)
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(
+                text = "https://aegora.app/proof/5f3a2e91b8a342981ce810",
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
+                color = SpecCyanHighlight,
+                maxLines = 1
+              )
+              Icon(
+                imageVector = if (copiedToClipboard) Icons.Default.Check else Icons.Default.ContentCopy,
+                contentDescription = "Copy Link",
+                tint = if (copiedToClipboard) SpecEmeraldVerification else SpecSubtextSlate,
+                modifier = Modifier.size(16.dp)
+              )
+            }
+          }
+        }
+      }
+    }
+
     // 1. Digital Passport Hero Card (3D Interactive)
     item {
       Interactive3DPassportCard(

@@ -1,7 +1,9 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,7 +23,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -38,7 +43,9 @@ data class OsintChatMessage(
   val text: String,
   val timestamp: String = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date()),
   val tags: List<String> = emptyList(),
-  val isCodeOrIoc: Boolean = false
+  val isCodeOrIoc: Boolean = false,
+  val isEasterEgg: Boolean = false,
+  val easterEggTitle: String? = null
 )
 
 enum class OsintSender {
@@ -59,8 +66,10 @@ fun OsintAgentChatScreen(
   val emeraldGreen = Color(0xFF00E676)
   val mutedSlate = Color(0xFF8A919E)
 
+  val haptic = LocalHapticFeedback.current
   var inputText by remember { mutableStateOf("") }
   var isAgentThinking by remember { mutableStateOf(false) }
+  var showConfetti by remember { mutableStateOf(false) }
   val coroutineScope = rememberCoroutineScope()
   val listState = rememberLazyListState()
 
@@ -87,12 +96,39 @@ fun OsintAgentChatScreen(
 
   fun sendQuery(query: String) {
     if (query.isBlank()) return
+    val cleanQuery = query.trim()
+    val isOverride = cleanQuery.equals("/shipaton-override", ignoreCase = true)
+
     val userMsg = OsintChatMessage(
       sender = OsintSender.USER,
-      text = query.trim()
+      text = cleanQuery
     )
     messages.add(userMsg)
     inputText = ""
+
+    if (isOverride) {
+      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+      showConfetti = true
+      coroutineScope.launch {
+        delay(3000)
+        showConfetti = false
+      }
+      coroutineScope.launch {
+        delay(120)
+        val easterEggMsg = OsintChatMessage(
+          sender = OsintSender.OSINT_AGENT,
+          text = "Hello RevenueCat & Devpost Judges. Welcome to the future of verified cybersecurity operations. Telemetry is active. Paywalls are primed. Enjoy the hunt.",
+          tags = listOf("SYSTEM-OVERRIDE", "REVENUECAT-READY", "VERIFIED-AGENT"),
+          isCodeOrIoc = false,
+          isEasterEgg = true,
+          easterEggTitle = "SYSTEM OVERRIDE AUTHORIZED"
+        )
+        messages.add(easterEggMsg)
+        delay(50)
+        listState.animateScrollToItem(messages.size - 1)
+      }
+      return
+    }
 
     coroutineScope.launch {
       delay(50)
@@ -146,12 +182,13 @@ fun OsintAgentChatScreen(
     }
   }
 
-  Scaffold(
-    modifier = modifier
-      .fillMaxSize()
-      .background(obsidianBg)
-      .imePadding(), // Ensure software keyboard never overlaps critical UI
-    containerColor = obsidianBg,
+  Box(modifier = modifier.fillMaxSize()) {
+    Scaffold(
+      modifier = Modifier
+        .fillMaxSize()
+        .background(obsidianBg)
+        .imePadding(), // Ensure software keyboard never overlaps critical UI
+      containerColor = obsidianBg,
     topBar = {
       Surface(
         color = matteSteel,
@@ -235,7 +272,10 @@ fun OsintAgentChatScreen(
               color = if (isHackathonPill) cobaltBlue.copy(alpha = 0.2f) else obsidianBg,
               border = BorderStroke(1.dp, if (isHackathonPill) cobaltBlue else slateBorder),
               modifier = Modifier
-                .clickable { sendQuery(pill) }
+                .clickable {
+                  haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                  sendQuery(pill)
+                }
                 .testTag(if (isHackathonPill) "pill_latest_tech_hackathons" else "pill_${pill.filter { it.isLetterOrDigit() }}")
             ) {
               Text(
@@ -260,7 +300,7 @@ fun OsintAgentChatScreen(
             value = inputText,
             onValueChange = { inputText = it },
             placeholder = {
-              Text("Enter target domain, CVE, or threat actor...", color = mutedSlate, fontSize = 12.sp)
+              Text("Enter target domain, CVE, or /shipaton-override...", color = mutedSlate, fontSize = 12.sp)
             },
             colors = OutlinedTextFieldDefaults.colors(
               focusedContainerColor = obsidianBg,
@@ -279,7 +319,10 @@ fun OsintAgentChatScreen(
           )
 
           IconButton(
-            onClick = { sendQuery(inputText) },
+            onClick = {
+              haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+              sendQuery(inputText)
+            },
             enabled = inputText.isNotBlank(),
             modifier = Modifier
               .size(46.dp)
@@ -336,43 +379,103 @@ fun OsintAgentChatScreen(
             )
           }
 
-          // Message Container
-          Surface(
-            shape = RoundedCornerShape(
-              topStart = 10.dp,
-              topEnd = 10.dp,
-              bottomStart = if (isUser) 10.dp else 2.dp,
-              bottomEnd = if (isUser) 2.dp else 10.dp
-            ),
-            color = if (isUser) cobaltBlue.copy(alpha = 0.25f) else matteSteel,
-            border = BorderStroke(1.dp, if (isUser) cobaltBlue else slateBorder),
-            modifier = Modifier.widthIn(max = 320.dp).testTag(if (isUser) "user_chat_bubble" else "agent_chat_bubble")
-          ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-              Text(
-                text = msg.text,
-                color = Color.White,
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
-                fontFamily = if (msg.isCodeOrIoc) FontFamily.Monospace else FontFamily.Default
-              )
+          if (msg.isEasterEgg) {
+            // Hardcoded Custom Easter Egg Card for Shipaton Judges
+            Surface(
+              shape = RoundedCornerShape(12.dp),
+              color = Color(0xFF091F14),
+              border = BorderStroke(1.5.dp, emeraldGreen),
+              modifier = Modifier
+                .widthIn(max = 340.dp)
+                .testTag("easter_egg_override_card")
+            ) {
+              Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                  Icon(
+                    Icons.Default.VerifiedUser,
+                    contentDescription = null,
+                    tint = emeraldGreen,
+                    modifier = Modifier.size(18.dp)
+                  )
+                  Text(
+                    text = msg.easterEggTitle ?: "SYSTEM OVERRIDE AUTHORIZED",
+                    color = emeraldGreen,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontFamily = FontFamily.Monospace
+                  )
+                }
 
-              if (msg.tags.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                  text = msg.text,
+                  color = Color.White,
+                  fontSize = 13.sp,
+                  lineHeight = 19.sp,
+                  fontWeight = FontWeight.Normal
+                )
+
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                   msg.tags.forEach { tagText ->
                     Surface(
                       shape = RoundedCornerShape(4.dp),
-                      color = obsidianBg,
-                      border = BorderStroke(1.dp, slateBorder)
+                      color = Color(0xFF0F3822),
+                      border = BorderStroke(0.8.dp, emeraldGreen.copy(alpha = 0.6f))
                     ) {
                       Text(
                         text = tagText,
                         color = emeraldGreen,
-                        fontSize = 8.sp,
+                        fontSize = 9.sp,
                         fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                       )
+                    }
+                  }
+                }
+              }
+            }
+          } else {
+            // Message Container
+            Surface(
+              shape = RoundedCornerShape(
+                topStart = 10.dp,
+                topEnd = 10.dp,
+                bottomStart = if (isUser) 10.dp else 2.dp,
+                bottomEnd = if (isUser) 2.dp else 10.dp
+              ),
+              color = if (isUser) cobaltBlue.copy(alpha = 0.25f) else matteSteel,
+              border = BorderStroke(1.dp, if (isUser) cobaltBlue else slateBorder),
+              modifier = Modifier.widthIn(max = 320.dp).testTag(if (isUser) "user_chat_bubble" else "agent_chat_bubble")
+            ) {
+              Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                  text = msg.text,
+                  color = Color.White,
+                  fontSize = 13.sp,
+                  lineHeight = 18.sp,
+                  fontFamily = if (msg.isCodeOrIoc) FontFamily.Monospace else FontFamily.Default
+                )
+
+                if (msg.tags.isNotEmpty()) {
+                  Spacer(modifier = Modifier.height(8.dp))
+                  Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    msg.tags.forEach { tagText ->
+                      Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = obsidianBg,
+                        border = BorderStroke(1.dp, slateBorder)
+                      ) {
+                        Text(
+                          text = tagText,
+                          color = emeraldGreen,
+                          fontSize = 8.sp,
+                          fontFamily = FontFamily.Monospace,
+                          modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                      }
                     }
                   }
                 }
@@ -405,4 +508,75 @@ fun OsintAgentChatScreen(
       }
     }
   }
+
+    if (showConfetti) {
+      CyanConfettiEmitter(modifier = Modifier.fillMaxSize())
+    }
+  }
 }
+
+@Composable
+fun CyanConfettiEmitter(modifier: Modifier = Modifier) {
+  val particles = remember {
+    List(40) { index ->
+      ConfettiParticle(
+        x = (index * 23 % 100) / 100f,
+        y = -0.05f - (index * 17 % 50) / 100f,
+        speed = 0.35f + ((index * 31 % 30) / 100f),
+        size = 4.5f + (index % 5) * 2f,
+        sway = ((index % 7) - 3) * 0.08f,
+        color = when (index % 4) {
+          0 -> Color(0xFF22D3EE)
+          1 -> Color(0xFF06B6D4)
+          2 -> Color(0xFF67E8F9)
+          else -> Color(0xFF38BDF8)
+        },
+        alpha = 0.85f
+      )
+    }
+  }
+
+  val transition = rememberInfiniteTransition(label = "confetti_anim")
+  val progress by transition.animateFloat(
+    initialValue = 0f,
+    targetValue = 1f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(durationMillis = 3000, easing = LinearEasing),
+      repeatMode = RepeatMode.Restart
+    ),
+    label = "confetti_progress"
+  )
+
+  Canvas(modifier = modifier.fillMaxSize()) {
+    val canvasWidth = size.width
+    val canvasHeight = size.height
+
+    particles.forEach { p ->
+      val currentY = ((p.y + progress * p.speed * 2.2f) % 1.2f) * canvasHeight
+      val currentX = (p.x * canvasWidth) + kotlin.math.sin((progress * 6f + p.sway * 10f).toDouble()).toFloat() * 24.dp.toPx()
+
+      // Subtle outer aura
+      drawCircle(
+        color = p.color.copy(alpha = 0.22f),
+        radius = p.size * 2.4f,
+        center = Offset(currentX, currentY)
+      )
+      // Particle core
+      drawCircle(
+        color = p.color.copy(alpha = p.alpha),
+        radius = p.size,
+        center = Offset(currentX, currentY)
+      )
+    }
+  }
+}
+
+private data class ConfettiParticle(
+  val x: Float,
+  val y: Float,
+  val speed: Float,
+  val size: Float,
+  val sway: Float,
+  val color: Color,
+  val alpha: Float
+)

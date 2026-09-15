@@ -2,34 +2,55 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// AEGORA // Multi-Platform Design System — Enterprise Obsidian Palette
-// Strict Hackathon Technical Compliance:
-// Background: #090A0C (Graphite), Surface Cards: #15171C (Matte Steel), Primary Action: #2962FF (Cobalt)
-val AegoraBackground = Color(0xFF090A0C)          // Strict Graphite #090A0C
-val AegoraBackgroundGradientEnd = Color(0xFF090A0C)
-val AegoraSurface = Color(0xFF15171C)             // Matte Steel #15171C
-val AegoraSurfaceElevated = Color(0xFF15171C)     // Matte Steel #15171C
-val AegoraSurfaceHighlight = Color(0xFF1E222B)    // Matte Steel highlight #1E222B
-val AegoraBorder = Color(0xFF2D313A)              // Slate border #2D313A
-val AegoraBorderSubtle = Color(0xFF2D313A)
-val AegoraBorderHighlight = Color(0xFF2962FF)     // Corporate Cobalt
-val AegoraTextPrimary = Color(0xFFF0F4F8)         // High-contrast clean sans text
-val AegoraTextSecondary = Color(0xFF8DA2B5)       // Balanced secondary text
-val AegoraTextTertiary = Color(0xFF53677A)        // Low-emphasis caption text
+// AEGORA // Multi-Platform Design System — Exact Specification Palette
+// Canvas Background: #050B14 (Deep Void Blue-Black)
+// Deep Surface Cards: #0B1528 (Primary Card Background)
+// Elevated Surfaces: #12203A (Sub-cards, Inputs, Terminal Boxes)
+// Hairline Borders: #1E3A5F (1.dp border)
+// Primary Action Blue: #3B82F6 (Solid Vibrant Electric Blue)
+// Cyan Highlights: #22D3EE (Status indicators, live pills, active bottom-bar items)
+// Emerald Verification: #34D399 (Checkmarks, "AI FAILURE DETECTED ✓", Success state)
+// Warning/Decay Amber: #F59E0B
+// Failure/Crime Red: #EF4444
+// Typography: Primary Headings: #F8FAFC, Secondary Metadata: #8CA3C7
 
-// AEGORA Core & Semantic Color Accents (Enterprise Obsidian)
-val SemanticElectricBlue = Color(0xFF2962FF)      // Primary Cobalt Accent #2962FF
-val SemanticHome = Color(0xFF2962FF)              // Cobalt #2962FF
-val SemanticLearn = Color(0xFF8B5CF6)             // Learn / Cognitive (Violet)
-val SemanticPractice = Color(0xFF00E676)          // Practice / Emerald Verification
-val SemanticInvestigate = Color(0xFF2962FF)       // Cobalt Investigation
-val SemanticAI = Color(0xFF2962FF)                // Cobalt AI
-val SemanticProof = Color(0xFF00E676)             // Proof-of-Work / Verification (Green)
-val SemanticRoadmap = Color(0xFF14B8A6)           // Roadmap / Progression (Teal)
-val SemanticIntel = Color(0xFF2962FF)             // Intel / Feeds (Cobalt)
-val SemanticTools = Color(0xFF2962FF)             // Tools / Utilities (Cobalt)
-val SemanticWarning = Color(0xFFF59E0B)           // Warnings only (Orange)
-val SemanticSuccess = Color(0xFF00E676)           // Verified / Success (Green)
+val SpecCanvasBg = Color(0xFF050B14)
+val SpecCardBg = Color(0xFF0B1528)
+val SpecElevatedBg = Color(0xFF12203A)
+val SpecBorder = Color(0xFF1E3A5F)
+val SpecPrimaryBlue = Color(0xFF3B82F6)
+val SpecCyanHighlight = Color(0xFF22D3EE)
+val SpecEmeraldVerification = Color(0xFF34D399)
+val SpecWarningAmber = Color(0xFFF59E0B)
+val SpecFailureRed = Color(0xFFEF4444)
+val SpecHeadingWhite = Color(0xFFF8FAFC)
+val SpecSubtextSlate = Color(0xFF8CA3C7)
+
+val AegoraBackground = SpecCanvasBg
+val AegoraBackgroundGradientEnd = SpecCanvasBg
+val AegoraSurface = SpecCardBg
+val AegoraSurfaceElevated = SpecElevatedBg
+val AegoraSurfaceHighlight = SpecElevatedBg
+val AegoraBorder = SpecBorder
+val AegoraBorderSubtle = SpecBorder
+val AegoraBorderHighlight = SpecPrimaryBlue
+val AegoraTextPrimary = SpecHeadingWhite
+val AegoraTextSecondary = SpecSubtextSlate
+val AegoraTextTertiary = Color(0xFF5A718A)
+
+// AEGORA Core & Semantic Color Accents
+val SemanticElectricBlue = SpecPrimaryBlue
+val SemanticHome = SpecPrimaryBlue
+val SemanticLearn = Color(0xFF8B5CF6)
+val SemanticPractice = SpecEmeraldVerification
+val SemanticInvestigate = SpecPrimaryBlue
+val SemanticAI = SpecPrimaryBlue
+val SemanticProof = SpecEmeraldVerification
+val SemanticRoadmap = SpecCyanHighlight
+val SemanticIntel = SpecCyanHighlight
+val SemanticTools = SpecPrimaryBlue
+val SemanticWarning = SpecWarningAmber
+val SemanticSuccess = SpecEmeraldVerification
 
 // Legacy & Semantic Compatibility mappings (Aliased to Strict Enterprise Obsidian)
 val PureBlack = Color(0xFF090A0C)

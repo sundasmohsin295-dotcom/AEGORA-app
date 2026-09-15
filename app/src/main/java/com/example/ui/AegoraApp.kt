@@ -78,12 +78,30 @@ sealed class ScreenDestination {
   data object OperatorDossier : ScreenDestination()
   data object OsintAgentChat : ScreenDestination()
   data object SubscriptionPaywall : ScreenDestination()
+  data object MissionDiagnostic : ScreenDestination()
+  data object AiAnalystChallenge : ScreenDestination()
+  data object VerificationResult : ScreenDestination()
+  data object CyberTwinRadar : ScreenDestination()
+  data object RaspLockdown : ScreenDestination()
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun AegoraApp() {
+fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) {
   AegoraTheme {
-    var currentDestination by remember { mutableStateOf<ScreenDestination>(ScreenDestination.Splash) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val auditReportState by com.example.security.SecurityEnforcer.auditReport.collectAsState()
+    val effectiveAuditReport = initialAuditReport ?: auditReportState
+
+    var currentDestination by remember {
+      mutableStateOf<ScreenDestination>(
+        if (effectiveAuditReport.isCompromised && !com.example.security.SecurityEnforcer.isAuditorOverrideActive && !com.example.security.SecurityEnforcer.bypassEnforcementForTesting) {
+          ScreenDestination.RaspLockdown
+        } else {
+          ScreenDestination.Splash
+        }
+      )
+    }
     var currentTab by remember { mutableStateOf(AegoraNavTab.RADAR) }
     val userProfile by AegoraRepository.userProfile.collectAsState()
     val syncStatus by AegoraRepository.networkSyncStatus.collectAsState()
@@ -95,6 +113,7 @@ fun AegoraApp() {
     var showSyncDialog by remember { mutableStateOf(false) }
     var showPerformanceDialog by remember { mutableStateOf(false) }
     var showSubscriptionDialog by remember { mutableStateOf(false) }
+    var showPremiumUpgradeSheet by remember { mutableStateOf(false) }
     val subscriptionState by com.example.subscription.AegoraSubscriptionRepository.subscriptionState.collectAsState()
 
     Surface(
@@ -147,6 +166,22 @@ fun AegoraApp() {
       color = CyberBackground
     ) {
       when (val dest = currentDestination) {
+        is ScreenDestination.RaspLockdown -> {
+          RaspLockdownScreen(
+            auditReport = effectiveAuditReport,
+            onAuditorOverride = {
+              com.example.security.SecurityEnforcer.setAuditorOverride(true)
+              currentDestination = ScreenDestination.MainHub
+            },
+            onRecheckIntegrity = {
+              val fresh = com.example.security.SecurityEnforcer.enforce(context)
+              if (!fresh.isCompromised || com.example.security.SecurityEnforcer.isAuditorOverrideActive) {
+                currentDestination = ScreenDestination.MainHub
+              }
+            }
+          )
+        }
+
         is ScreenDestination.Splash -> {
           SplashScreen(
             onSplashFinished = {
@@ -395,7 +430,7 @@ fun AegoraApp() {
         is ScreenDestination.DuelArena -> {
           DuelArenaScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub },
-            onShowPaywall = { showSubscriptionDialog = true }
+            onShowPaywall = { showPremiumUpgradeSheet = true }
           )
         }
 
@@ -498,7 +533,7 @@ fun AegoraApp() {
         }
 
         is ScreenDestination.SubscriptionPaywall -> {
-          SubscriptionPaywallScreen(
+          com.example.ui.screens.PremiumUpgradeScreen(
             onPurchaseSuccess = {
               com.example.subscription.AegoraSubscriptionRepository.recordDirectPurchase(
                 tier = com.example.model.SubscriptionTier.PRO,
@@ -508,6 +543,47 @@ fun AegoraApp() {
             },
             onNavigateBack = {
               currentDestination = ScreenDestination.MainHub
+            }
+          )
+        }
+
+        is ScreenDestination.MissionDiagnostic -> {
+          MissionDiagnosticScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onStartMission = {
+              currentDestination = ScreenDestination.AiAnalystChallenge
+            }
+          )
+        }
+
+        is ScreenDestination.AiAnalystChallenge -> {
+          AiAnalystChallengeScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MissionDiagnostic },
+            onChallengeAi = {
+              currentDestination = ScreenDestination.VerificationResult
+            }
+          )
+        }
+
+        is ScreenDestination.VerificationResult -> {
+          VerificationResultScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onViewAutopsy = {
+              currentDestination = ScreenDestination.SubscriptionPaywall
+            },
+            onViewPassport = {
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.PROOF
+            }
+          )
+        }
+
+        is ScreenDestination.CyberTwinRadar -> {
+          CyberTwinRadarScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToProof = {
+              currentDestination = ScreenDestination.MainHub
+              currentTab = AegoraNavTab.PROOF
             }
           )
         }
@@ -751,13 +827,24 @@ fun AegoraApp() {
                             currentDestination = ScreenDestination.VulnerabilityTriageArena
                           },
                           onNavigateToDuel = {
-                            currentDestination = ScreenDestination.DuelArena
+                            val freeDuelsLeft = 2 - com.example.subscription.AegoraSubscriptionRepository.adversaryDuelsEngaged.value
+                            if (subscriptionState.tier == com.example.model.SubscriptionTier.FREE && freeDuelsLeft <= 0) {
+                              showPremiumUpgradeSheet = true
+                            } else {
+                              currentDestination = ScreenDestination.DuelArena
+                            }
                           },
                           onNavigateToCodex = {
                             currentDestination = ScreenDestination.IntelligenceCodex
                           },
                           onNavigateToDossier = {
                             currentDestination = ScreenDestination.OperatorDossier
+                          },
+                          onNavigateToMissionDiagnostic = {
+                            currentDestination = ScreenDestination.MissionDiagnostic
+                          },
+                          onNavigateToRadar = {
+                            currentDestination = ScreenDestination.CyberTwinRadar
                           }
                         )
                       }
@@ -921,6 +1008,24 @@ fun AegoraApp() {
             currentDestination = ScreenDestination.SubscriptionPaywall
           }
         )
+      }
+
+      // Premium Upgrade Bento Box Bottom Sheet (Smooth ModalBottomSheet)
+      if (showPremiumUpgradeSheet) {
+        ModalBottomSheet(
+          onDismissRequest = { showPremiumUpgradeSheet = false },
+          containerColor = Color(0xFF050B14),
+          dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFF1E3A5F)) }
+        ) {
+          com.example.ui.screens.PremiumUpgradeScreen(
+            onPurchaseSuccess = {
+              showPremiumUpgradeSheet = false
+            },
+            onNavigateBack = {
+              showPremiumUpgradeSheet = false
+            }
+          )
+        }
       }
 
       // Performance and Display Mode Dialog

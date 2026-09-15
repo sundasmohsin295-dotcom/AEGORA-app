@@ -99,20 +99,20 @@ fun AegoraTopBar(
               lineTo(1.dp.toPx(), h * 0.25f)
               close()
             }
-            drawPath(path, color = Color(0x2A00E5FF))
+            drawPath(path, color = Color(0x2A22D3EE))
             drawPath(
               path,
-              color = Color(0xFF00E5FF),
+              color = Color(0xFF22D3EE),
               style = Stroke(width = 1.8.dp.toPx())
             )
           }
           Text(
-            text = "V",
+            text = "A",
             style = TextStyle(
               fontFamily = FontFamily.Monospace,
               fontWeight = FontWeight.Black,
-              fontSize = 17.sp,
-              color = Color(0xFF00E5FF)
+              fontSize = 18.sp,
+              color = Color(0xFF22D3EE)
             )
           )
         }
@@ -172,7 +172,7 @@ fun AegoraTopBar(
             val opCallsign = if (userProfile.callsign.isNotBlank() && userProfile.callsign != "Operator") {
               userProfile.callsign.uppercase()
             } else {
-              "VANCE-SOC"
+              "YANCE-SOC"
             }
             Text(
               text = "$opCallsign • ACTIVE",
@@ -181,7 +181,7 @@ fun AegoraTopBar(
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 8.sp
               ),
-              color = Color(0xFF00E5FF),
+              color = Color(0xFF22D3EE),
               maxLines = 1
             )
           }
@@ -193,19 +193,13 @@ fun AegoraTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
       ) {
-        // Truthful Runtime Sync Status Capsule
+        // Cyan Pill badge [ ⟳ SYNCED ]
         Surface(
           shape = RoundedCornerShape(14.dp),
-          color = AegoraSurfaceElevated,
+          color = Color(0xFF12203A),
           border = androidx.compose.foundation.BorderStroke(
             1.dp,
-            when (syncStatus) {
-              NetworkSyncStatus.SYNCED -> SemanticSuccess.copy(alpha = 0.4f)
-              NetworkSyncStatus.SYNCING -> SemanticElectricBlue.copy(alpha = 0.4f)
-              NetworkSyncStatus.OFFLINE -> AegoraTextTertiary.copy(alpha = 0.3f)
-              NetworkSyncStatus.SYNC_ERROR -> SemanticWarning.copy(alpha = 0.4f)
-              null -> AegoraBorder
-            }
+            Color(0xFF22D3EE).copy(alpha = 0.5f)
           ),
           modifier = Modifier
             .clickable { onSyncClick() }
@@ -215,42 +209,21 @@ fun AegoraTopBar(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Box(
-              modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(
-                  when (syncStatus) {
-                    NetworkSyncStatus.SYNCED -> SemanticSuccess
-                    NetworkSyncStatus.SYNCING -> SemanticElectricBlue
-                    NetworkSyncStatus.OFFLINE -> AegoraTextTertiary
-                    NetworkSyncStatus.SYNC_ERROR -> SemanticWarning
-                    null -> AegoraTextTertiary
-                  }
-                )
-            )
-            Spacer(modifier = Modifier.width(5.dp))
             Text(
               text = when (syncStatus) {
-                NetworkSyncStatus.SYNCED -> "SYNCED"
-                NetworkSyncStatus.SYNCING -> "SYNCING"
-                NetworkSyncStatus.OFFLINE -> "OFFLINE"
-                NetworkSyncStatus.SYNC_ERROR -> "ERROR"
-                null -> "SYNC STATUS UNAVAILABLE"
+                NetworkSyncStatus.SYNCED -> "[ ⟳ SYNCED ]"
+                NetworkSyncStatus.SYNCING -> "[ ⟳ SYNCING ]"
+                NetworkSyncStatus.OFFLINE -> "[ ⚠ OFFLINE ]"
+                NetworkSyncStatus.SYNC_ERROR -> "[ ! ERROR ]"
+                null -> "[ ⟳ SYNCED ]"
               },
               style = MaterialTheme.typography.labelSmall.copy(
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
-                fontSize = 9.sp,
-                letterSpacing = 0.6.sp
+                fontSize = 10.sp,
+                letterSpacing = 0.5.sp
               ),
-              color = when (syncStatus) {
-                NetworkSyncStatus.SYNCED -> SemanticSuccess
-                NetworkSyncStatus.SYNCING -> SemanticElectricBlue
-                NetworkSyncStatus.OFFLINE -> AegoraTextSecondary
-                NetworkSyncStatus.SYNC_ERROR -> SemanticWarning
-                null -> AegoraTextSecondary
-              }
+              color = Color(0xFF22D3EE)
             )
           }
         }

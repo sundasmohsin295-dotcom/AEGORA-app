@@ -3,6 +3,7 @@ package com.example.data
 import com.example.BuildConfig
 import com.example.model.AiMentorMode
 import com.example.network.DemoFallbackInterceptor
+import com.example.network.OfflineMockInterceptor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -20,6 +21,7 @@ object GeminiMentorService {
     .connectTimeout(1500, TimeUnit.MILLISECONDS)
     .readTimeout(1500, TimeUnit.MILLISECONDS)
     .writeTimeout(1500, TimeUnit.MILLISECONDS)
+    .addInterceptor(OfflineMockInterceptor())
     .addInterceptor(DemoFallbackInterceptor)
     .build()
 

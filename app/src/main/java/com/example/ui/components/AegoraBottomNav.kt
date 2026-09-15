@@ -18,14 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
 
-val NavActiveCyan = Color(0xFF00E5FF)
-val NavMutedSlate = Color(0xFF5A718A)
+val NavActiveCyan = Color(0xFF22D3EE)
+val NavMutedSlate = Color(0xFF8CA3C7)
 
 enum class AegoraNavTab(
   val label: String,
@@ -56,6 +58,7 @@ fun AegoraBottomNav(
   onTabSelected: (AegoraNavTab) -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val haptic = LocalHapticFeedback.current
   Surface(
     modifier = modifier
       .fillMaxWidth()
@@ -83,7 +86,10 @@ fun AegoraBottomNav(
         Column(
           modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .clickable { onTabSelected(tab) }
+            .clickable {
+              haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+              onTabSelected(tab)
+            }
             .padding(horizontal = 2.dp, vertical = 2.dp)
             .testTag("nav_tab_${tab.name.lowercase()}"),
           horizontalAlignment = Alignment.CenterHorizontally

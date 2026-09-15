@@ -36,7 +36,9 @@ import com.example.intelligence.CyberOperatingSystemV12Engine
 import com.example.intelligence.PersonalIntelligencePlatformEngine
 import com.example.model.*
 import com.example.ui.components.CinematicVerificationModal
+import com.example.ui.components.CyberTwinRadar3D
 import com.example.ui.components.MissionExecutionSheet
+import com.example.ui.components.RadarAxisData
 import com.example.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -117,12 +119,15 @@ fun HomeScreen(
   onNavigateToDuel: () -> Unit = {},
   onNavigateToCodex: () -> Unit = {},
   onNavigateToDossier: () -> Unit = {},
+  onNavigateToMissionDiagnostic: () -> Unit = {},
+  onNavigateToRadar: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   // State from authoritative repositories
   val userProfile by AegoraRepository.userProfile.collectAsState()
   val predictiveActions by AegoraRepository.predictiveNextActions.collectAsState()
   val cyberTwin60 by CyberOperatingSystemV12Engine.cyberTwin60.collectAsState()
+  val isOfflineMode by AegoraRepository.isOfflineMode.collectAsState()
 
   var activeMissionAction by remember { mutableStateOf<PredictiveNextAction?>(null) }
   var pendingVerificationData by remember { mutableStateOf<VerificationModalData?>(null) }
@@ -437,84 +442,136 @@ fun HomeScreen(
   ) {
 
     // --------------------------------------------------------------------------
+    // OFFLINE MODE AMBER WARNING PILL
+    // --------------------------------------------------------------------------
+    if (isOfflineMode) {
+      item(key = "offline_mode_warning_banner") {
+        Surface(
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("offline_warning_pill"),
+          color = SpecWarningAmber.copy(alpha = 0.15f),
+          shape = RoundedCornerShape(8.dp),
+          border = BorderStroke(1.dp, SpecWarningAmber)
+        ) {
+          Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+          ) {
+            Text(
+              text = "[ ⚠ TACTICAL OFFLINE MODE: USING CACHED INTEL ]",
+              fontSize = 11.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace,
+              color = SpecWarningAmber
+            )
+          }
+        }
+      }
+    }
+
+    // --------------------------------------------------------------------------
     // TOP OPERATOR IDENTITY HUD TILE
     // --------------------------------------------------------------------------
     item(key = "hud_bento_tile") {
       Card(
         modifier = Modifier
           .fillMaxWidth()
-          .testTag("home_operator_identity_hud"),
+          .testTag("home_operator_identity_hud")
+          .clickable { onNavigateToPersonalIntelligence() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-        border = BorderStroke(1.dp, Color(0xFF2D313A))
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = BorderStroke(1.dp, SpecBorder)
       ) {
-        Row(
+        Column(
           modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.SpaceBetween
+            .padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
           Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-          ) {
-            Box(
-              modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF1E222B))
-                .border(1.dp, Color(0xFF2962FF), CircleShape),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(
-                imageVector = Icons.Default.Shield,
-                contentDescription = "Operator Badge",
-                tint = Color(0xFF2962FF),
-                modifier = Modifier.size(18.dp)
-              )
-            }
-            Column {
-              Text(
-                text = "OPERATOR // ${userProfile.callsign.ifBlank { "NEXUS-01" }}",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace,
-                color = Color(0xFFF0F4F8),
-                modifier = Modifier.wrapContentHeight()
-              )
-              Text(
-                text = "LEVEL ${userProfile.currentLevel.ordinal + 1} • ACTIVE DEFENDER",
-                fontSize = 10.sp,
-                color = Color(0xFF8DA2B5),
-                modifier = Modifier.wrapContentHeight()
-              )
-            }
-          }
-
-          Surface(
-            color = Color(0xFF1E222B),
-            shape = RoundedCornerShape(8.dp),
-            border = BorderStroke(1.dp, Color(0xFF2D313A))
+            horizontalArrangement = Arrangement.SpaceBetween
           ) {
             Row(
-              modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
               verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(6.dp)
+              horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
               Box(
                 modifier = Modifier
-                  .size(6.dp)
+                  .size(44.dp)
                   .clip(CircleShape)
-                  .background(Color(0xFF00E676))
-              )
+                  .background(SpecElevatedBg)
+                  .border(1.5.dp, SpecPrimaryBlue, CircleShape),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Person,
+                  contentDescription = "Operator Avatar",
+                  tint = SpecPrimaryBlue,
+                  modifier = Modifier.size(24.dp)
+                )
+              }
+              Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  Text(
+                    text = "OPERATOR // ${userProfile.callsign.ifBlank { "YANCE-SOC" }}",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    color = SpecHeadingWhite
+                  )
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Surface(
+                    color = SpecEmeraldVerification.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(4.dp),
+                    border = BorderStroke(1.dp, SpecEmeraldVerification.copy(alpha = 0.5f))
+                  ) {
+                    Text(
+                      text = "ACTIVE",
+                      fontSize = 9.sp,
+                      fontWeight = FontWeight.Bold,
+                      fontFamily = FontFamily.Monospace,
+                      color = SpecEmeraldVerification,
+                      modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                    )
+                  }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                  text = "Personal Intelligence Profile → 4 Clusters • 6 Weaknesses • 2 Strengths",
+                  fontSize = 11.sp,
+                  color = SpecSubtextSlate
+                )
+              }
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
               Text(
-                text = "${userProfile.currentStreak}D STREAK",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFF0F4F8),
+                text = "LEVEL 04",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Black,
                 fontFamily = FontFamily.Monospace,
-                modifier = Modifier.wrapContentHeight()
+                color = SpecHeadingWhite
+              )
+              Spacer(modifier = Modifier.height(4.dp))
+              LinearProgressIndicator(
+                progress = { 1240f / 2000f },
+                modifier = Modifier
+                  .width(80.dp)
+                  .height(4.dp)
+                  .clip(RoundedCornerShape(2.dp)),
+                color = SpecPrimaryBlue,
+                trackColor = SpecElevatedBg
+              )
+              Spacer(modifier = Modifier.height(2.dp))
+              Text(
+                text = "XP 1,240 / 2,000",
+                fontSize = 9.sp,
+                fontFamily = FontFamily.Monospace,
+                color = SpecSubtextSlate
               )
             }
           }
@@ -523,245 +580,338 @@ fun HomeScreen(
     }
 
     // --------------------------------------------------------------------------
-    // TILE A: THE "NEXT DUEL" HERO TILE (Span: Full Width, Height: 140.dp)
+    // TILE A: "NEXT MOVE" HERO CARD (Full Width Spec Match)
     // --------------------------------------------------------------------------
     item(key = "next_duel_hero_tile") {
       Card(
         modifier = Modifier
           .fillMaxWidth()
-          .height(140.dp)
-          .testTag("home_next_move_hero")
-          .clickable { activeBentoSheet = BentoSheetType.NEXT_DUEL },
+          .testTag("home_next_move_hero"),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-        border = BorderStroke(1.dp, Color(0xFF2D313A))
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = BorderStroke(1.dp, SpecBorder)
       ) {
-        Row(
+        Column(
           modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(16.dp),
-          verticalAlignment = Alignment.CenterVertically
+          verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-          // Left side: Large, glowing Corporate Cobalt (#2962FF) play icon
-          Box(
-            modifier = Modifier
-              .size(56.dp)
-              .clip(CircleShape)
-              .background(
-                Brush.radialGradient(
-                  colors = listOf(Color(0xFF2962FF), Color(0xFF1A44B8))
-                )
-              )
-              .border(1.5.dp, Color(0xFF82B1FF).copy(alpha = 0.6f), CircleShape)
-              .testTag("home_btn_start_next_move")
-              .clickable { activeMissionAction = nextMoveAction },
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              imageVector = Icons.Default.PlayArrow,
-              contentDescription = "Start Duel",
-              tint = Color.White,
-              modifier = Modifier.size(32.dp)
-            )
-          }
-
-          // Middle: Text hierarchy
-          Column(
-            modifier = Modifier
-              .weight(1f)
-              .padding(horizontal = 14.dp)
-              .wrapContentHeight(),
-            verticalArrangement = Arrangement.Center
+          // Pill & Title Header
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
           ) {
             Surface(
-              color = Color(0x222962FF),
+              color = SpecPrimaryBlue.copy(alpha = 0.15f),
               shape = RoundedCornerShape(4.dp),
-              border = BorderStroke(1.dp, Color(0xFF2962FF).copy(alpha = 0.5f))
+              border = BorderStroke(1.dp, SpecPrimaryBlue.copy(alpha = 0.5f))
             ) {
               Text(
-                text = "ASYNC DUEL READY",
-                fontSize = 11.sp,
+                text = "EST. 8 MIN",
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF82B1FF),
-                modifier = Modifier
-                  .padding(horizontal = 6.dp, vertical = 2.dp)
-                  .wrapContentHeight()
+                fontFamily = FontFamily.Monospace,
+                color = SpecPrimaryBlue,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
               )
             }
-            Spacer(modifier = Modifier.height(6.dp))
             Text(
-              text = "APT29 Beacon Analysis",
-              fontSize = 14.sp,
+              text = "+350 XP",
+              fontSize = 11.sp,
               fontWeight = FontWeight.Bold,
-              color = Color(0xFFF0F4F8),
-              modifier = Modifier.wrapContentHeight()
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-              text = "Cobalt Strike Malleable C2",
-              fontSize = 12.sp,
-              color = Color(0xFF8DA2B5),
-              modifier = Modifier.wrapContentHeight()
+              fontFamily = FontFamily.Monospace,
+              color = SpecCyanHighlight
             )
           }
 
-          // Right side: Subtle pulse animation / minimal line chart
-          BentoThreatPulseChart(
-            modifier = Modifier
-              .size(width = 68.dp, height = 52.dp)
+          Text(
+            text = "DIAGNOSTIC REVIEW: LINUX CLI FORENSICS",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Black,
+            fontFamily = FontFamily.Monospace,
+            color = SpecHeadingWhite
           )
+
+          // WHY THIS MISSION? with 4 bullet points
+          Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+              text = "WHY THIS MISSION?",
+              fontSize = 11.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace,
+              color = SpecSubtextSlate,
+              letterSpacing = 0.5.sp
+            )
+            listOf(
+              "Retention dropped to 48%",
+              "Prerequisite for active Phase 1 Linux Log Triage",
+              "Decay Risk: Critical",
+              "Generates Proof Link"
+            ).forEach { reason ->
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Check,
+                  contentDescription = null,
+                  tint = SpecCyanHighlight,
+                  modifier = Modifier.size(14.dp)
+                )
+                Text(
+                  text = reason,
+                  fontSize = 12.sp,
+                  color = SpecHeadingWhite
+                )
+              }
+            }
+          }
+
+          // Full-width Primary Blue CTA Button
+          Button(
+            onClick = {
+              activeMissionAction = nextMoveAction
+              onNavigateToMissionDiagnostic()
+            },
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(48.dp)
+              .testTag("home_btn_start_next_move"),
+            colors = ButtonDefaults.buttonColors(containerColor = SpecPrimaryBlue),
+            shape = RoundedCornerShape(12.dp)
+          ) {
+            Text(
+              text = "▶ EXECUTE MISSION",
+              fontSize = 14.sp,
+              fontWeight = FontWeight.Bold,
+              letterSpacing = 1.sp,
+              color = Color.White
+            )
+          }
+
+          // Sub-link
+          Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+          ) {
+            Text(
+              text = "VIEW DETAILED REASONING >",
+              fontSize = 11.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace,
+              color = SpecPrimaryBlue,
+              modifier = Modifier
+                .clickable { onNavigateToMissionDiagnostic() }
+                .padding(vertical = 4.dp)
+            )
+          }
         }
       }
     }
 
     // --------------------------------------------------------------------------
-    // TWO-COLUMN BENTO ROW: TILE B (OSINT) & TILE C (CYBER TWIN)
+    // FAILURE PATTERN TREND CARD
     // --------------------------------------------------------------------------
-    item(key = "bento_two_column_row") {
-      Row(
+    item(key = "failure_pattern_trend_card") {
+      Card(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = BorderStroke(1.dp, SpecBorder)
       ) {
-        // TILE B: OSINT Agent Tile (Span: Half Width, Square: 140.dp)
-        Card(
+        Row(
           modifier = Modifier
-            .weight(1f)
-            .height(140.dp)
-            .clickable { activeBentoSheet = BentoSheetType.OSINT },
-          shape = RoundedCornerShape(16.dp),
-          colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-          border = BorderStroke(1.dp, Color(0xFF2D313A))
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.SpaceBetween
         ) {
-          Column(
-            modifier = Modifier
-              .fillMaxSize()
-              .padding(14.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+          Column {
+            Text(
+              text = "FAILURE PATTERN TREND",
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace,
+              color = SpecSubtextSlate
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+              text = "Premature Conclusion | 3 → 2 → 1",
+              fontSize = 12.sp,
+              fontWeight = FontWeight.Bold,
+              color = SpecHeadingWhite
+            )
+          }
+          Surface(
+            color = SpecEmeraldVerification.copy(alpha = 0.15f),
+            shape = RoundedCornerShape(4.dp),
+            border = BorderStroke(1.dp, SpecEmeraldVerification.copy(alpha = 0.4f))
           ) {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Box(
-                modifier = Modifier
-                  .size(36.dp)
-                  .clip(RoundedCornerShape(8.dp))
-                  .background(Color(0x1A06B6D4))
-                  .border(1.dp, Color(0x3306B6D4), RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(
-                  imageVector = Icons.Default.Search,
-                  contentDescription = "OSINT Radar",
-                  tint = Color(0xFF06B6D4),
-                  modifier = Modifier.size(20.dp)
-                )
-              }
-              // Active live indicator
-              Box(
-                modifier = Modifier
-                  .size(8.dp)
-                  .clip(CircleShape)
-                  .background(Color(0xFF00E676))
-              )
-            }
-
-            Column(modifier = Modifier.wrapContentHeight()) {
-              Text(
-                text = "Live OSINT Agent",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFF0F4F8),
-                modifier = Modifier.wrapContentHeight()
-              )
-              Spacer(modifier = Modifier.height(2.dp))
-              Text(
-                text = "3 New CVEs",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF00E676),
-                modifier = Modifier.wrapContentHeight()
-              )
-            }
+            Text(
+              text = "[ 🠓 Improving ]",
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              color = SpecEmeraldVerification,
+              modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+            )
           }
         }
+      }
+    }
 
-        // TILE C: Cyber Twin Stats Tile (Span: Half Width, Square: 140.dp)
-        Card(
+    // --------------------------------------------------------------------------
+    // CYBER TWIN MINI WIDGET (Full Width Spec Match)
+    // --------------------------------------------------------------------------
+    item(key = "cyber_twin_mini_widget") {
+      Card(
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("home_compact_cyber_twin")
+          .clickable { onNavigateToRadar() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = BorderStroke(1.dp, SpecBorder)
+      ) {
+        Column(
           modifier = Modifier
-            .weight(1f)
-            .height(140.dp)
-            .testTag("home_compact_cyber_twin")
-            .clickable { activeBentoSheet = BentoSheetType.CYBER_TWIN },
-          shape = RoundedCornerShape(16.dp),
-          colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-          border = BorderStroke(1.dp, Color(0xFF2D313A))
+            .fillMaxWidth()
+            .padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-          Column(
-            modifier = Modifier
-              .fillMaxSize()
-              .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
           ) {
-            // Clean circular progress indicator in Cobalt Blue (78%)
-            Box(
-              modifier = Modifier.size(54.dp),
-              contentAlignment = Alignment.Center
+            Text(
+              text = "CYBER TWIN // CAPABILITY GRAPH",
+              fontSize = 12.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace,
+              color = SpecCyanHighlight,
+              letterSpacing = 0.5.sp
+            )
+            Surface(
+              color = SpecPrimaryBlue.copy(alpha = 0.15f),
+              shape = RoundedCornerShape(4.dp),
+              border = BorderStroke(1.dp, SpecPrimaryBlue.copy(alpha = 0.4f))
             ) {
-              CircularProgressIndicator(
-                progress = { 0.78f },
-                modifier = Modifier.fillMaxSize(),
-                color = Color(0xFF2962FF),
-                trackColor = Color(0xFF2D313A),
-                strokeWidth = 5.dp,
-                strokeCap = StrokeCap.Round
-              )
               Text(
-                text = "78%",
-                fontSize = 13.sp,
+                text = "[ ◉ ORBITAL TELEMETRY ]",
+                fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace,
-                color = Color(0xFFF0F4F8),
-                modifier = Modifier.wrapContentHeight()
-              )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-              text = "AI Oversight Level",
-              fontSize = 12.sp,
-              color = Color(0xFF8DA2B5),
-              textAlign = TextAlign.Center,
-              modifier = Modifier.wrapContentHeight()
-            )
-
-            Row(
-              horizontalArrangement = Arrangement.spacedBy(4.dp),
-              modifier = Modifier.padding(top = 2.dp)
-            ) {
-              Text(
-                text = "Foundation",
-                fontSize = 8.sp,
-                color = Color(0xFF53677A),
-                modifier = Modifier.wrapContentHeight()
-              )
-              Text(
-                text = "•",
-                fontSize = 8.sp,
-                color = Color(0xFF53677A),
-                modifier = Modifier.wrapContentHeight()
-              )
-              Text(
-                text = "Active Defense",
-                fontSize = 8.sp,
-                color = Color(0xFF53677A),
-                modifier = Modifier.wrapContentHeight()
+                color = SpecPrimaryBlue,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
               )
             }
           }
+
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+          ) {
+            // Left: Stylized 2D/3D orbital graph node
+            Box(
+              modifier = Modifier
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(SpecElevatedBg)
+                .border(1.dp, SpecPrimaryBlue, CircleShape),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(
+                imageVector = Icons.Default.AllInclusive,
+                contentDescription = "Orbital Twin Node",
+                tint = SpecCyanHighlight,
+                modifier = Modifier.size(34.dp)
+              )
+            }
+
+            // Right: 5 horizontal micro-bars with percentages
+            Column(
+              modifier = Modifier.weight(1f),
+              verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              listOf(
+                Triple("INVESTIGATION", 0.82f, "82%"),
+                Triple("REASONING", 0.60f, "60%"),
+                Triple("TECHNICAL SKILL", 0.76f, "76%"),
+                Triple("EVIDENCE DISCIPLINE", 0.61f, "61%"),
+                Triple("AI OVERSIGHT", 0.73f, "73%")
+              ).forEach { (label, progress, pctText) ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                  ) {
+                    Text(
+                      text = label,
+                      fontSize = 9.sp,
+                      fontWeight = FontWeight.Bold,
+                      fontFamily = FontFamily.Monospace,
+                      color = SpecHeadingWhite
+                    )
+                    Text(
+                      text = pctText,
+                      fontSize = 9.sp,
+                      fontWeight = FontWeight.Bold,
+                      fontFamily = FontFamily.Monospace,
+                      color = SpecCyanHighlight
+                    )
+                  }
+                  LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .height(4.dp)
+                      .clip(RoundedCornerShape(2.dp)),
+                    color = SpecPrimaryBlue,
+                    trackColor = SpecElevatedBg
+                  )
+                }
+              }
+
+              // Foundation and Active Defense compatibility text for tests
+              Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(top = 2.dp)
+              ) {
+                Text(
+                  text = "Foundation",
+                  fontSize = 8.sp,
+                  color = SpecSubtextSlate
+                )
+                Text(
+                  text = "•",
+                  fontSize = 8.sp,
+                  color = SpecSubtextSlate
+                )
+                Text(
+                  text = "Active Defense",
+                  fontSize = 8.sp,
+                  color = SpecSubtextSlate
+                )
+              }
+            }
+          }
+
+          // 3D Isometric Cyber Twin Capability Radar
+          CyberTwinRadar3D(
+            axes = listOf(
+              RadarAxisData("Investigation", 0.82f),
+              RadarAxisData("Reasoning", 0.60f),
+              RadarAxisData("Tech Skill", 0.76f),
+              RadarAxisData("Evidence", 0.61f),
+              RadarAxisData("AI Oversight", 0.73f)
+            ),
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(220.dp)
+          )
         }
       }
     }

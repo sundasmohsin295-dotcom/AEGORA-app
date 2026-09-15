@@ -1,11 +1,7 @@
 package com.example
 
-import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import com.example.auth.AegoraAuthRepository
 import com.example.model.SubscriptionTier
 import com.example.subscription.AegoraSubscriptionRepository
@@ -144,5 +140,63 @@ class AegoraCriticalPathTest {
     biometricExportBtn.performClick()
 
     assertTrue("Clicking Biometric Export without PRO subscription must summon paywall", paywallTriggered)
+  }
+
+  /**
+   * Test 5: The "SHIPATON" Judge Easter Egg:
+   * Entering "/shipaton-override" into the OSINT Agent chat input and clicking Send
+   * displays the custom "SYSTEM OVERRIDE AUTHORIZED" Easter Egg card.
+   */
+  @Test
+  fun testOsintAgentChat_shipatonOverrideEasterEgg() {
+    composeTestRule.setContent {
+      AegoraTheme {
+        OsintAgentChatScreen(
+          onNavigateBack = {}
+        )
+      }
+    }
+
+    val inputField = composeTestRule.onNodeWithTag("osint_input_field")
+    inputField.performTextInput("/shipaton-override")
+
+    val sendButton = composeTestRule.onNodeWithTag("osint_send_button")
+    sendButton.performClick()
+
+    composeTestRule.waitUntil(timeoutMillis = 2500) {
+      composeTestRule.onAllNodesWithTag("easter_egg_override_card").fetchSemanticsNodes().isNotEmpty()
+    }
+
+    composeTestRule.onNodeWithTag("easter_egg_override_card").assertIsDisplayed()
+    composeTestRule.onNodeWithText("SYSTEM OVERRIDE AUTHORIZED").assertIsDisplayed()
+  }
+
+  /**
+   * Test 6: Scapy Live .PCAP trace ingestion:
+   * Clicking "[ INGEST .PCAP TRACE ]" in DuelArenaScreen starts streaming packet frames.
+   */
+  @Test
+  fun testDuelArena_ingestPcapTrace() {
+    runBlocking {
+      AegoraSubscriptionRepository.syncSubscriptionForUser("test_pcap_operator")
+    }
+
+    composeTestRule.setContent {
+      AegoraTheme {
+        DuelArenaScreen(
+          onNavigateBack = {},
+          onShowPaywall = {}
+        )
+      }
+    }
+
+    val pcapBtn = composeTestRule.onNodeWithTag("duel_ingest_pcap_btn")
+    pcapBtn.assertIsDisplayed()
+    pcapBtn.performClick()
+
+    composeTestRule.waitUntil(timeoutMillis = 2500) {
+      composeTestRule.onAllNodesWithText("PCAP // SCAPY 2.5 DISSECTION", substring = true).fetchSemanticsNodes().isNotEmpty()
+    }
+    composeTestRule.onNodeWithText("PCAP // SCAPY 2.5 DISSECTION", substring = true).assertIsDisplayed()
   }
 }

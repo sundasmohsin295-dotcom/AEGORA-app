@@ -469,19 +469,31 @@ fun ProofDossierModal(
                   return@Button
                 }
 
-                if (!isExporting) {
-                  isExporting = true
-                  exportProgress = 0f
-                  exportComplete = false
-                  coroutineScope.launch {
-                    while (exportProgress < 1.0f) {
-                      delay(200)
-                      exportProgress = (exportProgress + 0.25f).coerceAtMost(1.0f)
+                val fragmentActivity = com.example.security.BiometricSecurityEngine.findFragmentActivity(context)
+                com.example.security.BiometricSecurityEngine.authenticateOperator(
+                  activity = fragmentActivity,
+                  title = "BIOMETRIC PROOF ATTESTATION",
+                  subtitle = "Cryptographic Dossier Export",
+                  description = "Re-verify your operator biometric identity via StrongBox / TEE before releasing encrypted cryptographic proof.",
+                  onAuthenticated = {
+                    if (!isExporting) {
+                      isExporting = true
+                      exportProgress = 0f
+                      exportComplete = false
+                      coroutineScope.launch {
+                        while (exportProgress < 1.0f) {
+                          delay(200)
+                          exportProgress = (exportProgress + 0.25f).coerceAtMost(1.0f)
+                        }
+                        isExporting = false
+                        exportComplete = true
+                      }
                     }
-                    isExporting = false
-                    exportComplete = true
+                  },
+                  onError = { err ->
+                    android.widget.Toast.makeText(context, "Biometric Signature Refused: $err", android.widget.Toast.LENGTH_SHORT).show()
                   }
-                }
+                )
               },
               enabled = !isExporting,
               shape = RoundedCornerShape(8.dp),
