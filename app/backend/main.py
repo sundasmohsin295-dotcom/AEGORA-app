@@ -21,6 +21,7 @@ import re
 import json
 import time
 import os
+os.environ["GEMINI_API_KEY"] = "AQ.Ab8RN6Kzr05hNIHcerytWsmSg3d12_9kvP95spdz960tnE8y3A"
 import asyncio
 import urllib.request
 import urllib.parse
