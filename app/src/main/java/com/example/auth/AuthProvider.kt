@@ -14,6 +14,7 @@ interface AuthProvider {
   val currentIdentity: AuthenticatedIdentity?
 
   suspend fun signInWithEmailPassword(email: String, pass: String): AuthResult
+  suspend fun signUpWithEmailPassword(email: String, pass: String): AuthResult
   suspend fun signInWithFederatedToken(idToken: String): AuthResult
   suspend fun signOut(): Boolean
 }

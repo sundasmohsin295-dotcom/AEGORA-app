@@ -302,7 +302,7 @@ fun ZeroDayLabScreen(
           }
         }
 
-        if (testRuleResult != null) {
+        testRuleResult?.let { res ->
           Spacer(modifier = Modifier.height(8.dp))
           Surface(
             shape = RoundedCornerShape(6.dp),
@@ -311,7 +311,7 @@ fun ZeroDayLabScreen(
             modifier = Modifier.fillMaxWidth()
           ) {
             Text(
-              text = testRuleResult!!,
+              text = res,
               style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
               color = CyberEmerald,
               modifier = Modifier.padding(8.dp)

@@ -120,6 +120,34 @@ class RealFirebaseAuthProvider(
     }
   }
 
+  override suspend fun signUpWithEmailPassword(email: String, pass: String): AuthResult {
+    val auth = firebaseAuth
+    if (auth == null) {
+      val blockerReason = "External Identity Provider (Firebase) is not configured. Missing app/google-services.json."
+      _authState.value = AuthState.AuthenticationFailed(blockerReason)
+      return AuthResult.Blocked(blockerReason)
+    }
+
+    _authState.value = AuthState.Authenticating(providerId)
+    return try {
+      val authResult = auth.createUserWithEmailAndPassword(email, pass).awaitTask()
+      val user = authResult.user
+      if (user != null) {
+        val identity = mapFirebaseUser(user)
+        _authState.value = AuthState.Authenticated(identity)
+        AuthResult.Success(identity)
+      } else {
+        val err = "Registration succeeded but Firebase user payload is null"
+        _authState.value = AuthState.AuthenticationFailed(err)
+        AuthResult.Failure(err)
+      }
+    } catch (e: Exception) {
+      val err = e.localizedMessage ?: "Firebase registration failed"
+      _authState.value = AuthState.AuthenticationFailed(err)
+      AuthResult.Failure(err)
+    }
+  }
+
   override suspend fun signInWithFederatedToken(idToken: String): AuthResult {
     val auth = firebaseAuth
     if (auth == null) {

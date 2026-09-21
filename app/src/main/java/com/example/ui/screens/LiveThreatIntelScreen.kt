@@ -30,6 +30,7 @@ import com.example.security.AuthoritativeVerificationHandler
 import com.example.security.SignedProofDossier
 import com.example.subscription.AegoraSubscriptionRepository
 import com.example.ui.components.SubscriptionPaywallDialog
+import com.example.ui.components.ThreatIntelDashboardCard
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -246,7 +247,14 @@ fun LiveThreatIntelScreen(
         }
       }
 
-      // 2. Real-Time CVE Feed Selector Carousel
+      // 2. Threat Intel Dashboard with Glowing Canvas Bezier Graphs
+      item {
+        ThreatIntelDashboardCard(
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
+
+      // 3. Real-Time CVE Feed Selector Carousel
       item {
         Text(
           text = "ACTIVE ZERO-DAY INGEST FEED",
@@ -651,7 +659,7 @@ fun LiveThreatIntelScreen(
                       )
                       Spacer(modifier = Modifier.height(2.dp))
                       Text(
-                        text = "SHA-256 Digest: ${signedProof!!.missionDigestSha256}",
+                        text = "SHA-256 Digest: ${signedProof?.missionDigestSha256 ?: "N/A"}",
                         style = MaterialTheme.typography.bodySmall.copy(
                           fontFamily = FontFamily.Monospace,
                           fontSize = 9.sp
@@ -660,7 +668,7 @@ fun LiveThreatIntelScreen(
                       )
                       Spacer(modifier = Modifier.height(2.dp))
                       Text(
-                        text = "HMAC Signature: ${signedProof!!.cryptographicSignature.take(24)}...",
+                        text = "HMAC Signature: ${signedProof?.cryptographicSignature?.take(24) ?: "PENDING"}...",
                         style = MaterialTheme.typography.bodySmall.copy(
                           fontFamily = FontFamily.Monospace,
                           fontSize = 8.5.sp

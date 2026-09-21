@@ -1,5 +1,6 @@
 package com.example.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -76,6 +77,7 @@ sealed class ScreenDestination {
   data object DuelArena : ScreenDestination()
   data object IntelligenceCodex : ScreenDestination()
   data object OperatorDossier : ScreenDestination()
+  data object ThreatDossier : ScreenDestination()
   data object OsintAgentChat : ScreenDestination()
   data object SubscriptionPaywall : ScreenDestination()
   data object MissionDiagnostic : ScreenDestination()
@@ -83,6 +85,10 @@ sealed class ScreenDestination {
   data object VerificationResult : ScreenDestination()
   data object CyberTwinRadar : ScreenDestination()
   data object RaspLockdown : ScreenDestination()
+  data object SystemRecovery : ScreenDestination()
+  data object SecurityClearance : ScreenDestination()
+  data object AuthVault : ScreenDestination()
+  data class EmailVerification(val email: String) : ScreenDestination()
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -92,6 +98,9 @@ fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) 
     val context = androidx.compose.ui.platform.LocalContext.current
     val auditReportState by com.example.security.SecurityEnforcer.auditReport.collectAsState()
     val effectiveAuditReport = initialAuditReport ?: auditReportState
+    val crashReport by com.example.util.GlobalExceptionHandler.lastCrashReport.collectAsState()
+    val clearanceRepo = remember { com.example.data.SecurityClearanceRepository(context) }
+    val isClearanceVerified by clearanceRepo.isClearanceVerifiedFlow.collectAsState(initial = null)
 
     var currentDestination by remember {
       mutableStateOf<ScreenDestination>(
@@ -101,6 +110,13 @@ fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) 
           ScreenDestination.Splash
         }
       )
+    }
+
+    // Safely redirect to SystemRecoveryScreen if a global exception is intercepted
+    LaunchedEffect(crashReport) {
+      if (crashReport != null) {
+        currentDestination = ScreenDestination.SystemRecovery
+      }
     }
     var currentTab by remember { mutableStateOf(AegoraNavTab.RADAR) }
     val userProfile by AegoraRepository.userProfile.collectAsState()
@@ -115,6 +131,25 @@ fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) 
     var showSubscriptionDialog by remember { mutableStateOf(false) }
     var showPremiumUpgradeSheet by remember { mutableStateOf(false) }
     val subscriptionState by com.example.subscription.AegoraSubscriptionRepository.subscriptionState.collectAsState()
+
+    // BACK-STACK RESILIENCE: Intercept system back presses when modals, dialogs, or sub-screens are active
+    val isSubScreenActive = currentDestination != ScreenDestination.MainHub &&
+        currentDestination != ScreenDestination.Splash &&
+        currentDestination != ScreenDestination.RaspLockdown
+    val isAnyModalActive = showPremiumUpgradeSheet || showSubscriptionDialog ||
+        showSearchDialog || showNotificationDialog || showSyncDialog || showPerformanceDialog
+
+    BackHandler(enabled = isAnyModalActive || isSubScreenActive) {
+      when {
+        showPremiumUpgradeSheet -> showPremiumUpgradeSheet = false
+        showSubscriptionDialog -> showSubscriptionDialog = false
+        showSearchDialog -> showSearchDialog = false
+        showNotificationDialog -> showNotificationDialog = false
+        showSyncDialog -> showSyncDialog = false
+        showPerformanceDialog -> showPerformanceDialog = false
+        isSubScreenActive -> currentDestination = ScreenDestination.MainHub
+      }
+    }
 
     Surface(
       modifier = Modifier
@@ -166,6 +201,15 @@ fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) 
       color = CyberBackground
     ) {
       when (val dest = currentDestination) {
+        is ScreenDestination.SystemRecovery -> {
+          SystemRecoveryScreen(
+            crashReport = crashReport,
+            onRestartSession = {
+              currentDestination = ScreenDestination.MainHub
+            }
+          )
+        }
+
         is ScreenDestination.RaspLockdown -> {
           RaspLockdownScreen(
             auditReport = effectiveAuditReport,
@@ -185,7 +229,19 @@ fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) 
         is ScreenDestination.Splash -> {
           SplashScreen(
             onSplashFinished = {
-              currentDestination = ScreenDestination.CyberAuth
+              if (isClearanceVerified == false) {
+                currentDestination = ScreenDestination.SecurityClearance
+              } else {
+                currentDestination = ScreenDestination.CyberAuth
+              }
+            }
+          )
+        }
+
+        is ScreenDestination.SecurityClearance -> {
+          SecurityClearanceScreen(
+            onClearanceGranted = {
+              currentDestination = ScreenDestination.MainHub
             }
           )
         }
@@ -317,9 +373,32 @@ fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) 
         }
 
         is ScreenDestination.CyberAuth -> {
-          ProAuthScreen(
+          AuthVaultScreen(
             onAuthSuccess = { currentDestination = ScreenDestination.MainHub },
-            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
+            onNavigateToOtpVerification = { emailToVerify ->
+              currentDestination = ScreenDestination.EmailVerification(emailToVerify)
+            }
+          )
+        }
+
+        is ScreenDestination.AuthVault -> {
+          AuthVaultScreen(
+            onAuthSuccess = { currentDestination = ScreenDestination.MainHub },
+            onNavigateToOtpVerification = { emailToVerify ->
+              currentDestination = ScreenDestination.EmailVerification(emailToVerify)
+            }
+          )
+        }
+
+        is ScreenDestination.EmailVerification -> {
+          EmailVerificationScreen(
+            email = dest.email,
+            onVerificationComplete = {
+              currentDestination = ScreenDestination.MainHub
+            },
+            onNavigateBack = {
+              currentDestination = ScreenDestination.CyberAuth
+            }
           )
         }
 
@@ -445,7 +524,14 @@ fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) 
           OperatorDossierScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub },
             onNavigateToDuel = { currentDestination = ScreenDestination.DuelArena },
+            onNavigateToThreatDossier = { currentDestination = ScreenDestination.ThreatDossier },
             onShowPaywall = { showSubscriptionDialog = true }
+          )
+        }
+
+        is ScreenDestination.ThreatDossier -> {
+          ThreatDossierScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
           )
         }
 

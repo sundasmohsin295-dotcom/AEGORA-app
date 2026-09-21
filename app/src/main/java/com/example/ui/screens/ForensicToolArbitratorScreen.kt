@@ -554,7 +554,7 @@ fun ForensicToolArbitratorScreen(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                          text = "SHA-256: ${signedProof!!.missionDigestSha256}",
+                          text = "SHA-256: ${signedProof?.missionDigestSha256 ?: "N/A"}",
                           style = MaterialTheme.typography.bodySmall.copy(
                             fontFamily = FontFamily.Monospace,
                             fontSize = 9.sp

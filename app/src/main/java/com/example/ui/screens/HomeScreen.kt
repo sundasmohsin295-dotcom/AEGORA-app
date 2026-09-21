@@ -35,11 +35,20 @@ import com.example.data.AegoraRepository
 import com.example.intelligence.CyberOperatingSystemV12Engine
 import com.example.intelligence.PersonalIntelligencePlatformEngine
 import com.example.model.*
+import com.example.subscription.AegoraSubscriptionRepository
 import com.example.ui.components.CinematicVerificationModal
 import com.example.ui.components.CyberTwinRadar3D
 import com.example.ui.components.MissionExecutionSheet
+import com.example.ui.components.PalantirMatteButton
 import com.example.ui.components.RadarAxisData
+import com.example.ui.components.ThreatIntelDashboardCard
+import com.example.ui.modifiers.glitchEffect
+import com.example.ui.overscroll.drawCyberOverscroll
+import com.example.ui.overscroll.rememberCyberOverscrollEffect
 import com.example.ui.theme.*
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -128,10 +137,14 @@ fun HomeScreen(
   val predictiveActions by AegoraRepository.predictiveNextActions.collectAsState()
   val cyberTwin60 by CyberOperatingSystemV12Engine.cyberTwin60.collectAsState()
   val isOfflineMode by AegoraRepository.isOfflineMode.collectAsState()
+  val subscriptionState by AegoraSubscriptionRepository.subscriptionState.collectAsState()
 
   var activeMissionAction by remember { mutableStateOf<PredictiveNextAction?>(null) }
   var pendingVerificationData by remember { mutableStateOf<VerificationModalData?>(null) }
   var activeBentoSheet by remember { mutableStateOf(BentoSheetType.NONE) }
+  var isExecutingMission by remember { mutableStateOf(false) }
+  val snackbarHostState = remember { SnackbarHostState() }
+  val coroutineScope = rememberCoroutineScope()
 
   val nextMoveAction: PredictiveNextAction = remember(predictiveActions) {
     predictiveActions.firstOrNull() ?: PredictiveNextAction(
@@ -429,42 +442,47 @@ fun HomeScreen(
     }
   }
 
+  val cyberOverscroll = rememberCyberOverscrollEffect()
+
   // ============================================================================
-  // MAIN BENTO GRID CONTAINER (DEEP GRAPHITE CANVAS)
+  // MAIN BENTO GRID CONTAINER (ENTERPRISE OBSIDIAN CANVAS)
   // ============================================================================
-  LazyColumn(
-    modifier = modifier
-      .fillMaxSize()
-      .background(Color(0xFF090A0C))
-      .testTag("home_command_center_list"),
-    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
-    verticalArrangement = Arrangement.spacedBy(12.dp)
-  ) {
+  Box(modifier = modifier.fillMaxSize().background(SpecCanvasBg)) {
+    LazyColumn(
+      modifier = Modifier
+        .fillMaxSize()
+        .drawCyberOverscroll(cyberOverscroll)
+        .testTag("home_command_center_list"),
+      contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
+      verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
 
     // --------------------------------------------------------------------------
-    // OFFLINE MODE AMBER WARNING PILL
+    // OFFLINE MODE AMBER WARNING PILL WITH DYNAMIC GLITCH EFFECT
     // --------------------------------------------------------------------------
     if (isOfflineMode) {
       item(key = "offline_mode_warning_banner") {
         Surface(
           modifier = Modifier
             .fillMaxWidth()
+            .glitchEffect(isGlitching = true)
             .testTag("offline_warning_pill"),
-          color = SpecWarningAmber.copy(alpha = 0.15f),
+          color = SpecWarningAmber.copy(alpha = 0.18f),
           shape = RoundedCornerShape(8.dp),
           border = BorderStroke(1.dp, SpecWarningAmber)
         ) {
           Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
           ) {
             Text(
-              text = "[ ⚠ TACTICAL OFFLINE MODE: USING CACHED INTEL ]",
+              text = "[ ⚠ TACTICAL AIRGAP: UPLINK SEVERED // USING HARDWARE CACHE ]",
               fontSize = 11.sp,
-              fontWeight = FontWeight.Bold,
+              fontWeight = FontWeight.Black,
               fontFamily = FontFamily.Monospace,
-              color = SpecWarningAmber
+              color = SpecWarningAmber,
+              letterSpacing = 1.sp
             )
           }
         }
@@ -507,6 +525,15 @@ fun HomeScreen(
                   .border(1.5.dp, SpecPrimaryBlue, CircleShape),
                 contentAlignment = Alignment.Center
               ) {
+                val context = LocalContext.current
+                val avatarImageRequest = remember(context) {
+                  ImageRequest.Builder(context)
+                    .data(android.R.drawable.ic_menu_camera)
+                    .crossfade(true)
+                    .crossfade(300)
+                    .build()
+                }
+
                 Icon(
                   imageVector = Icons.Default.Person,
                   contentDescription = "Operator Avatar",
@@ -524,19 +551,98 @@ fun HomeScreen(
                     color = SpecHeadingWhite
                   )
                   Spacer(modifier = Modifier.width(6.dp))
-                  Surface(
-                    color = SpecEmeraldVerification.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(4.dp),
-                    border = BorderStroke(1.dp, SpecEmeraldVerification.copy(alpha = 0.5f))
-                  ) {
-                    Text(
-                      text = "ACTIVE",
-                      fontSize = 9.sp,
-                      fontWeight = FontWeight.Bold,
-                      fontFamily = FontFamily.Monospace,
-                      color = SpecEmeraldVerification,
-                      modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                    )
+                  when (subscriptionState.tier) {
+                    SubscriptionTier.CAREER -> {
+                      Surface(
+                        color = SpecEmeraldVerification.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(4.dp),
+                        border = BorderStroke(1.dp, SpecEmeraldVerification),
+                        modifier = Modifier.testTag("home_tier_badge")
+                      ) {
+                        Row(
+                          verticalAlignment = Alignment.CenterVertically,
+                          modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                          Box(
+                            modifier = Modifier
+                              .size(5.dp)
+                              .clip(CircleShape)
+                              .background(SpecEmeraldVerification)
+                          )
+                          Spacer(modifier = Modifier.width(4.dp))
+                          Text(
+                            text = "CAREER",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace,
+                            color = SpecEmeraldVerification
+                          )
+                        }
+                      }
+                    }
+                    SubscriptionTier.PRO -> {
+                      val glowingCobalt = Color(0xFF2962FF)
+                      Surface(
+                        color = glowingCobalt.copy(alpha = 0.25f),
+                        shape = RoundedCornerShape(4.dp),
+                        border = BorderStroke(1.dp, glowingCobalt),
+                        modifier = Modifier.testTag("home_tier_badge")
+                      ) {
+                        Row(
+                          verticalAlignment = Alignment.CenterVertically,
+                          modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                          Box(
+                            modifier = Modifier
+                              .size(5.dp)
+                              .clip(CircleShape)
+                              .background(Color(0xFF60A5FA))
+                          )
+                          Spacer(modifier = Modifier.width(4.dp))
+                          Text(
+                            text = "PRO",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace,
+                            color = Color(0xFF60A5FA)
+                          )
+                        }
+                      }
+                    }
+                    SubscriptionTier.FREE, SubscriptionTier.UNKNOWN -> {
+                      Surface(
+                        color = SpecElevatedBg,
+                        shape = RoundedCornerShape(4.dp),
+                        border = BorderStroke(1.dp, SpecBorder),
+                        modifier = Modifier.testTag("home_tier_badge")
+                      ) {
+                        Text(
+                          text = "FREE",
+                          fontSize = 9.sp,
+                          fontWeight = FontWeight.Bold,
+                          fontFamily = FontFamily.Monospace,
+                          color = SpecSubtextSlate,
+                          modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                      }
+                    }
+                    else -> {
+                      Surface(
+                        color = SpecElevatedBg,
+                        shape = RoundedCornerShape(4.dp),
+                        border = BorderStroke(1.dp, SpecBorder),
+                        modifier = Modifier.testTag("home_tier_badge")
+                      ) {
+                        Text(
+                          text = "FREE",
+                          fontSize = 9.sp,
+                          fontWeight = FontWeight.Bold,
+                          fontFamily = FontFamily.Monospace,
+                          color = SpecSubtextSlate,
+                          modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                      }
+                    }
                   }
                 }
                 Spacer(modifier = Modifier.height(2.dp))
@@ -669,27 +775,28 @@ fun HomeScreen(
             }
           }
 
-          // Full-width Primary Blue CTA Button
-          Button(
+          // Full-width Primary Blue CTA Button with spring physics & haptics
+          PalantirMatteButton(
+            text = "▶ EXECUTE MISSION",
             onClick = {
-              activeMissionAction = nextMoveAction
-              onNavigateToMissionDiagnostic()
+              if (!isExecutingMission) {
+                isExecutingMission = true
+                activeMissionAction = nextMoveAction
+                onNavigateToMissionDiagnostic()
+              }
             },
+            enabled = !isExecutingMission,
+            isLoading = isExecutingMission,
+            containerColor = SpecPrimaryBlue,
+            contentColor = Color.White,
+            borderColor = SpecPrimaryBlue,
+            shape = RoundedCornerShape(12.dp),
+            isMonospace = true,
+            testTag = "home_btn_start_next_move",
             modifier = Modifier
               .fillMaxWidth()
               .height(48.dp)
-              .testTag("home_btn_start_next_move"),
-            colors = ButtonDefaults.buttonColors(containerColor = SpecPrimaryBlue),
-            shape = RoundedCornerShape(12.dp)
-          ) {
-            Text(
-              text = "▶ EXECUTE MISSION",
-              fontSize = 14.sp,
-              fontWeight = FontWeight.Bold,
-              letterSpacing = 1.sp,
-              color = Color.White
-            )
-          }
+          )
 
           // Sub-link
           Box(
@@ -927,8 +1034,8 @@ fun HomeScreen(
           .testTag("home_cyber_treasure")
           .clickable { onNavigateToDossier() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-        border = BorderStroke(1.dp, Color(0xFF2D313A))
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = BorderStroke(1.dp, SpecBorder)
       ) {
         Row(
           modifier = Modifier
@@ -941,14 +1048,14 @@ fun HomeScreen(
             modifier = Modifier
               .size(44.dp)
               .clip(RoundedCornerShape(12.dp))
-              .background(Color(0x1A2962FF))
-              .border(1.dp, Color(0x332962FF), RoundedCornerShape(12.dp)),
+              .background(SpecPrimaryBlue.copy(alpha = 0.15f))
+              .border(1.dp, SpecPrimaryBlue.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
           ) {
             Icon(
               imageVector = Icons.Default.Fingerprint,
               contentDescription = "Cryptographic Proof",
-              tint = Color(0xFF2962FF),
+              tint = SpecPrimaryBlue,
               modifier = Modifier.size(24.dp)
             )
           }
@@ -965,14 +1072,14 @@ fun HomeScreen(
               text = "View Verified Dossier",
               fontSize = 14.sp,
               fontWeight = FontWeight.Bold,
-              color = Color(0xFFF0F4F8),
+              color = SpecHeadingWhite,
               modifier = Modifier.wrapContentHeight()
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
               text = "Merkle Root: 0x8f3c...91e • Signed",
               fontSize = 11.sp,
-              color = Color(0xFF8DA2B5),
+              color = SpecEmeraldVerification,
               fontFamily = FontFamily.Monospace,
               modifier = Modifier.wrapContentHeight()
             )
@@ -982,7 +1089,7 @@ fun HomeScreen(
           Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = "Navigate to Dossier",
-            tint = Color(0xFF8DA2B5),
+            tint = SpecSubtextSlate,
             modifier = Modifier.size(20.dp)
           )
         }
@@ -999,8 +1106,8 @@ fun HomeScreen(
           .testTag("home_zero_to_job_ready")
           .clickable { onNavigateToJourney() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-        border = BorderStroke(1.dp, Color(0xFF2D313A))
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = BorderStroke(1.dp, SpecBorder)
       ) {
         Column(
           modifier = Modifier
@@ -1017,20 +1124,21 @@ fun HomeScreen(
               text = "Zero → Job Ready",
               fontSize = 13.sp,
               fontWeight = FontWeight.Bold,
-              color = Color(0xFFF0F4F8),
+              color = SpecHeadingWhite,
               modifier = Modifier.wrapContentHeight()
             )
 
             Surface(
-              color = Color(0x222962FF),
+              color = SpecPrimaryBlue.copy(alpha = 0.18f),
               shape = RoundedCornerShape(4.dp),
-              border = BorderStroke(1.dp, Color(0xFF2962FF).copy(alpha = 0.5f))
+              border = BorderStroke(1.dp, SpecPrimaryBlue.copy(alpha = 0.5f))
             ) {
               Text(
                 text = "PIPELINE ACTIVE",
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF82B1FF),
+                fontFamily = FontFamily.Monospace,
+                color = SpecPrimaryBlue,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp).wrapContentHeight()
               )
             }
@@ -1042,8 +1150,8 @@ fun HomeScreen(
               .fillMaxWidth()
               .height(4.dp)
               .clip(RoundedCornerShape(2.dp)),
-            color = Color(0xFF2962FF),
-            trackColor = Color(0xFF2D313A)
+            color = SpecPrimaryBlue,
+            trackColor = SpecElevatedBg
           )
         }
       }
@@ -1058,8 +1166,8 @@ fun HomeScreen(
           .fillMaxWidth()
           .testTag("home_active_mission"),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-        border = BorderStroke(1.dp, Color(0xFF2D313A))
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = BorderStroke(1.dp, SpecBorder)
       ) {
         Row(
           modifier = Modifier
@@ -1077,40 +1185,40 @@ fun HomeScreen(
               modifier = Modifier
                 .size(8.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF2962FF))
+                .background(SpecPrimaryBlue)
             )
             Column {
               Text(
                 text = "Active Mission",
                 fontSize = 11.sp,
-                color = Color(0xFF8DA2B5),
+                color = SpecSubtextSlate,
                 modifier = Modifier.wrapContentHeight()
               )
               Text(
                 text = "Sysmon Lateral Detection",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFF0F4F8),
+                color = SpecHeadingWhite,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.wrapContentHeight()
               )
             }
           }
 
-          Button(
+          PalantirMatteButton(
+            text = "CONTINUE",
             onClick = { activeMissionAction = nextMoveAction },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2962FF)),
+            containerColor = SpecPrimaryBlue,
+            contentColor = Color.White,
+            borderColor = SpecPrimaryBlue,
             shape = RoundedCornerShape(8.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-            modifier = Modifier.testTag("home_btn_continue_active_mission")
-          ) {
-            Text(
-              text = "CONTINUE",
-              fontSize = 11.sp,
-              fontWeight = FontWeight.Bold,
-              color = Color.White
-            )
-          }
+            fontSize = 11.sp,
+            isMonospace = true,
+            modifier = Modifier
+              .width(100.dp)
+              .height(36.dp),
+            testTag = "home_btn_continue_active_mission"
+          )
         }
       }
     }
@@ -1125,8 +1233,8 @@ fun HomeScreen(
           .testTag("home_proven_skill")
           .clickable { onNavigateToDossier() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-        border = BorderStroke(1.dp, Color(0xFF2D313A))
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = BorderStroke(1.dp, SpecBorder)
       ) {
         Row(
           modifier = Modifier
@@ -1142,7 +1250,7 @@ fun HomeScreen(
             Icon(
               imageVector = Icons.Default.VerifiedUser,
               contentDescription = "Verified Skill",
-              tint = Color(0xFF00E676),
+              tint = SpecEmeraldVerification,
               modifier = Modifier.size(20.dp)
             )
             Column {
@@ -1150,13 +1258,13 @@ fun HomeScreen(
                 text = "Cryptographic Telemetry Evidence",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFF0F4F8),
+                color = SpecHeadingWhite,
                 modifier = Modifier.wrapContentHeight()
               )
               Text(
                 text = "SHA256: 7f4ae91b... Hardware Attested",
                 fontSize = 10.sp,
-                color = Color(0xFF8DA2B5),
+                color = SpecEmeraldVerification,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.wrapContentHeight()
               )
@@ -1166,7 +1274,7 @@ fun HomeScreen(
           Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = "Details",
-            tint = Color(0xFF8DA2B5),
+            tint = SpecSubtextSlate,
             modifier = Modifier.size(16.dp)
           )
         }
@@ -1183,8 +1291,8 @@ fun HomeScreen(
           .testTag("home_career_signal")
           .clickable { onNavigateToCareers() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-        border = BorderStroke(1.dp, Color(0xFF2D313A))
+        colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+        border = BorderStroke(1.dp, SpecBorder)
       ) {
         Row(
           modifier = Modifier
@@ -1200,7 +1308,7 @@ fun HomeScreen(
             Icon(
               imageVector = Icons.Default.TrendingUp,
               contentDescription = "Career Signal",
-              tint = Color(0xFF2962FF),
+              tint = SpecPrimaryBlue,
               modifier = Modifier.size(20.dp)
             )
             Column {
@@ -1208,13 +1316,13 @@ fun HomeScreen(
                 text = "Career Signal: SOC Analyst II",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFF0F4F8),
+                color = SpecHeadingWhite,
                 modifier = Modifier.wrapContentHeight()
               )
               Text(
                 text = "Meets Top 5 Tier-2 Gateway Requirements",
                 fontSize = 10.sp,
-                color = Color(0xFF8DA2B5),
+                color = SpecSubtextSlate,
                 modifier = Modifier.wrapContentHeight()
               )
             }
@@ -1223,11 +1331,21 @@ fun HomeScreen(
           Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = "Details",
-            tint = Color(0xFF8DA2B5),
+            tint = SpecSubtextSlate,
             modifier = Modifier.size(16.dp)
           )
         }
       }
+    }
+
+    // --------------------------------------------------------------------------
+    // 2. ADVANCED THREAT INTEL DASHBOARD (GLOWING CANVAS BEZIER GRAPHS)
+    // --------------------------------------------------------------------------
+    item(key = "threat_intel_dashboard_bento_tile") {
+      ThreatIntelDashboardCard(
+        modifier = Modifier.testTag("threat_intel_dashboard_card"),
+        onInspectTelemetry = onNavigateToLiveThreatIntel
+      )
     }
 
     // --------------------------------------------------------------------------
@@ -1265,6 +1383,31 @@ fun HomeScreen(
       }
     }
   }
+
+  // Sleek Enterprise Dark Snackbar
+  SnackbarHost(
+    hostState = snackbarHostState,
+    modifier = Modifier
+      .align(Alignment.BottomCenter)
+      .padding(16.dp)
+      .testTag("home_screen_snackbar_host")
+  ) { data ->
+    Snackbar(
+      modifier = Modifier.border(BorderStroke(1.dp, SpecBorder), RoundedCornerShape(8.dp)),
+      containerColor = SpecElevatedBg,
+      contentColor = SpecPrimaryBlue,
+      shape = RoundedCornerShape(8.dp)
+    ) {
+      Text(
+        text = data.visuals.message,
+        color = SpecPrimaryBlue,
+        fontWeight = FontWeight.SemiBold,
+        fontFamily = FontFamily.Monospace,
+        fontSize = 13.sp
+      )
+    }
+  }
+}
 }
 
 /**
@@ -1282,8 +1425,8 @@ private fun QuickOpBentoTile(
       .height(72.dp)
       .clickable(onClick = onClick),
     shape = RoundedCornerShape(14.dp),
-    colors = CardDefaults.cardColors(containerColor = Color(0xFF15171C)),
-    border = BorderStroke(1.dp, Color(0xFF2D313A))
+    colors = CardDefaults.cardColors(containerColor = SpecCardBg),
+    border = BorderStroke(1.dp, SpecBorder)
   ) {
     Column(
       modifier = Modifier
@@ -1295,7 +1438,7 @@ private fun QuickOpBentoTile(
       Icon(
         imageVector = icon,
         contentDescription = label,
-        tint = Color(0xFF2962FF),
+        tint = SpecPrimaryBlue,
         modifier = Modifier.size(20.dp)
       )
       Spacer(modifier = Modifier.height(4.dp))
@@ -1303,7 +1446,7 @@ private fun QuickOpBentoTile(
         text = label,
         fontSize = 11.sp,
         fontWeight = FontWeight.Medium,
-        color = Color(0xFFF0F4F8),
+        color = SpecHeadingWhite,
         modifier = Modifier.wrapContentHeight()
       )
     }

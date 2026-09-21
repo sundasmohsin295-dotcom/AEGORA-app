@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.AegoraRepository
 import com.example.model.CareerRole
 import com.example.model.ReverseRoadmapAnalysis
+import com.example.ui.components.BiometricGuard
 import com.example.ui.components.CyberCard
 import com.example.ui.components.CyberSectionHeader
 import com.example.ui.components.SkillProgressBar
@@ -432,74 +433,79 @@ fun CareerCenterScreen(
       // =======================================================================
       if (activeTab == CareerCenterTab.RESUME_COMPILER) {
         item {
-          CyberCard(
-            borderColor = CyberEmerald.copy(alpha = 0.5f),
-            backgroundColor = CyberSurface
+          BiometricGuard(
+            title = "ATS Evidence Resume & SHA-256 Hashes",
+            subtitle = "Protected Career Dossier Layer"
           ) {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
+            CyberCard(
+              borderColor = CyberEmerald.copy(alpha = 0.5f),
+              backgroundColor = CyberSurface
             ) {
-              Column {
-                Text(
-                  text = "EVIDENCE-FIRST RESUME COMPILER",
-                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                  color = CyberEmerald
-                )
-                Text(
-                  text = "Verified Bullet Points Generator",
-                  style = MaterialTheme.typography.titleMedium,
-                  color = TextPrimaryDark
-                )
-              }
-              IconButton(onClick = { showExportDialog = true }) {
-                Icon(Icons.Default.Download, contentDescription = "Export", tint = CyberCyan)
-              }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-              text = "Instead of vague claims ('Knowledge of SIEM'), Aegora generates ATS-optimized bullet points linked directly to your completed lab hashes and MITRE ATT&CK techniques.",
-              style = MaterialTheme.typography.bodySmall,
-              color = TextSecondaryDark
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Surface(
-              shape = RoundedCornerShape(8.dp),
-              color = CyberSurfaceElevated,
-              border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorder)
-            ) {
-              Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
               ) {
-                ResumeBulletItem(
-                  bullet = "• Triaged 47 live enterprise SOC incidents, isolating lateral movement and detecting Cobalt Strike C2 beacons in under 4 minutes with 0 false dismissals.",
-                  tag = "Verified Lab #29 • T1071.001"
-                )
-                ResumeBulletItem(
-                  bullet = "• Formulated detection engineering rules for Mimikatz LSASS credential dumping (T1003.001) mapped against MITRE ATT&CK framework with 91% precision.",
-                  tag = "Verified Lab #14 • T1003.001"
-                )
-                ResumeBulletItem(
-                  bullet = "• Executed end-to-end incident containment playbooks across AWS CloudTrail and Linux Auth logs, preserving evidence chains with SHA-256 hashing.",
-                  tag = "Verified Lab #19 • T1078.004"
-                )
+                Column {
+                  Text(
+                    text = "EVIDENCE-FIRST RESUME COMPILER",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = CyberEmerald
+                  )
+                  Text(
+                    text = "Verified Bullet Points Generator",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimaryDark
+                  )
+                }
+                IconButton(onClick = { showExportDialog = true }) {
+                  Icon(Icons.Default.Download, contentDescription = "Export", tint = CyberCyan)
+                }
               }
-            }
 
-            Spacer(modifier = Modifier.height(14.dp))
+              Spacer(modifier = Modifier.height(10.dp))
+              Text(
+                text = "Instead of vague claims ('Knowledge of SIEM'), Aegora generates ATS-optimized bullet points linked directly to your completed lab hashes and MITRE ATT&CK techniques.",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondaryDark
+              )
 
-            Button(
-              onClick = { showExportDialog = true },
-              colors = ButtonDefaults.buttonColors(containerColor = CyberEmerald),
-              shape = RoundedCornerShape(8.dp),
-              modifier = Modifier.fillMaxWidth()
-            ) {
-              Text("Export ATS Verified Resume (.PDF / .MD)", color = CyberBackground, fontWeight = FontWeight.Bold)
+              Spacer(modifier = Modifier.height(14.dp))
+
+              Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = CyberSurfaceElevated,
+                border = androidx.compose.foundation.BorderStroke(1.dp, CyberBorder)
+              ) {
+                Column(
+                  modifier = Modifier.padding(12.dp),
+                  verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                  ResumeBulletItem(
+                    bullet = "• Triaged 47 live enterprise SOC incidents, isolating lateral movement and detecting Cobalt Strike C2 beacons in under 4 minutes with 0 false dismissals.",
+                    tag = "Verified Lab #29 • T1071.001"
+                  )
+                  ResumeBulletItem(
+                    bullet = "• Formulated detection engineering rules for Mimikatz LSASS credential dumping (T1003.001) mapped against MITRE ATT&CK framework with 91% precision.",
+                    tag = "Verified Lab #14 • T1003.001"
+                  )
+                  ResumeBulletItem(
+                    bullet = "• Executed end-to-end incident containment playbooks across AWS CloudTrail and Linux Auth logs, preserving evidence chains with SHA-256 hashing.",
+                    tag = "Verified Lab #19 • T1078.004"
+                  )
+                }
+              }
+
+              Spacer(modifier = Modifier.height(14.dp))
+
+              Button(
+                onClick = { showExportDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = CyberEmerald),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+              ) {
+                Text("Export ATS Verified Resume (.PDF / .MD)", color = CyberBackground, fontWeight = FontWeight.Bold)
+              }
             }
           }
         }

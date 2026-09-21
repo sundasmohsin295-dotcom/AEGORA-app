@@ -172,10 +172,10 @@ fun QuizScreen(
             lineHeight = 26.sp
           )
 
-          if (currentQuestion.scenarioContext != null) {
+          currentQuestion.scenarioContext?.let { ctx ->
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-              text = currentQuestion.scenarioContext!!,
+              text = ctx,
               style = MaterialTheme.typography.bodyMedium,
               color = TextSecondaryDark
             )
@@ -184,10 +184,10 @@ fun QuizScreen(
       }
 
       // 2. Telemetry / Log Snippet
-      if (currentQuestion.logSnippet != null) {
+      currentQuestion.logSnippet?.let { snippet ->
         item {
           CodeTerminalView(
-            code = currentQuestion.logSnippet!!,
+            code = snippet,
             title = "LOG SNIPPET / EVENT TELEMETRY"
           )
         }

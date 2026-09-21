@@ -11,8 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +58,8 @@ fun AegoraBottomNav(
   modifier: Modifier = Modifier
 ) {
   val haptic = LocalHapticFeedback.current
+  var lastTabClickTime by remember { mutableLongStateOf(0L) }
+
   Surface(
     modifier = modifier
       .fillMaxWidth()
@@ -87,8 +88,12 @@ fun AegoraBottomNav(
           modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable {
-              haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-              onTabSelected(tab)
+              val now = System.currentTimeMillis()
+              if (now - lastTabClickTime > 250L && tab != currentTab) {
+                lastTabClickTime = now
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onTabSelected(tab)
+              }
             }
             .padding(horizontal = 2.dp, vertical = 2.dp)
             .testTag("nav_tab_${tab.name.lowercase()}"),

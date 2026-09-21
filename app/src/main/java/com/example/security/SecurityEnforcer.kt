@@ -2,6 +2,7 @@ package com.example.security
 
 import android.content.Context
 import android.os.Build
+import android.os.Debug
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,14 +16,16 @@ import java.io.File
  * Performs proactive hardware-level integrity checks:
  * 1. Root detection (known su binaries, dangerous directories, test-keys build tags, su execution).
  * 2. Emulator & hypervisor detection (QEMU/ranchu/goldfish signatures, virtualized hardware drivers).
- * 3. Immediate storage purge (clearing EncryptedSharedPreferences and master keys upon compromise).
- * 4. API Gateway lockout (revoking network transport tokens if environment is untrusted).
+ * 3. Unauthorized Debugger / Tracer detection (Android Debugger attachment, ptrace hooking).
+ * 4. Immediate storage purge (clearing EncryptedSharedPreferences and master keys upon compromise).
+ * 5. API Gateway lockout (revoking network transport tokens if environment is untrusted).
  */
 data class RaspAuditReport(
   val isCompromised: Boolean,
   val rootDetected: Boolean,
   val emulatorDetected: Boolean,
   val testKeysDetected: Boolean,
+  val debuggerAttached: Boolean = false,
   val suBinariesFound: List<String>,
   val triggeredAnomalies: List<String>,
   val timestamp: Long = System.currentTimeMillis()
@@ -135,14 +138,21 @@ object SecurityEnforcer {
       anomalies.add("EMULATOR_HYPERVISOR_SIGNATURE_DETECTED")
     }
 
+    // 6. Unauthorized Debugger / Tracer Attachment Probing
+    val isDebuggerAttached = Debug.isDebuggerConnected() || Debug.waitingForDebugger()
+    if (isDebuggerAttached) {
+      anomalies.add("UNAUTHORIZED_DEBUGGER_ATTACHED")
+    }
+
     // Determine compromise state
-    val isCompromised = (isRoot || (strictEmulatorCheck && isEmulator)) && !bypassEnforcementForTesting
+    val isCompromised = (isRoot || (strictEmulatorCheck && isEmulator) || isDebuggerAttached) && !bypassEnforcementForTesting
 
     val report = RaspAuditReport(
       isCompromised = isCompromised,
       rootDetected = isRoot,
       emulatorDetected = isEmulator,
       testKeysDetected = hasTestKeys,
+      debuggerAttached = isDebuggerAttached,
       suBinariesFound = foundSuPaths,
       triggeredAnomalies = anomalies
     )

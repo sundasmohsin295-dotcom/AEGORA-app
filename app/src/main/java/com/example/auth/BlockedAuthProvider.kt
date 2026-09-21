@@ -27,6 +27,11 @@ class BlockedAuthProvider(
     return AuthResult.Blocked(blockerReason)
   }
 
+  override suspend fun signUpWithEmailPassword(email: String, pass: String): AuthResult {
+    _authState.value = AuthState.AuthenticationFailed("Authentication blocked: $blockerReason")
+    return AuthResult.Blocked(blockerReason)
+  }
+
   override suspend fun signInWithFederatedToken(idToken: String): AuthResult {
     _authState.value = AuthState.AuthenticationFailed("Authentication blocked: $blockerReason")
     return AuthResult.Blocked(blockerReason)

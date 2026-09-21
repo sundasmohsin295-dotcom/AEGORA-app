@@ -879,8 +879,7 @@ fun IntelligenceConnectiveScreen(
           }
         }
 
-        if (parsedJobResult != null) {
-          val result = parsedJobResult!!
+        parsedJobResult?.let { result ->
           item {
             CyberCard(
               borderColor = CyberGreen,

@@ -40,6 +40,7 @@ import kotlin.math.sin
 fun OperatorDossierScreen(
   onNavigateBack: () -> Unit,
   onNavigateToDuel: (() -> Unit)? = null,
+  onNavigateToThreatDossier: (() -> Unit)? = null,
   onShowPaywall: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
@@ -51,6 +52,7 @@ fun OperatorDossierScreen(
   val mutedSlate = Color(0xFF8A919E)
 
   val userProfile by AegoraRepository.userProfile.collectAsState()
+  val isAccessibilityMasked by com.example.security.AccessibilityShield.isMaskingActive.collectAsState()
   var showProofDossierModal by remember { mutableStateOf(false) }
 
   Column(
@@ -81,20 +83,39 @@ fun OperatorDossierScreen(
         fontWeight = FontWeight.Bold
       )
 
-      if (onNavigateToDuel != null) {
-        Surface(
-          onClick = onNavigateToDuel,
-          shape = RoundedCornerShape(6.dp),
-          color = Color(0x222962FF),
-          border = androidx.compose.foundation.BorderStroke(1.dp, cobaltBlue)
-        ) {
-          Text(
-            text = "ENTER DUEL",
-            color = Color.White,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-          )
+      Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (onNavigateToThreatDossier != null) {
+          Surface(
+            onClick = onNavigateToThreatDossier,
+            shape = RoundedCornerShape(6.dp),
+            color = Color(0x2210B981),
+            border = androidx.compose.foundation.BorderStroke(1.dp, emeraldGreen)
+          ) {
+            Text(
+              text = "THREAT INTEL",
+              color = Color(0xFF34D399),
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+          }
+        }
+
+        if (onNavigateToDuel != null) {
+          Surface(
+            onClick = onNavigateToDuel,
+            shape = RoundedCornerShape(6.dp),
+            color = Color(0x222962FF),
+            border = androidx.compose.foundation.BorderStroke(1.dp, cobaltBlue)
+          ) {
+            Text(
+              text = "ENTER DUEL",
+              color = Color.White,
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+          }
         }
       }
     }
@@ -376,8 +397,8 @@ fun OperatorDossierScreen(
             )
           }
           Text(
-            text = rankData.third,
-            color = emeraldGreen,
+            text = com.example.security.AccessibilityShield.maskSensitive(rankData.third, isAccessibilityMasked),
+            color = if (isAccessibilityMasked) Color(0xFFF59E0B) else emeraldGreen,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Monospace

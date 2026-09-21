@@ -75,7 +75,9 @@ fun RaspLockdownScreen(
     LazyColumn(
       modifier = Modifier
         .fillMaxSize()
-        .padding(horizontal = 20.dp, vertical = 24.dp),
+        .statusBarsPadding()
+        .navigationBarsPadding()
+        .padding(horizontal = 20.dp, vertical = 16.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -195,6 +197,12 @@ fun RaspLockdownScreen(
               label = "Hypervisor / Emulator",
               detected = auditReport.emulatorDetected,
               detail = if (auditReport.emulatorDetected) "QEMU/Ranchu virtualized core" else "Physical TEE confirmed"
+            )
+
+            RaspTelemetryRow(
+              label = "Debugger & Tracer (ptrace)",
+              detected = auditReport.debuggerAttached,
+              detail = if (auditReport.debuggerAttached) "Unauthorized debugger active" else "No debug hooks detected"
             )
 
             RaspTelemetryRow(

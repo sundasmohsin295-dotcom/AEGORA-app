@@ -86,9 +86,10 @@ fun SubscriptionPaywallScreen(
 
   fun proceedWithSubscriptionExecution(plan: String) {
     try {
-      if (Purchases.isConfigured && activity != null && availablePackage != null && !isPurchasing) {
+      val pkg = availablePackage
+      if (Purchases.isConfigured && activity != null && pkg != null && !isPurchasing) {
         isPurchasing = true
-        val params = PurchaseParams.Builder(activity, availablePackage!!).build()
+        val params = PurchaseParams.Builder(activity, pkg).build()
         Purchases.sharedInstance.purchase(
           params,
           object : PurchaseCallback {

@@ -7,6 +7,9 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import net.sqlcipher.database.SupportFactory
+import com.example.security.DatabaseKeyManager
+import com.example.security.SecureMemory
 import com.example.data.db.dao.CapabilityDao
 import com.example.data.db.dao.CapabilityEvidenceDao
 import com.example.data.db.dao.MasteryAssessmentDao
@@ -105,11 +108,17 @@ abstract class AegoraDatabase : RoomDatabase() {
 
     fun getInstance(context: Context): AegoraDatabase {
       return INSTANCE ?: synchronized(this) {
+        val passphraseBytes = DatabaseKeyManager.getOrCreatePassphrase(context)
+        val factory = SupportFactory(passphraseBytes)
+        // Securely zero out the key buffer in RAM now that the factory holds its internal key material
+        SecureMemory.wipe(passphraseBytes)
+
         val instance = Room.databaseBuilder(
           context.applicationContext,
           AegoraDatabase::class.java,
           "aegora_capability_engine.db"
         )
+          .openHelperFactory(factory)
           .addMigrations(MIGRATION_1_2)
           .fallbackToDestructiveMigration()
           .build()

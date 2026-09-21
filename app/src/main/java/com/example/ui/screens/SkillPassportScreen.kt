@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,20 +20,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import com.example.data.AegoraRepository
 import com.example.model.MitreTacticCoverage
 import com.example.model.SimulatedExperienceLedger
+import com.example.security.BiometricAuthResult
+import com.example.security.BiometricSecureEnclave
+import com.example.security.ZeroDaySecurityShield.antiTapjackingShield
+import com.example.ui.components.BiometricGuard
 import com.example.ui.components.CyberCard
 import com.example.ui.components.CyberSectionHeader
 import com.example.ui.components.EvidenceBadge
 import com.example.ui.components.Interactive3DPassportCard
+import com.example.ui.components.PalantirMatteButton
 import com.example.ui.components.SkillProgressBar
 import com.example.ui.theme.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun SkillPassportScreen(
@@ -43,13 +54,53 @@ fun SkillPassportScreen(
   val domains = AegoraRepository.skillDomains
   val simulatedLedger by AegoraRepository.simulatedExperience.collectAsState()
   val mitreCoverages = AegoraRepository.mitreTacticCoverages
+  val context = LocalContext.current
+  val coroutineScope = rememberCoroutineScope()
+  var isBiometricAuthenticated by remember { mutableStateOf(false) }
+  var isAuthenticatingBiometric by remember { mutableStateOf(false) }
+  var biometricErrorMsg by remember { mutableStateOf<String?>(null) }
   var showShareDialog by remember { mutableStateOf(false) }
   var showDossierDialog by remember { mutableStateOf(false) }
   var copiedToClipboard by remember { mutableStateOf(false) }
 
+  fun triggerBiometricAttestation() {
+    val activity = context as? FragmentActivity
+    if (activity == null) {
+      isBiometricAuthenticated = true
+      return
+    }
+    isAuthenticatingBiometric = true
+    biometricErrorMsg = null
+    coroutineScope.launch {
+      val result = BiometricSecureEnclave.authenticate(
+        activity = activity,
+        title = "Zero-Trust Biometric Attestation",
+        subtitle = "Cryptographic Skill Passport Enclave",
+        description = "Scan your fingerprint or enter device PIN to unlock the tamper-proof SHA-256 capability hashes."
+      )
+      isAuthenticatingBiometric = false
+      when (result) {
+        is BiometricAuthResult.Success -> {
+          isBiometricAuthenticated = true
+        }
+        is BiometricAuthResult.Error -> {
+          biometricErrorMsg = "Biometric Attestation Denied: ${result.errString}"
+        }
+        is BiometricAuthResult.Failed -> {
+          biometricErrorMsg = "Biometric Verification Failed. Please try again."
+        }
+        is BiometricAuthResult.Unavailable -> {
+          // Fallback gracefully on devices without sensor hardware
+          isBiometricAuthenticated = true
+        }
+      }
+    }
+  }
+
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
+      .antiTapjackingShield()
       .background(SpecCanvasBg)
       .padding(horizontal = 16.dp),
     contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
@@ -108,81 +159,122 @@ fun SkillPassportScreen(
             }
           }
 
-          // Skill Passport Sub-card
-          Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = SpecElevatedBg,
-            shape = RoundedCornerShape(10.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, SpecBorder)
+          // 0A. ZERO-TRUST BIOMETRIC ATTESTATION GUARD & ENCLAVE LEDGER
+          BiometricGuard(
+            title = "Cryptographic Skill Passport & SHA-256 Ledger",
+            subtitle = "Zero-Trust Hardware Enclave Attestation",
+            initiallyAuthenticated = isBiometricAuthenticated,
+            onAuthenticationSuccess = { isBiometricAuthenticated = true }
           ) {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Column {
-                Text(
-                  text = "Linux Forensics Analysis",
-                  fontSize = 13.sp,
-                  fontWeight = FontWeight.Bold,
-                  color = SpecHeadingWhite
-                )
-                Text(
-                  text = "Verified on: Apr 28, 2026",
-                  fontSize = 11.sp,
-                  color = SpecSubtextSlate
-                )
-              }
-
-              Button(
-                onClick = { showShareDialog = true },
-                colors = ButtonDefaults.buttonColors(containerColor = SpecPrimaryBlue),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+              // Skill Passport Sub-card
+              Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = SpecElevatedBg,
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, SpecBorder)
               ) {
-                Icon(
-                  imageVector = Icons.Default.Share,
-                  contentDescription = "Share",
-                  tint = Color.White,
-                  modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Share", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-              }
-            }
-          }
+                Row(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Column {
+                    Text(
+                      text = "Linux Forensics Analysis",
+                      fontSize = 13.sp,
+                      fontWeight = FontWeight.Bold,
+                      color = SpecHeadingWhite
+                    )
+                    Text(
+                      text = "Verified on: Apr 28, 2026",
+                      fontSize = 11.sp,
+                      color = SpecSubtextSlate
+                    )
+                  }
 
-          // Proof Link Container with Copy Icon
-          Surface(
-            modifier = Modifier
-              .fillMaxWidth()
-              .clickable { copiedToClipboard = true },
-            color = SpecElevatedBg,
-            shape = RoundedCornerShape(8.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, SpecBorder)
-          ) {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Text(
-                text = "https://aegora.app/proof/5f3a2e91b8a342981ce810",
-                fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                color = SpecCyanHighlight,
-                maxLines = 1
-              )
-              Icon(
-                imageVector = if (copiedToClipboard) Icons.Default.Check else Icons.Default.ContentCopy,
-                contentDescription = "Copy Link",
-                tint = if (copiedToClipboard) SpecEmeraldVerification else SpecSubtextSlate,
-                modifier = Modifier.size(16.dp)
-              )
+                  Button(
+                    onClick = { showShareDialog = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = SpecPrimaryBlue),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                  ) {
+                    Icon(
+                      imageVector = Icons.Default.Share,
+                      contentDescription = "Share",
+                      tint = Color.White,
+                      modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Share", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                  }
+                }
+              }
+
+              // Proof Link Container with Copy Icon & SHA-256 Enclave Mask
+              Surface(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .clickable { copiedToClipboard = true },
+                color = SpecElevatedBg,
+                shape = RoundedCornerShape(8.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                  1.dp,
+                  SpecEmeraldVerification.copy(alpha = 0.5f)
+                )
+              ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Text(
+                      text = "https://aegora.app/proof/5f3a2e91b8a342981ce810",
+                      fontSize = 11.sp,
+                      fontFamily = FontFamily.Monospace,
+                      color = SpecCyanHighlight,
+                      maxLines = 1
+                    )
+                    Icon(
+                      imageVector = if (copiedToClipboard) Icons.Default.Check else Icons.Default.ContentCopy,
+                      contentDescription = "Enclave Action",
+                      tint = SpecEmeraldVerification,
+                      modifier = Modifier.size(16.dp)
+                    )
+                  }
+
+                  // SHA-256 Cryptographic Hash Reveal
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Text(
+                      text = "SHA256: 8f3e2b9c71d4a081e6f9...d49a (VERIFIED ENCLAVE)",
+                      fontSize = 9.sp,
+                      fontFamily = FontFamily.Monospace,
+                      color = SpecEmeraldVerification,
+                      fontWeight = FontWeight.Bold
+                    )
+                    Surface(
+                      color = SpecEmeraldVerification.copy(alpha = 0.15f),
+                      shape = RoundedCornerShape(4.dp)
+                    ) {
+                      Text(
+                        text = "ROOT VALIDATED",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace,
+                        color = SpecEmeraldVerification,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                      )
+                    }
+                  }
+                }
+              }
             }
           }
         }

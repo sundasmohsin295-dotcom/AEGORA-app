@@ -301,9 +301,9 @@ fun WorkplaceSimulatorScreen(
 
         3 -> {
           // Tab 3: Manager / Executive Slack Channel & Consequence Results
-          if (currentShift.latestConsequence != null) {
+          currentShift.latestConsequence?.let { consequence ->
             item {
-              IncidentConsequenceCard(consequence = currentShift.latestConsequence!!)
+              IncidentConsequenceCard(consequence = consequence)
             }
           }
 

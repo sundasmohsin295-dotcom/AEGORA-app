@@ -100,6 +100,17 @@ class AuthenticationArchitectureHardeningTest {
       }
     }
 
+    override suspend fun signUpWithEmailPassword(email: String, pass: String): AuthResult {
+      val identity = AuthenticatedIdentity.fromProvider(
+        providerUid = testUserUid,
+        provider = providerId,
+        email = email,
+        displayName = "Registered Test Operator"
+      )
+      _authState.value = AuthState.Authenticated(identity)
+      return AuthResult.Success(identity)
+    }
+
     override suspend fun signInWithFederatedToken(idToken: String): AuthResult {
       val identity = AuthenticatedIdentity.fromProvider(
         providerUid = testUserUid,

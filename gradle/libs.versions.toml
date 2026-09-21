@@ -45,6 +45,8 @@ glance = "1.1.1"
 revenuecat = "8.25.0"
 biometric = "1.2.0-alpha05"
 securityCrypto = "1.1.0-alpha06"
+sqlcipher = "4.5.4"
+playIntegrity = "1.4.0"
 
 
 [libraries]
@@ -108,6 +110,8 @@ glance-material3 = { group = "androidx.glance", name = "glance-material3", versi
 revenuecat-purchases = { group = "com.revenuecat.purchases", name = "purchases", version.ref = "revenuecat" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+sqlcipher = { group = "net.zetetic", name = "android-database-sqlcipher", version.ref = "sqlcipher" }
+play-integrity = { group = "com.google.android.play", name = "integrity", version.ref = "playIntegrity" }
 
 
 [plugins]

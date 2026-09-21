@@ -68,6 +68,7 @@ class FirestoreAuthorizationBoundaryTest {
       override val authState = kotlinx.coroutines.flow.MutableStateFlow<AuthState>(AuthState.Authenticated(identity))
       override val currentIdentity: AuthenticatedIdentity? = identity
       override suspend fun signInWithEmailPassword(email: String, pass: String): AuthResult = AuthResult.Success(identity)
+      override suspend fun signUpWithEmailPassword(email: String, pass: String): AuthResult = AuthResult.Success(identity)
       override suspend fun signInWithFederatedToken(idToken: String): AuthResult = AuthResult.Success(identity)
       override suspend fun signOut(): Boolean {
         authState.value = AuthState.Unauthenticated

@@ -227,12 +227,12 @@ fun SubscriptionPaywallDialog(
           }
         }
 
-        if (statusMessage != null) {
+        statusMessage?.let { msg ->
           Spacer(modifier = Modifier.height(8.dp))
           Text(
-            text = statusMessage!!,
+            text = msg,
             style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-            color = if (statusMessage!!.contains("Upgrade") || statusMessage!!.contains("restored")) CyberEmerald else CyberAmber
+            color = if (msg.contains("Upgrade") || msg.contains("restored")) CyberEmerald else CyberAmber
           )
         }
       }

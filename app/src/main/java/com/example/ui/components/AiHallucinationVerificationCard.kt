@@ -577,8 +577,8 @@ fun AiHallucinationVerificationCard(
           }
 
           // TARGETED ADAPTIVE CHALLENGE INLINE WORKSPACE
-          if (isAdaptiveChallengeOpen && adaptiveChallenge != null) {
-            val challenge = adaptiveChallenge!!
+          val challenge = adaptiveChallenge
+          if (isAdaptiveChallengeOpen && challenge != null) {
             Spacer(modifier = Modifier.height(12.dp))
             Surface(
               shape = RoundedCornerShape(6.dp),

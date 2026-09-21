@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.PredictiveNextAction
 import com.example.subscription.AegoraSubscriptionRepository
+import com.example.ui.components.BiometricGuard
 import com.example.ui.components.SubscriptionPaywallDialog
 import com.example.ui.theme.*
 
@@ -175,16 +176,21 @@ fun AdaptiveSkillPassportScreen(
     },
     containerColor = CyberBackground
   ) { innerPadding ->
-    LazyColumn(
+    BiometricGuard(
+      title = "Adaptive Skill Passport & Career Constellation",
+      subtitle = "Zero-Trust Biometric Hardware Enclave Attestation",
       modifier = modifier
         .fillMaxSize()
         .padding(innerPadding)
-        .padding(horizontal = 16.dp),
-      verticalArrangement = Arrangement.spacedBy(14.dp),
-      contentPadding = PaddingValues(top = 10.dp, bottom = 48.dp)
+        .padding(horizontal = 16.dp)
     ) {
-      // 1. Constellation Overview Header Card
-      item {
+      LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(top = 10.dp, bottom = 48.dp)
+      ) {
+        // 1. Constellation Overview Header Card
+        item {
         Card(
           shape = RoundedCornerShape(16.dp),
           colors = CardDefaults.cardColors(containerColor = CyberSurface),
@@ -376,6 +382,7 @@ fun AdaptiveSkillPassportScreen(
           }
         }
       }
+    }
     }
   }
 

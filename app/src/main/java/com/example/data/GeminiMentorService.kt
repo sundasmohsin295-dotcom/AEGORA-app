@@ -2,9 +2,14 @@ package com.example.data
 
 import com.example.BuildConfig
 import com.example.model.AiMentorMode
+import com.example.network.CertificateTransparencyInterceptor
 import com.example.network.DemoFallbackInterceptor
 import com.example.network.OfflineMockInterceptor
+import com.example.ai.EdgeInferenceManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.MediaType.Companion.toMediaType
@@ -14,29 +19,122 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
+import android.util.Log
+
+enum class CircuitBreakerState {
+  CLOSED,
+  OPEN,
+  HALF_OPEN
+}
+
+class NetworkCircuitBreaker(
+  val latencyThresholdMs: Long = 3500L,
+  val failureThreshold: Int = 3,
+  val openCooldownMs: Long = 30_000L
+) {
+  private val _state = MutableStateFlow(CircuitBreakerState.CLOSED)
+  val state: StateFlow<CircuitBreakerState> = _state.asStateFlow()
+
+  var consecutiveFailures: Int = 0
+    private set
+  var lastTripTimeMs: Long = 0L
+    private set
+
+  @Synchronized
+  fun canAttemptRequest(): Boolean {
+    val now = System.currentTimeMillis()
+    return when (_state.value) {
+      CircuitBreakerState.CLOSED -> true
+      CircuitBreakerState.OPEN -> {
+        if (now - lastTripTimeMs >= openCooldownMs) {
+          Log.i("CircuitBreaker", "Cooldown expired (${openCooldownMs}ms). Transitioning to HALF_OPEN probe.")
+          _state.value = CircuitBreakerState.HALF_OPEN
+          true
+        } else {
+          false
+        }
+      }
+      CircuitBreakerState.HALF_OPEN -> true
+    }
+  }
+
+  @Synchronized
+  fun recordSuccess(durationMs: Long) {
+    if (durationMs > latencyThresholdMs) {
+      recordFailure("Request latency ${durationMs}ms exceeded threshold (${latencyThresholdMs}ms)")
+    } else {
+      consecutiveFailures = 0
+      if (_state.value != CircuitBreakerState.CLOSED) {
+        Log.i("CircuitBreaker", "Request succeeded in ${durationMs}ms. Resetting circuit to CLOSED.")
+        _state.value = CircuitBreakerState.CLOSED
+      }
+    }
+  }
+
+  @Synchronized
+  fun recordFailure(reason: String) {
+    consecutiveFailures++
+    Log.w("CircuitBreaker", "Failure recorded ($consecutiveFailures/$failureThreshold): $reason")
+    if (consecutiveFailures >= failureThreshold || _state.value == CircuitBreakerState.HALF_OPEN) {
+      tripToOpen(reason)
+    }
+  }
+
+  @Synchronized
+  fun tripToOpen(reason: String) {
+    _state.value = CircuitBreakerState.OPEN
+    lastTripTimeMs = System.currentTimeMillis()
+    Log.e("CircuitBreaker", "CIRCUIT TRIPPED TO OPEN: $reason. Re-routing traffic to EdgeInferenceManager.")
+  }
+
+  @Synchronized
+  fun reset() {
+    consecutiveFailures = 0
+    _state.value = CircuitBreakerState.CLOSED
+  }
+}
 
 object GeminiMentorService {
 
-  private val client = OkHttpClient.Builder()
-    .connectTimeout(1500, TimeUnit.MILLISECONDS)
-    .readTimeout(1500, TimeUnit.MILLISECONDS)
-    .writeTimeout(1500, TimeUnit.MILLISECONDS)
-    .addInterceptor(OfflineMockInterceptor())
-    .addInterceptor(DemoFallbackInterceptor)
-    .build()
+  val circuitBreaker = NetworkCircuitBreaker(
+    latencyThresholdMs = 3500L,
+    failureThreshold = 3,
+    openCooldownMs = 30_000L
+  )
+
+  private val client = com.example.network.PostQuantumTlsFactory.configurePostQuantumTls(
+    OkHttpClient.Builder()
+      .dns(com.example.network.DnsOverHttpsResolver.INSTANCE)
+      .connectTimeout(3500, TimeUnit.MILLISECONDS)
+      .readTimeout(3500, TimeUnit.MILLISECONDS)
+      .writeTimeout(3500, TimeUnit.MILLISECONDS)
+      .addInterceptor(com.example.security.SecureTimeValidator)
+      .addInterceptor(CertificateTransparencyInterceptor())
+      .addInterceptor(OfflineMockInterceptor())
+      .addInterceptor(DemoFallbackInterceptor)
+  ).build()
 
   suspend fun askMentor(
     userPrompt: String,
     mode: AiMentorMode,
     userCareerContext: String = "SOC Analyst"
   ): Pair<String, List<String>> = withContext(Dispatchers.IO) {
-    val apiKey = try {
+    // PHASE 26: CIRCUIT BREAKER PATTERN (NO INFINITE LOADING / ZERO DEAD-ENDS)
+    // If circuit is OPEN, bypass network entirely and immediately execute offline EdgeInferenceManager
+    if (!circuitBreaker.canAttemptRequest()) {
+      Log.w("GeminiMentorService", "CircuitBreaker is OPEN! Routing immediately to EdgeInferenceManager.")
+      return@withContext routeToEdgeInference(userPrompt, mode, userCareerContext)
+    }
+
+    val nativeKey = com.example.security.NativeKeyVault.getGeminiApiKey()
+    val apiKey = if (nativeKey.isNotBlank()) nativeKey else try {
       BuildConfig.GEMINI_API_KEY
     } catch (e: Exception) {
       ""
     }
 
     if (apiKey.isNotBlank() && apiKey != "MY_GEMINI_API_KEY") {
+      val startTime = System.currentTimeMillis()
       try {
         val endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=$apiKey"
         
@@ -67,26 +165,71 @@ object GeminiMentorService {
           .build()
 
         val response = client.newCall(request).execute()
-        if (response.isSuccessful) {
+        val duration = System.currentTimeMillis() - startTime
+
+        if (response.code in 500..599) {
+          circuitBreaker.recordFailure("HTTP ${response.code} Server Error")
+        } else if (duration > 3500L) {
+          circuitBreaker.recordFailure("Latency ${duration}ms exceeded 3500ms threshold")
+        } else if (response.isSuccessful) {
+          circuitBreaker.recordSuccess(duration)
+        } else {
+          circuitBreaker.recordFailure("HTTP ${response.code} Client Error")
+        }
+
+        // PHASE 26: SELF-HEALING JSON PARSER (ANTI-CRASH)
+        // Wrapped in safe runCatching with zero fatal exceptions
+        val parsed = runCatching {
+          if (!response.isSuccessful) return@runCatching null
           val responseBody = response.body?.string().orEmpty()
+          if (responseBody.isBlank()) return@runCatching null
+
           val jsonResp = JSONObject(responseBody)
-          val candidates = jsonResp.optJSONArray("candidates")
-          if (candidates != null && candidates.length() > 0) {
-            val content = candidates.getJSONObject(0).optJSONObject("content")
-            val parts = content?.optJSONArray("parts")
-            val rawText = parts?.getJSONObject(0)?.optString("text").orEmpty()
-            if (rawText.isNotBlank()) {
-              return@withContext parseResponseAndSuggestions(rawText, mode)
-            }
-          }
+          val candidates = jsonResp.optJSONArray("candidates") ?: return@runCatching null
+          if (candidates.length() == 0) return@runCatching null
+
+          val content = candidates.getJSONObject(0).optJSONObject("content") ?: return@runCatching null
+          val parts = content.optJSONArray("parts") ?: return@runCatching null
+          if (parts.length() == 0) return@runCatching null
+
+          val rawText = parts.getJSONObject(0).optString("text").orEmpty()
+          if (rawText.isBlank()) return@runCatching null
+
+          parseResponseAndSuggestions(rawText, mode)
+        }.getOrNull()
+
+        if (parsed != null) {
+          return@withContext parsed
         }
       } catch (e: Exception) {
-        // Fall back to built-in cybersecurity expert engine
+        val duration = System.currentTimeMillis() - startTime
+        circuitBreaker.recordFailure("Network exception (${e.javaClass.simpleName}): ${e.message}")
+        Log.w("GeminiMentorService", "Network call failed, tripping or recording failure: ${e.message}")
       }
     }
 
-    // High-fidelity domain-expert heuristic response engine
-    return@withContext generateExpertOfflineResponse(userPrompt, mode, userCareerContext)
+    // High-fidelity domain-expert edge neural inference fallback
+    return@withContext routeToEdgeInference(userPrompt, mode, userCareerContext)
+  }
+
+  private fun routeToEdgeInference(
+    prompt: String,
+    mode: AiMentorMode,
+    career: String
+  ): Pair<String, List<String>> {
+    val edgeResult = EdgeInferenceManager.inferEdgeTelemetry(
+      telemetryLog = prompt,
+      adversary = "Offline Threat Analysis",
+      threatScore = 80
+    )
+    val offlineExpert = generateExpertOfflineResponse(prompt, mode, career)
+    val enrichedAnalysis = StringBuilder()
+      .appendLine("[CIRCUIT BREAKER ENGAGED: ZERO-DEADEND EDGE INFERENCE]")
+      .appendLine(edgeResult.analysisSummary)
+      .appendLine("--- DOMAIN EXPERT TRIAGE PROTOCOL ---")
+      .appendLine(offlineExpert.first)
+      .toString()
+    return Pair(enrichedAnalysis, offlineExpert.second)
   }
 
   private fun parseResponseAndSuggestions(rawText: String, mode: AiMentorMode): Pair<String, List<String>> {
@@ -237,7 +380,8 @@ object GeminiMentorService {
     mistakePattern: String?
   ): com.example.model.AmbientObservation = withContext(Dispatchers.IO) {
     val id = "obs_${System.currentTimeMillis()}"
-    val apiKey = try { BuildConfig.GEMINI_API_KEY } catch (e: Exception) { "" }
+    val nativeKey = com.example.security.NativeKeyVault.getGeminiApiKey()
+    val apiKey = if (nativeKey.isNotBlank()) nativeKey else try { BuildConfig.GEMINI_API_KEY } catch (e: Exception) { "" }
 
     val mistakeInfo = mistakePattern ?: "None currently flagged"
     val observationPrompt = "The student is currently viewing the screen: '$screenName'. Target career: '$targetCareer'. Diagnostic bottleneck: '$bottleneck'. Historical Mistake DNA: '$mistakeInfo'. Provide ONE single sentence (maximum 22 words) of high-value, actionable cybersecurity advice or a sharp analytical observation relevant to this exact moment. Avoid generic encouragement."
@@ -317,8 +461,8 @@ object GeminiMentorService {
     val randomOctet = (20..240).random()
     val dynamicIp = "185.220.$randomOctet.${(2..254).random()}"
     val randomHost = "srv-app-${(10..99).random()}.corp.internal"
-
-    val apiKey = try { BuildConfig.GEMINI_API_KEY } catch (e: Exception) { "" }
+    val nativeKey = com.example.security.NativeKeyVault.getGeminiApiKey()
+    val apiKey = if (nativeKey.isNotBlank()) nativeKey else try { BuildConfig.GEMINI_API_KEY } catch (e: Exception) { "" }
 
     var generatedTitle = "Adversary Variant: $baseTacticName ($mitreCode)"
     var rawLog = "Sysmon Event ID 1: ProcessCreate Image: C:\\Windows\\System32\\cmd.exe CommandLine: cmd.exe /c powershell -nop -enc JABjACAAPQAgAE4AZQB3... ParentImage: explorer.exe TargetHost: $randomHost SourceIP: $dynamicIp"

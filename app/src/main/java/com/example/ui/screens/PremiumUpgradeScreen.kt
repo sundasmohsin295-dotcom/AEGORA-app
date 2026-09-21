@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
@@ -37,7 +38,9 @@ import androidx.compose.ui.unit.sp
 import com.example.commerce.CommerceManager
 import com.example.commerce.CommerceUiState
 import com.example.model.SubscriptionTier
+import com.example.security.ZeroDaySecurityShield.antiTapjackingShield
 import com.example.subscription.AegoraSubscriptionRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // STRICT ENTERPRISE OBSIDIAN COLOR TOKENS
@@ -83,6 +86,7 @@ fun PremiumUpgradeScreen(
 
   var selectedTier by remember { mutableStateOf(SubscriptionTier.PRO) }
   var showLegalDialog by remember { mutableStateOf<String?>(null) } // "TERMS" or "PRIVACY"
+  var isPaymentVerified by remember { mutableStateOf(false) }
 
   val isProcessing = uiState is CommerceUiState.ProcessingPurchase
   val isRestoring = uiState is CommerceUiState.Restoring
@@ -92,20 +96,66 @@ fun PremiumUpgradeScreen(
     CommerceManager.ensureAnonymousLogin()
   }
 
-  // Handle successful purchase or restore
+  // BACK-STACK RESILIENCE: Smoothly dismiss paywall on system back press
+  if (onNavigateBack != null) {
+    BackHandler(enabled = true) {
+      onNavigateBack()
+    }
+  }
+
+  // Handle successful purchase or restore and error mapping
   LaunchedEffect(uiState) {
-    if (uiState is CommerceUiState.Success) {
-      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+    when (uiState) {
+      is CommerceUiState.Success -> {
+        isPaymentVerified = true
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        snackbarHostState.showSnackbar("Cryptographic Entitlement Granted: Welcome to PRO.")
+        delay(1000)
+        onPurchaseSuccess()
+      }
+      is CommerceUiState.Error -> {
+        val rawMsg = (uiState as CommerceUiState.Error).message.lowercase()
+        val friendlyMsg = when {
+          rawMsg.contains("network") || rawMsg.contains("internet") || rawMsg.contains("connection") || rawMsg.contains("offline") || rawMsg.contains("timeout") -> {
+            "Secure connection lost. Check your internet."
+          }
+          rawMsg.contains("restore") || rawMsg.contains("no active") || rawMsg.contains("not found") -> {
+            "No active PRO or CAREER operations found."
+          }
+          else -> {
+            "Secure operation could not be completed. Please retry."
+          }
+        }
+        snackbarHostState.showSnackbar(friendlyMsg)
+      }
+      else -> {}
     }
   }
 
   Scaffold(
     modifier = modifier
       .fillMaxSize()
+      .antiTapjackingShield()
       .background(DeepSpaceCanvas)
       .testTag("premium_upgrade_screen"),
     containerColor = DeepSpaceCanvas,
-    snackbarHost = { SnackbarHost(snackbarHostState) },
+    snackbarHost = {
+      SnackbarHost(snackbarHostState) { data ->
+        Snackbar(
+          modifier = Modifier.border(BorderStroke(1.dp, HairlineBorder), RoundedCornerShape(10.dp)),
+          containerColor = MatteSteelCard,
+          contentColor = GlowingCobaltPrimary,
+          shape = RoundedCornerShape(10.dp)
+        ) {
+          Text(
+            text = data.visuals.message,
+            color = GlowingCobaltPrimary,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp
+          )
+        }
+      }
+    },
     topBar = {
       TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
@@ -462,11 +512,7 @@ fun PremiumUpgradeScreen(
                   activity = activity,
                   tier = SubscriptionTier.PRO,
                   onSuccess = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    scope.launch {
-                      snackbarHostState.showSnackbar("PRO Clearance Activated Successfully!")
-                    }
-                    onPurchaseSuccess()
+                    // Handled centrally by LaunchedEffect(uiState)
                   },
                   onError = { msg ->
                     scope.launch {
@@ -480,11 +526,11 @@ fun PremiumUpgradeScreen(
                 .height(48.dp)
                 .testTag("btn_subscribe_pro"),
               colors = ButtonDefaults.buttonColors(
-                containerColor = GlowingCobaltPrimary,
-                contentColor = Color.White
+                containerColor = if (isPaymentVerified && selectedTier == SubscriptionTier.PRO) EmeraldVerified else GlowingCobaltPrimary,
+                contentColor = if (isPaymentVerified && selectedTier == SubscriptionTier.PRO) Color.Black else Color.White
               ),
               shape = RoundedCornerShape(12.dp),
-              enabled = !isProcessing && !isRestoring
+              enabled = !isProcessing && !isRestoring && !isPaymentVerified
             ) {
               if (isProcessing && selectedTier == SubscriptionTier.PRO) {
                 CircularProgressIndicator(
@@ -498,14 +544,20 @@ fun PremiumUpgradeScreen(
                   horizontalArrangement = Arrangement.Center
                 ) {
                   Icon(
-                    imageVector = Icons.Default.LockOpen,
+                    imageVector = if (isPaymentVerified && selectedTier == SubscriptionTier.PRO) Icons.Default.CheckCircle else Icons.Default.LockOpen,
                     contentDescription = null,
-                    tint = CyanGlow,
+                    tint = if (isPaymentVerified && selectedTier == SubscriptionTier.PRO) Color.Black else CyanGlow,
                     modifier = Modifier.size(18.dp)
                   )
                   Spacer(modifier = Modifier.width(8.dp))
                   Text(
-                    text = if (isCurrent) "CURRENT PLAN (ACTIVE)" else "SUBSCRIBE // PRO ($4.99/MO)",
+                    text = if (isPaymentVerified && selectedTier == SubscriptionTier.PRO) {
+                      "[OK] PAYMENT VERIFIED"
+                    } else if (isCurrent) {
+                      "CURRENT PLAN (ACTIVE)"
+                    } else {
+                      "SUBSCRIBE // PRO ($4.99/MO)"
+                    },
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
@@ -649,11 +701,7 @@ fun PremiumUpgradeScreen(
                   activity = activity,
                   tier = SubscriptionTier.CAREER,
                   onSuccess = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    scope.launch {
-                      snackbarHostState.showSnackbar("CAREER Clearance Activated Successfully!")
-                    }
-                    onPurchaseSuccess()
+                    // Handled centrally by LaunchedEffect(uiState)
                   },
                   onError = { msg ->
                     scope.launch {
@@ -671,7 +719,7 @@ fun PremiumUpgradeScreen(
                 contentColor = Color.Black
               ),
               shape = RoundedCornerShape(12.dp),
-              enabled = !isProcessing && !isRestoring
+              enabled = !isProcessing && !isRestoring && !isPaymentVerified
             ) {
               if (isProcessing && selectedTier == SubscriptionTier.CAREER) {
                 CircularProgressIndicator(
@@ -685,14 +733,20 @@ fun PremiumUpgradeScreen(
                   horizontalArrangement = Arrangement.Center
                 ) {
                   Icon(
-                    imageVector = Icons.Default.Security,
+                    imageVector = if (isPaymentVerified && selectedTier == SubscriptionTier.CAREER) Icons.Default.CheckCircle else Icons.Default.Security,
                     contentDescription = null,
                     tint = Color.Black,
                     modifier = Modifier.size(18.dp)
                   )
                   Spacer(modifier = Modifier.width(8.dp))
                   Text(
-                    text = if (isCurrent) "CURRENT PLAN (ACTIVE)" else "GET VERIFIED // CAREER ($9.99/MO)",
+                    text = if (isPaymentVerified && selectedTier == SubscriptionTier.CAREER) {
+                      "[OK] PAYMENT VERIFIED"
+                    } else if (isCurrent) {
+                      "CURRENT PLAN (ACTIVE)"
+                    } else {
+                      "GET VERIFIED // CAREER ($9.99/MO)"
+                    },
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,

@@ -197,8 +197,8 @@ fun CommunityScreen(
   }
 
   // Replies Bottom Sheet / Modal
-  if (activePostForReplies != null) {
-    val livePost = posts.find { it.id == activePostForReplies?.id } ?: activePostForReplies!!
+  activePostForReplies?.let { activePost ->
+    val livePost = posts.find { it.id == activePost.id } ?: activePost
     CommunityRepliesDialog(
       post = livePost,
       onDismiss = { activePostForReplies = null },
@@ -414,9 +414,9 @@ fun NewCommunityPostDialog(
           modifier = Modifier.fillMaxWidth()
         )
 
-        if (errorMessage != null) {
+        errorMessage?.let { msg ->
           Text(
-            text = errorMessage!!,
+            text = msg,
             style = MaterialTheme.typography.labelSmall,
             color = VibrantPinkOnContainer
           )

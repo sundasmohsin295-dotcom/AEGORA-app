@@ -7,9 +7,11 @@ import com.example.model.SubscriptionTier
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 /**
  * Interface defining the RevenueCat / In-App Purchases service.
@@ -113,7 +115,7 @@ object AegoraSubscriptionRepository {
   /**
    * Synchronizes subscription state for the authenticated Firebase UID.
    */
-  suspend fun syncSubscriptionForUser(authUid: String): AuthoritativeSubscriptionState {
+  suspend fun syncSubscriptionForUser(authUid: String): AuthoritativeSubscriptionState = withContext(Dispatchers.IO) {
     if (authUid.isBlank()) {
       val defaultState = AuthoritativeSubscriptionState(
         ownerAuthUid = "",
@@ -122,7 +124,7 @@ object AegoraSubscriptionRepository {
         provider = "SYSTEM_DEFAULT"
       )
       _subscriptionState.value = defaultState
-      return defaultState
+      return@withContext defaultState
     }
 
     val client = activeClient
@@ -131,7 +133,7 @@ object AegoraSubscriptionRepository {
       if (loginRes.isSuccess) {
         val state = loginRes.getOrThrow()
         _subscriptionState.value = state
-        return state
+        return@withContext state
       }
     }
 
@@ -144,7 +146,7 @@ object AegoraSubscriptionRepository {
       provider = "SYSTEM_DEFAULT"
     )
     _subscriptionState.value = fallback
-    return fallback
+    fallback
   }
 
   /**
@@ -222,10 +224,10 @@ object AegoraSubscriptionRepository {
   /**
    * Purchases a package for the currently active user.
    */
-  suspend fun purchasePackage(packageId: String): Result<AuthoritativeSubscriptionState> {
+  suspend fun purchasePackage(packageId: String): Result<AuthoritativeSubscriptionState> = withContext(Dispatchers.IO) {
     val client = activeClient
     if (client == null || !client.isConfigured) {
-      return Result.failure(IllegalStateException("RevenueCat client is not configured or available."))
+      return@withContext Result.failure(IllegalStateException("RevenueCat client is not configured or available."))
     }
 
     val res = client.purchasePackage(packageId)
@@ -233,16 +235,16 @@ object AegoraSubscriptionRepository {
       val updated = res.getOrThrow()
       _subscriptionState.value = updated
     }
-    return res
+    res
   }
 
   /**
    * Restores existing purchases for the active user.
    */
-  suspend fun restorePurchases(): Result<AuthoritativeSubscriptionState> {
+  suspend fun restorePurchases(): Result<AuthoritativeSubscriptionState> = withContext(Dispatchers.IO) {
     val client = activeClient
     if (client == null || !client.isConfigured) {
-      return Result.failure(IllegalStateException("RevenueCat client is not configured or available."))
+      return@withContext Result.failure(IllegalStateException("RevenueCat client is not configured or available."))
     }
 
     val res = client.restorePurchases()
@@ -250,7 +252,7 @@ object AegoraSubscriptionRepository {
       val updated = res.getOrThrow()
       _subscriptionState.value = updated
     }
-    return res
+    res
   }
 
   /**

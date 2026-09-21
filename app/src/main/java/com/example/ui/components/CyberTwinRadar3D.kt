@@ -4,11 +4,14 @@ import android.graphics.BlurMaskFilter
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -19,17 +22,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.hardware.DeviceThermalState
+import com.example.hardware.rememberDeviceThermalState
+import com.example.ui.theme.*
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
-
-// STRICT ENTERPRISE OBSIDIAN COLOR TOKENS
-val ObsidianDeepSpaceCanvas = Color(0xFF050B14)
-val ObsidianMatteSteel = Color(0xFF0B1528)
-val ObsidianGlowingCobalt = Color(0xFF3B82F6)
-val ObsidianEmeraldVerified = Color(0xFF34D399)
-val ObsidianHairlineBorder = Color(0xFF1E3A5F)
-val ObsidianCyanGlow = Color(0xFF22D3EE)
 
 data class RadarAxisData(
   val name: String,
@@ -47,8 +45,8 @@ data class RadarAxisData(
  * - AI Oversight
  *
  * 3D Effect: Multi-layered isometric polygons with decreasing alpha opacity.
- * Outermost active layer features glowing Cobalt Blue stroke (blurRadius = 15f)
- * and translucent fill gradient with glowing Cyan data point vertices.
+ * Hardware-Aware: Automatically reduces shader complexity (disables BlurMaskFilter)
+ * and simplifies depth projection layers if device enters MODERATE/SEVERE/CRITICAL thermal state.
  */
 @Composable
 fun CyberTwinRadar3D(
@@ -62,6 +60,17 @@ fun CyberTwinRadar3D(
   modifier: Modifier = Modifier,
   isInteractive: Boolean = true
 ) {
+  val thermalState by rememberDeviceThermalState()
+
+  // In throttled thermal state, disable continuous pulse or reduce frame overhead
+  val enablePulse = thermalState == DeviceThermalState.NORMAL
+  val enableBlurGlowShader = thermalState == DeviceThermalState.NORMAL || thermalState == DeviceThermalState.MODERATE
+  val depthLayers = when (thermalState) {
+    DeviceThermalState.NORMAL -> 4
+    DeviceThermalState.MODERATE -> 2
+    DeviceThermalState.SEVERE, DeviceThermalState.CRITICAL -> 1
+  }
+
   // Smooth entry animation for capability values
   val transition = updateTransition(targetState = axes, label = "RadarAnimation")
 
@@ -74,23 +83,49 @@ fun CyberTwinRadar3D(
     animVal
   }
 
-  // Continuous subtle pulse animation for 3D holographic effect
+  // Continuous subtle pulse animation for 3D holographic effect (only if not thermally throttled)
   val infiniteTransition = rememberInfiniteTransition(label = "Radar3DPulse")
-  val pulsePhase by infiniteTransition.animateFloat(
-    initialValue = 0f,
-    targetValue = 1f,
-    animationSpec = infiniteRepeatable(
-      animation = tween(2400, easing = LinearEasing),
-      repeatMode = RepeatMode.Restart
-    ),
-    label = "pulsePhase"
-  )
+  val pulsePhase by if (enablePulse) {
+    infiniteTransition.animateFloat(
+      initialValue = 0f,
+      targetValue = 1f,
+      animationSpec = infiniteRepeatable(
+        animation = tween(2400, easing = LinearEasing),
+        repeatMode = RepeatMode.Restart
+      ),
+      label = "pulsePhase"
+    )
+  } else {
+    remember { mutableFloatStateOf(0.5f) }
+  }
+
+  // Reusable cached framework Paint & MaskFilter to eliminate allocations in onDraw
+  val cachedGlowPaint = remember {
+    android.graphics.Paint().apply {
+      isAntiAlias = true
+      color = android.graphics.Color.parseColor("#3B82F6")
+      style = android.graphics.Paint.Style.STROKE
+      maskFilter = BlurMaskFilter(15f, BlurMaskFilter.Blur.NORMAL)
+    }
+  }
 
   Box(
     modifier = modifier
-      .testTag("cyber_twin_radar_3d")
       .fillMaxWidth()
-      .height(280.dp),
+      .heightIn(min = 200.dp, max = 280.dp)
+      .testTag("cyber_twin_radar_3d")
+      .clip(RoundedCornerShape(16.dp))
+      .background(
+        Brush.radialGradient(
+          colors = listOf(
+            SpecPrimaryBlue.copy(alpha = 0.18f),
+            SpecCardBg.copy(alpha = 0.85f),
+            SpecCanvasBg
+          ),
+          radius = 500f
+        )
+      )
+      .border(1.dp, SpecBorder.copy(alpha = 0.7f), RoundedCornerShape(16.dp)),
     contentAlignment = Alignment.Center
   ) {
     Canvas(
@@ -110,7 +145,6 @@ fun CyberTwinRadar3D(
       // ------------------------------------------------------------------------
       // 1. ISOMETRIC DEPTH FOUNDATION (Layered grid polygons at decreasing depths)
       // ------------------------------------------------------------------------
-      val depthLayers = 4
       val layerElevationPx = 14.dp.toPx()
 
       for (layer in (depthLayers - 1) downTo 0) {
@@ -137,7 +171,7 @@ fun CyberTwinRadar3D(
 
           drawPath(
             path = gridPath,
-            color = ObsidianHairlineBorder.copy(alpha = layerAlpha),
+            color = SpecBorder.copy(alpha = layerAlpha),
             style = Stroke(width = if (layer == 0) 1.2f.dp.toPx() else 0.8f.dp.toPx())
           )
         }
@@ -151,7 +185,7 @@ fun CyberTwinRadar3D(
         val bottomY = center.y - ((depthLayers - 1) * layerElevationPx) + (radius * sin(angle) * isometricYScale)
 
         drawLine(
-          color = ObsidianHairlineBorder.copy(alpha = 0.25f),
+          color = SpecBorder.copy(alpha = 0.25f),
           start = Offset(topX, bottomY),
           end = Offset(topX, topY),
           strokeWidth = 1.dp.toPx(),
@@ -160,7 +194,7 @@ fun CyberTwinRadar3D(
 
         // Radial axis lines on primary surface
         drawLine(
-          color = ObsidianHairlineBorder.copy(alpha = 0.6f),
+          color = SpecBorder.copy(alpha = 0.6f),
           start = center,
           end = Offset(topX, topY),
           strokeWidth = 1.dp.toPx()
@@ -194,14 +228,14 @@ fun CyberTwinRadar3D(
             path = capPath,
             brush = Brush.verticalGradient(
               colors = listOf(
-                ObsidianGlowingCobalt.copy(alpha = 0.20f * alphaMult),
-                ObsidianCyanGlow.copy(alpha = 0.05f * alphaMult)
+                SpecPrimaryBlue.copy(alpha = 0.20f * alphaMult),
+                SpecCyanHighlight.copy(alpha = 0.05f * alphaMult)
               )
             )
           )
           drawPath(
             path = capPath,
-            color = ObsidianGlowingCobalt.copy(alpha = 0.35f * alphaMult),
+            color = SpecPrimaryBlue.copy(alpha = 0.35f * alphaMult),
             style = Stroke(width = 1.2f.dp.toPx())
           )
         } else {
@@ -210,31 +244,27 @@ fun CyberTwinRadar3D(
             path = capPath,
             brush = Brush.radialGradient(
               colors = listOf(
-                ObsidianGlowingCobalt.copy(alpha = 0.42f),
-                ObsidianCyanGlow.copy(alpha = 0.20f),
-                ObsidianGlowingCobalt.copy(alpha = 0.06f)
+                SpecPrimaryBlue.copy(alpha = 0.42f),
+                SpecCyanHighlight.copy(alpha = 0.20f),
+                SpecPrimaryBlue.copy(alpha = 0.06f)
               ),
               center = center,
               radius = radius
             )
           )
 
-          // Glowing Cobalt Blue Stroke with Shadow Blur (blurRadius = 15f)
-          drawIntoCanvas { canvas ->
-            val frameworkPaint = Paint().asFrameworkPaint().apply {
-              isAntiAlias = true
-              color = android.graphics.Color.parseColor("#3B82F6")
-              style = android.graphics.Paint.Style.STROKE
-              strokeWidth = 2.5f.dp.toPx()
-              maskFilter = BlurMaskFilter(15f, BlurMaskFilter.Blur.NORMAL)
+          // Glowing Cobalt Blue Stroke with Shadow Blur (using recycled framework paint, disabled in severe thermal states)
+          if (enableBlurGlowShader) {
+            drawIntoCanvas { canvas ->
+              cachedGlowPaint.strokeWidth = 2.5f.dp.toPx()
+              canvas.nativeCanvas.drawPath(capPath.asAndroidPath(), cachedGlowPaint)
             }
-            canvas.nativeCanvas.drawPath(capPath.asAndroidPath(), frameworkPaint)
           }
 
           // Crisp primary stroke on top of the blur glow
           drawPath(
             path = capPath,
-            color = ObsidianGlowingCobalt,
+            color = SpecPrimaryBlue,
             style = Stroke(width = 2.2f.dp.toPx())
           )
 
@@ -250,7 +280,7 @@ fun CyberTwinRadar3D(
 
             // Outer cyan glow aura
             drawCircle(
-              color = ObsidianCyanGlow.copy(alpha = 0.35f),
+              color = SpecCyanHighlight.copy(alpha = 0.35f),
               radius = 8.dp.toPx(),
               center = Offset(vx, vy)
             )
@@ -262,7 +292,7 @@ fun CyberTwinRadar3D(
             )
             // Solid center cyan core
             drawCircle(
-              color = ObsidianCyanGlow,
+              color = SpecCyanHighlight,
               radius = 3.dp.toPx(),
               center = Offset(vx, vy)
             )
@@ -283,14 +313,14 @@ fun CyberTwinRadar3D(
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
         fontFamily = FontFamily.Monospace,
-        color = ObsidianCyanGlow,
+        color = SpecCyanHighlight,
         letterSpacing = 1.sp
       )
       Text(
         text = "ISOMETRIC 5-AXIS",
         fontSize = 9.sp,
         fontFamily = FontFamily.Monospace,
-        color = ObsidianEmeraldVerified
+        color = SpecEmeraldVerification
       )
     }
   }

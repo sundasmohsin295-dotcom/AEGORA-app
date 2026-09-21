@@ -81,10 +81,11 @@ fun LabSimulatorScreen(
   var showLabRewardDialog by remember { mutableStateOf(false) }
   var labRewardPayload by remember { mutableStateOf<DecryptedReward?>(null) }
 
-  if (showLabRewardDialog && labRewardPayload != null) {
+  val activeReward = labRewardPayload
+  if (showLabRewardDialog && activeReward != null) {
     DecryptingCacheDialog(
       onDismiss = { showLabRewardDialog = false },
-      reward = labRewardPayload!!
+      reward = activeReward
     )
   }
 
@@ -403,19 +404,20 @@ fun LabSimulatorScreen(
             HoldToHackButton(
               text = "HOLD TO EXECUTE CONTAINMENT",
               onComplete = {
-                if (selectedContainmentIndex != null) {
+                val chosenIndex = selectedContainmentIndex
+                if (chosenIndex != null && chosenIndex in simulation.containmentOptions.indices) {
                   isContained = true
                   AegoraRepository.logReasoningStep(
                     ReasoningGraphStep(
                       stepId = "step_containment",
                       nodeLabel = "Containment Decision",
                       nodeType = "CONTAINMENT_TRIGGERED",
-                      actionDescription = "Selected action: ${simulation.containmentOptions[selectedContainmentIndex!!]}",
+                      actionDescription = "Selected action: ${simulation.containmentOptions[chosenIndex]}",
                       timeOffsetSeconds = 30,
-                      isOptimalStep = selectedContainmentIndex == simulation.correctContainmentIndex
+                      isOptimalStep = chosenIndex == simulation.correctContainmentIndex
                     )
                   )
-                  if (selectedContainmentIndex == simulation.correctContainmentIndex) {
+                  if (chosenIndex == simulation.correctContainmentIndex) {
                     labRewardPayload = DecryptedReward(
                       xpMultiplier = "2.8x ACCURACY BONUS",
                       bonusXp = 350,
@@ -973,12 +975,12 @@ fun LabSimulatorScreen(
               }
             }
 
-            if (alertFeedback != null) {
+            alertFeedback?.let { feedback ->
               Spacer(modifier = Modifier.height(8.dp))
               Text(
-                text = alertFeedback!!,
+                text = feedback,
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                color = if (alertFeedback!!.startsWith("✓")) CyberEmerald else CyberAmber
+                color = if (feedback.startsWith("✓")) CyberEmerald else CyberAmber
               )
             }
 
@@ -1289,9 +1291,9 @@ fun LabSimulatorScreen(
                 modifier = Modifier.fillMaxWidth()
               )
             }
-            if (flagFeedback != null) {
+            flagFeedback?.let { feedback ->
               Spacer(modifier = Modifier.height(4.dp))
-              Text(text = flagFeedback!!, color = if (flagFeedback!!.startsWith("✓")) CyberEmerald else CyberRed, style = MaterialTheme.typography.labelSmall)
+              Text(text = feedback, color = if (feedback.startsWith("✓")) CyberEmerald else CyberRed, style = MaterialTheme.typography.labelSmall)
             }
           }
         }

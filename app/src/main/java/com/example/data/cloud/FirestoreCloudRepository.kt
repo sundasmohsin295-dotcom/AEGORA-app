@@ -157,7 +157,8 @@ class FirestoreCloudRepository(
         val docRef = db.collection("learners").document(authUid)
         val snap = docRef.get().await()
         if (snap.exists()) {
-          return snap.toObject(CloudLearnerDocument::class.java)!!
+          val doc = snap.toObject(CloudLearnerDocument::class.java)
+          if (doc != null) return doc
         }
         val profile = CloudLearnerDocument(
           firebaseAuthUid = authUid,

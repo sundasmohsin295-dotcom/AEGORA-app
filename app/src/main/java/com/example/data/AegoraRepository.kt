@@ -4504,6 +4504,48 @@ echo "SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbg
     val updatedOptionals = current.optionalActions.map { if (it.id == itemId) it.copy(isCompleted = true) else it }
     _todaysMissionV8.value = current.copy(primaryAction = updatedPrimary, optionalActions = updatedOptionals)
   }
+
+  // ============================================================================
+  // ENCRYPTED LOCAL CACHE (AES-256 ZERO-PLAIN-TEXT BOOT LAYER)
+  // ============================================================================
+
+  fun initEncryptedCache(context: android.content.Context) {
+    try {
+      val storage = com.example.security.AegoraEncryptedStorage.getInstance(context)
+      val cachedXp = storage.getSecureString("cached_operator_xp", "")
+      val cachedReadiness = storage.getSecureString("cached_job_readiness", "")
+      val cachedStreak = storage.getSecureString("cached_current_streak", "")
+      val cachedCallsign = storage.getSecureString("cached_callsign", "")
+      val cachedVerifiedSkills = storage.getSecureString("cached_verified_skills", "")
+
+      if (cachedXp.isNotEmpty() || cachedReadiness.isNotEmpty()) {
+        val current = _userProfile.value
+        _userProfile.value = current.copy(
+          xp = cachedXp.toIntOrNull() ?: current.xp,
+          jobReadinessScore = cachedReadiness.toIntOrNull() ?: current.jobReadinessScore,
+          currentStreak = cachedStreak.toIntOrNull() ?: current.currentStreak,
+          callsign = if (cachedCallsign.isNotEmpty()) cachedCallsign else current.callsign,
+          verifiedSkillCount = cachedVerifiedSkills.toIntOrNull() ?: current.verifiedSkillCount
+        )
+      }
+    } catch (_: Throwable) {}
+  }
+
+  fun updateProfile(profile: UserProfile) {
+    _userProfile.value = profile
+  }
+
+  fun persistUserProfile(context: android.content.Context) {
+    try {
+      val storage = com.example.security.AegoraEncryptedStorage.getInstance(context)
+      val current = _userProfile.value
+      storage.putSecureString("cached_operator_xp", current.xp.toString())
+      storage.putSecureString("cached_job_readiness", current.jobReadinessScore.toString())
+      storage.putSecureString("cached_current_streak", current.currentStreak.toString())
+      storage.putSecureString("cached_callsign", current.callsign)
+      storage.putSecureString("cached_verified_skills", current.verifiedSkillCount.toString())
+    } catch (_: Throwable) {}
+  }
 }
 
 

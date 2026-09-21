@@ -43,14 +43,16 @@ object NetworkMonitorService : NetworkMonitor {
 
     monitor.networkStatus
       .onEach { status ->
-        _currentStatus.value = status
-        val online = status is NetworkStatus.Online
         val wasConnected = _isConnected.value
+        val previousStatus = _currentStatus.value
+        val online = status is NetworkStatus.Online
+        _currentStatus.value = status
         _isConnected.value = online
 
         if (online) {
-          if (!wasConnected) {
-            triggerSyncOnConnectionRestore()
+          val isHandoff = previousStatus is NetworkStatus.Online && (previousStatus.isWifi != (status as NetworkStatus.Online).isWifi)
+          if (!wasConnected || isHandoff) {
+            triggerSyncOnConnectionRestore(isHandoff = isHandoff)
           } else {
             AegoraRepository.setNetworkSyncStatus(NetworkSyncStatus.SYNCED)
           }
@@ -64,12 +66,12 @@ object NetworkMonitorService : NetworkMonitor {
       .launchIn(scope)
   }
 
-  private fun triggerSyncOnConnectionRestore() {
+  private fun triggerSyncOnConnectionRestore(isHandoff: Boolean = false) {
     syncJob?.cancel()
     syncJob = scope.launch {
       AegoraRepository.setNetworkSyncStatus(NetworkSyncStatus.SYNCING)
-      // Smooth transient sync transition
-      delay(1500)
+      // Fast adaptive resync delay (300ms for network handoff, 1200ms for fresh reconnect)
+      delay(if (isHandoff) 300L else 1200L)
       AegoraRepository.setNetworkSyncStatus(NetworkSyncStatus.SYNCED)
     }
   }

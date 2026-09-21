@@ -751,12 +751,20 @@ fun SecurityCenterScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 val archSteps = listOf(
                   "1. USER & LOCAL DEVICE" to "Biometric prompt / Hardware Attestation (StrongBox/TEE)",
-                  "2. PASSKEY / FIDO2 ASSERTION" to "Origin-bound challenge signed via WebAuthn clientDataJSON",
-                  "3. IDENTITY GATEWAY" to "Argon2id fallback + Progressive rate-limiting + Bot shield",
-                  "4. ADAPTIVE RISK ENGINE" to "Geo-velocity, Device integrity, IP reputation, Anomaly check",
-                  "5. SESSION & TOKEN ENGINE" to "15m short-lived access token + Refresh token rotation in Keystore",
-                  "6. SERVER AUTHORIZATION" to "Role-Based (RBAC) + Fine-grained Resource Ownership checks",
-                  "7. SECURE APPLICATION APIs" to "HTTPS/TLS 1.3 + Nonce validation + Zero client-side trust"
+                  "2. ANTI-KEYLOGGER ENCLAVE" to "In-app randomized SecureNumpad & SecureKeyboard defeats screen loggers",
+                  "3. IN-MEMORY WIPE ENCLAVE" to "Zero-out RAM buffers (SecureMemory.wipe) to stop heap dump scrapers",
+                  "4. PLAY INTEGRITY ATTESTATION" to "Cryptographic nonce hardware token verification via Google Play",
+                  "5. CERTIFICATE TRANSPARENCY (CT)" to "RFC 6962 embedded SCT audit & rogue proxy CA interception defense",
+                  "6. MUTEX CONCURRENCY ENCLAVE" to "Server-side asyncio.Lock() shields against TOCTOU race conditions",
+                  "7. PASSKEY / FIDO2 ASSERTION" to "Origin-bound challenge signed via WebAuthn clientDataJSON",
+                  "8. ADAPTIVE RISK ENGINE" to "Geo-velocity, Device integrity, IP reputation, Anomaly check",
+                  "9. SESSION & TOKEN ENGINE" to "15m short-lived access token + Refresh token rotation in Keystore",
+                  "10. SECURE APPLICATION APIs" to "HTTPS/TLS 1.3 + Nonce validation + Zero client-side trust",
+                  "11. THE DURESS PIN (ZERO-WIPE)" to "Under-duress instant purge of Room DB, EncryptedPrefs, and Keystore aliases",
+                  "12. STRONGBOX SE HARDWARE ENCLAVE" to "StrongBox dedicated chip backing immune to cold-boot DRAM extraction & bus sniffing",
+                  "13. NETWORK TRAFFIC PADDING" to "Fixed 4096 / 8192-byte noise padding defeats packet size analysis & endpoint sniffing",
+                  "14. COGNITIVE INJECTION SHIELD" to "Scrubbed telemetry commands & enforced strict JSON schema for Gemini 1.5 Pro",
+                  "15. STRICT IPC & PATH SHIELD" to "Zero unexported components, deep-link Intent firewall & canonical path traversal sandbox"
                 )
 
                 archSteps.forEach { (title, desc) ->
@@ -1229,7 +1237,7 @@ fun AttackSimulatorScenarioCard(
         }
       }
 
-      if (selectedFeedback != null) {
+      selectedFeedback?.let { feedback ->
         Spacer(modifier = Modifier.height(8.dp))
         Surface(
           shape = RoundedCornerShape(6.dp),
@@ -1238,7 +1246,7 @@ fun AttackSimulatorScenarioCard(
           modifier = Modifier.fillMaxWidth()
         ) {
           Text(
-            text = selectedFeedback!!,
+            text = feedback,
             style = MaterialTheme.typography.bodySmall,
             color = if (feedbackIsCorrect) CyberEmerald else NeonPink,
             modifier = Modifier.padding(8.dp)

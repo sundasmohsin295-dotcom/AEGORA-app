@@ -11,12 +11,22 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.restorePurchasesWith
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.getCustomerInfoWith
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 object CommerceManager {
+
+    // Global real-time stream of CustomerInfo for instant entitlement synchronization
+    private val _customerInfoStream = MutableStateFlow<CustomerInfo?>(null)
+    val customerInfoStream: StateFlow<CustomerInfo?> = _customerInfoStream.asStateFlow()
 
     // UI States for MVI Architecture
     sealed class CommerceState {
@@ -28,18 +38,36 @@ object CommerceManager {
     }
 
     fun initialize(context: Context) {
+        // Explicitly enable DEBUG log level to monitor Google Play Billing sandbox handshake
+        Purchases.logLevel = LogLevel.DEBUG
+
         // 1-Tap Anonymous Login: Initializes without a specific App User ID
-        val configuredKey = BuildConfig.REVENUECAT_PUBLIC_API_KEY
-        val apiKey = if (configuredKey.isNotBlank() && !configuredKey.contains("YOUR_PUBLIC_API_KEY")) {
-            configuredKey
-        } else {
-            "goog_sandbox_judge_aegora_2026"
-        }
-        if (!Purchases.isConfigured) {
+        val apiKey = BuildConfig.REVENUECAT_PUBLIC_API_KEY
+        if (apiKey.isNotBlank() && !Purchases.isConfigured) {
             Purchases.configure(
                 PurchasesConfiguration.Builder(context, apiKey).build()
             )
         }
+
+        if (Purchases.isConfigured) {
+            // Instant Entitlement Sync: Attach UpdatedCustomerInfoListener
+            Purchases.sharedInstance.updatedCustomerInfoListener = UpdatedCustomerInfoListener { customerInfo ->
+                syncCustomerInfo(customerInfo)
+            }
+
+            // Prime the initial customer info state
+            Purchases.sharedInstance.getCustomerInfoWith(
+                onError = { /* offline fallback handled by cache */ },
+                onSuccess = { customerInfo ->
+                    syncCustomerInfo(customerInfo)
+                }
+            )
+        }
+    }
+
+    private fun syncCustomerInfo(customerInfo: CustomerInfo) {
+        _customerInfoStream.value = customerInfo
+        com.example.subscription.AegoraSubscriptionRepository.updateFromCustomerInfo(customerInfo)
     }
 
     fun purchase(activity: Activity, rcPackage: Package, onResult: (CommerceState) -> Unit) {
@@ -55,6 +83,7 @@ object CommerceManager {
                 }
             },
             onSuccess = { storeTransaction, customerInfo ->
+                syncCustomerInfo(customerInfo)
                 onResult(CommerceState.Success(customerInfo))
             }
         )
@@ -67,10 +96,11 @@ object CommerceManager {
                 onResult(CommerceState.Error(error.message))
             },
             onSuccess = { customerInfo ->
+                syncCustomerInfo(customerInfo)
                 if (customerInfo.entitlements.active.isNotEmpty()) {
                     onResult(CommerceState.Success(customerInfo))
                 } else {
-                    onResult(CommerceState.Error("No active subscriptions found."))
+                    onResult(CommerceState.Error("No active PRO or CAREER operations found."))
                 }
             }
         )

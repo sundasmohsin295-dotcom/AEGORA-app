@@ -214,8 +214,7 @@ fun IntelligenceCodexScreen(
   }
 
   // Detail Modal Bottom Sheet
-  if (activeDetailItem != null) {
-    val item = activeDetailItem!!
+  activeDetailItem?.let { item ->
     ModalBottomSheet(
       onDismissRequest = { activeDetailItem = null },
       containerColor = matteSteel,

@@ -30,7 +30,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.CyberTwinRadar3D
+import com.example.ui.components.PalantirMatteButton
 import com.example.ui.components.RadarAxisData
+import com.example.ui.overscroll.drawCyberOverscroll
+import com.example.ui.overscroll.rememberCyberOverscrollEffect
 
 // STRICT ENTERPRISE OBSIDIAN COLOR TOKENS
 private val DeepSpaceCanvas = Color(0xFF050B14)
@@ -91,21 +94,51 @@ fun HomeScreenBentoGrid(
     )
   }
 
+  var isHeroEngaging by remember { mutableStateOf(false) }
+  val snackbarHostState = remember { SnackbarHostState() }
+  val coroutineScope = rememberCoroutineScope()
+
+  val cyberOverscroll = rememberCyberOverscrollEffect()
+
   Scaffold(
     modifier = modifier
       .fillMaxSize()
       .background(DeepSpaceCanvas)
       .testTag("home_screen_bento_grid"),
-    containerColor = DeepSpaceCanvas
+    containerColor = DeepSpaceCanvas,
+    snackbarHost = {
+      SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier
+          .padding(16.dp)
+          .testTag("bento_grid_snackbar_host")
+      ) { data ->
+        Snackbar(
+          modifier = Modifier.border(BorderStroke(1.dp, HairlineBorder), RoundedCornerShape(8.dp)),
+          containerColor = MatteSteelCard,
+          contentColor = GlowingCobaltPrimary,
+          shape = RoundedCornerShape(8.dp)
+        ) {
+          Text(
+            text = data.visuals.message,
+            color = GlowingCobaltPrimary,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 13.sp
+          )
+        }
+      }
+    }
   ) { innerPadding ->
     LazyVerticalStaggeredGrid(
       columns = StaggeredGridCells.Adaptive(minSize = 340.dp),
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding)
-        .padding(horizontal = 16.dp),
-      verticalItemSpacing = 14.dp,
-      horizontalArrangement = Arrangement.spacedBy(14.dp),
+        .padding(horizontal = 16.dp)
+        .drawCyberOverscroll(cyberOverscroll),
+      verticalItemSpacing = 16.dp,
+      horizontalArrangement = Arrangement.spacedBy(16.dp),
       contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
     ) {
 
@@ -196,8 +229,8 @@ fun HomeScreenBentoGrid(
           Column(
             modifier = Modifier
               .fillMaxWidth()
-              .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+              .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
           ) {
             Row(
               modifier = Modifier.fillMaxWidth(),
@@ -252,41 +285,67 @@ fun HomeScreenBentoGrid(
               )
             }
 
-            // Action Button
-            Button(
+            // High-Precision Telemetry Metrics Strip (Monospace with Glowing Emerald/Cobalt)
+            Surface(
+              color = Color(0x33000000),
+              shape = RoundedCornerShape(8.dp),
+              border = BorderStroke(1.dp, HairlineBorder.copy(alpha = 0.6f)),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                  Text(
+                    text = "SRC: 10.0.4.18:49822",
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = GlowingCobaltPrimary,
+                    fontWeight = FontWeight.Bold
+                  )
+                  Text(
+                    text = "DST: 20.190.159.23:443",
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = CyanAccent,
+                    fontWeight = FontWeight.Bold
+                  )
+                }
+                Text(
+                  text = "SCORE: 96/100",
+                  fontSize = 11.sp,
+                  fontFamily = FontFamily.Monospace,
+                  color = EmeraldVerified,
+                  fontWeight = FontWeight.Black
+                )
+              }
+            }
+
+            // Action Button with State Locking & Anti-Spam
+            PalantirMatteButton(
+              text = "ENGAGE ADVERSARY DUEL",
               onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onStartDuel()
+                if (!isHeroEngaging) {
+                  isHeroEngaging = true
+                  onStartDuel()
+                }
               },
+              enabled = !isHeroEngaging,
+              isLoading = isHeroEngaging,
+              containerColor = GlowingCobaltPrimary,
+              contentColor = Color.White,
+              borderColor = GlowingCobaltPrimary,
+              shape = RoundedCornerShape(12.dp),
+              isMonospace = true,
+              testTag = "btn_start_hero_duel",
               modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .testTag("btn_start_hero_duel"),
-              colors = ButtonDefaults.buttonColors(containerColor = GlowingCobaltPrimary),
-              shape = RoundedCornerShape(12.dp)
-            ) {
-              Icon(
-                imageVector = Icons.Default.Bolt,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(18.dp)
-              )
-              Spacer(modifier = Modifier.width(8.dp))
-              Text(
-                text = "ENGAGE ADVERSARY DUEL",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                letterSpacing = 0.5.sp
-              )
-              Spacer(modifier = Modifier.weight(1f))
-              Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
-              )
-            }
+            )
           }
         }
       }
@@ -310,8 +369,8 @@ fun HomeScreenBentoGrid(
           Column(
             modifier = Modifier
               .fillMaxWidth()
-              .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+              .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
           ) {
             Row(
               modifier = Modifier.fillMaxWidth(),

@@ -115,6 +115,7 @@ class RealFirebaseIdentityContractTest {
       override val authState = kotlinx.coroutines.flow.MutableStateFlow<AuthState>(AuthState.Authenticated(testIdentity))
       override val currentIdentity: AuthenticatedIdentity? = testIdentity
       override suspend fun signInWithEmailPassword(email: String, pass: String): AuthResult = AuthResult.Success(testIdentity)
+      override suspend fun signUpWithEmailPassword(email: String, pass: String): AuthResult = AuthResult.Success(testIdentity)
       override suspend fun signInWithFederatedToken(idToken: String): AuthResult = AuthResult.Success(testIdentity)
       override suspend fun signOut(): Boolean {
         authState.value = AuthState.Unauthenticated
@@ -145,6 +146,7 @@ class RealFirebaseIdentityContractTest {
       override val authState = kotlinx.coroutines.flow.MutableStateFlow<AuthState>(AuthState.Authenticated(realIdentity))
       override val currentIdentity: AuthenticatedIdentity? = realIdentity
       override suspend fun signInWithEmailPassword(email: String, pass: String): AuthResult = AuthResult.Success(realIdentity)
+      override suspend fun signUpWithEmailPassword(email: String, pass: String): AuthResult = AuthResult.Success(realIdentity)
       override suspend fun signInWithFederatedToken(idToken: String): AuthResult = AuthResult.Success(realIdentity)
       override suspend fun signOut(): Boolean = true
     }

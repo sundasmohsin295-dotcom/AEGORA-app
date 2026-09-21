@@ -327,8 +327,7 @@ fun CognitiveProfileScreen(
     }
   }
 
-  if (showRemediationDialog != null) {
-    val rec = showRemediationDialog!!
+  showRemediationDialog?.let { rec ->
     AlertDialog(
       onDismissRequest = { showRemediationDialog = null },
       title = {
