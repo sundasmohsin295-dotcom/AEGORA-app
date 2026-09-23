@@ -89,6 +89,7 @@ sealed class ScreenDestination {
   data object SecurityClearance : ScreenDestination()
   data object AuthVault : ScreenDestination()
   data class EmailVerification(val email: String) : ScreenDestination()
+  data object UltimateCyberBastion : ScreenDestination()
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -368,25 +369,26 @@ fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) 
         is ScreenDestination.SecurityCenter -> {
           SecurityCenterScreen(
             onNavigateBack = { currentDestination = ScreenDestination.MainHub },
-            onNavigateToAuth = { currentDestination = ScreenDestination.CyberAuth }
+            onNavigateToAuth = { currentDestination = ScreenDestination.CyberAuth },
+            onNavigateToCyberBastion = { currentDestination = ScreenDestination.UltimateCyberBastion }
+          )
+        }
+
+        is ScreenDestination.UltimateCyberBastion -> {
+          UltimateCyberBastionScreen(
+            onNavigateBack = { currentDestination = ScreenDestination.SecurityCenter }
           )
         }
 
         is ScreenDestination.CyberAuth -> {
           AuthVaultScreen(
-            onAuthSuccess = { currentDestination = ScreenDestination.MainHub },
-            onNavigateToOtpVerification = { emailToVerify ->
-              currentDestination = ScreenDestination.EmailVerification(emailToVerify)
-            }
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
           )
         }
 
         is ScreenDestination.AuthVault -> {
           AuthVaultScreen(
-            onAuthSuccess = { currentDestination = ScreenDestination.MainHub },
-            onNavigateToOtpVerification = { emailToVerify ->
-              currentDestination = ScreenDestination.EmailVerification(emailToVerify)
-            }
+            onNavigateBack = { currentDestination = ScreenDestination.MainHub }
           )
         }
 
@@ -507,9 +509,9 @@ fun AegoraApp(initialAuditReport: com.example.security.RaspAuditReport? = null) 
         }
 
         is ScreenDestination.DuelArena -> {
+          val duelVm: com.example.viewmodel.DuelArenaViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
           DuelArenaScreen(
-            onNavigateBack = { currentDestination = ScreenDestination.MainHub },
-            onShowPaywall = { showPremiumUpgradeSheet = true }
+            viewModel = duelVm
           )
         }
 

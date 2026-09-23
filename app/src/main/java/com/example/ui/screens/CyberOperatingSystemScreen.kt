@@ -30,8 +30,6 @@ import com.example.ui.theme.*
 private val CyberTextPrimary = TextPrimaryDark
 private val CyberTextSecondary = TextSecondaryDark
 private val WarningYellow = Color(0xFFFFD54F)
-private val NeonGreen = Color(0xFF00E676)
-private val NeonPurple = Color(0xFFB388FF)
 private val ChamferedCutCornerShape = androidx.compose.foundation.shape.CutCornerShape(8.dp)
 
 @Composable

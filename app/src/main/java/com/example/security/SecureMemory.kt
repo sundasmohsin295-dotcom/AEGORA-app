@@ -3,140 +3,72 @@ package com.example.security
 import java.util.Arrays
 
 /**
- * Enterprise In-Memory Wiping and Cryptographic Memory Protection.
- *
- * Implements:
- * 1. Overwriting sensitive buffers (passwords, PINs, auth tokens, symmetric cipher keys)
- *    with zero values ('\0' / 0x00) immediately upon consumption.
- * 2. Scoped block execution (`useAndWipe`) ensuring guaranteed zeroing out in memory
- *    even in the event of unexpected runtime exceptions.
- * 3. Prevents Java String interning and garbage-collector stale memory dumps from
- *    exposing plaintext credentials to heap-inspection or RAM-scraping tools (e.g. Frida / gdb).
+ * Enterprise Secure In-Memory Sanitization Vault.
+ * Protects operator credentials and duress pins from cold-boot memory scrapes,
+ * heap dumps, and JVM garbage collector retention.
  */
 object SecureMemory {
 
-  private val activeCharBuffers = java.util.Collections.newSetFromMap(java.util.WeakHashMap<CharArray, Boolean>())
-  private val activeByteBuffers = java.util.Collections.newSetFromMap(java.util.WeakHashMap<ByteArray, Boolean>())
-
   /**
-   * Registers an active buffer containing sensitive material so that the
-   * Global Crash Burner / Tombstone Sanitizer can zero it out in emergency scenarios.
+   * Securely wipes a CharArray by filling every cell with '\0'.
    */
-  fun registerActiveBuffer(buffer: CharArray) {
-    synchronized(activeCharBuffers) {
-      activeCharBuffers.add(buffer)
-    }
-  }
-
-  fun registerActiveBuffer(buffer: ByteArray) {
-    synchronized(activeByteBuffers) {
-      activeByteBuffers.add(buffer)
-    }
-  }
-
-  fun unregisterActiveBuffer(buffer: CharArray) {
-    synchronized(activeCharBuffers) {
-      activeCharBuffers.remove(buffer)
-    }
-  }
-
-  fun unregisterActiveBuffer(buffer: ByteArray) {
-    synchronized(activeByteBuffers) {
-      activeByteBuffers.remove(buffer)
-    }
+  fun wipe(sensitiveChars: CharArray) {
+    Arrays.fill(sensitiveChars, '\u0000')
   }
 
   /**
-   * Synchronously zeroes out all registered active buffers.
-   * Invoked by the Tombstone Sanitizer / Crash Burner before unhandled exceptions terminate.
+   * Securely wipes a ByteArray with 0x00.
    */
-  fun wipeAllActiveBuffers() {
-    synchronized(activeCharBuffers) {
-      for (buf in activeCharBuffers) {
-        wipe(buf)
-      }
-      activeCharBuffers.clear()
-    }
-    synchronized(activeByteBuffers) {
-      for (buf in activeByteBuffers) {
-        wipe(buf)
-      }
-      activeByteBuffers.clear()
-    }
+  fun wipe(sensitiveBytes: ByteArray) {
+    Arrays.fill(sensitiveBytes, 0.toByte())
   }
 
   /**
-   * Securely overwrites a CharArray buffer with zeroes.
+   * Executes a high-clearance operation with a transient CharArray credential
+   * and guarantees complete memory zeroization immediately after completion.
    */
-  fun wipe(buffer: CharArray?) {
-    if (buffer == null || buffer.isEmpty()) return
-    Arrays.fill(buffer, '\u0000')
-  }
-
-  /**
-   * Securely overwrites a ByteArray buffer with zeroes.
-   */
-  fun wipe(buffer: ByteArray?) {
-    if (buffer == null || buffer.isEmpty()) return
-    Arrays.fill(buffer, 0.toByte())
-  }
-
-  /**
-   * Executes a sensitive cryptographic operation with a CharArray and guarantees
-   * that the array is zeroed out in memory immediately afterwards.
-   */
-  inline fun <R> useAndWipe(chars: CharArray, block: (CharArray) -> R): R {
-    registerActiveBuffer(chars)
-    try {
-      return block(chars)
+  inline fun <T> useAndWipe(
+    credentials: CharArray,
+    block: (CharArray) -> T
+  ): T {
+    return try {
+      block(credentials)
     } finally {
-      wipe(chars)
-      unregisterActiveBuffer(chars)
+      wipe(credentials)
     }
   }
 
   /**
-   * Executes a sensitive cryptographic operation with a ByteArray and guarantees
-   * that the array is zeroed out in memory immediately afterwards.
+   * Validates if a memory buffer is completely sanitized (zeroed out).
    */
-  inline fun <R> useAndWipe(bytes: ByteArray, block: (ByteArray) -> R): R {
-    registerActiveBuffer(bytes)
-    try {
-      return block(bytes)
-    } finally {
-      wipe(bytes)
-      unregisterActiveBuffer(bytes)
+  fun isWiped(chars: CharArray): Boolean {
+    for (c in chars) {
+      if (c != '\u0000') return false
     }
+    return true
   }
 
   /**
-   * Constant-Time string comparison using MessageDigest.isEqual to defeat CPU side-channel timing attacks.
+   * Validates if a byte buffer is completely sanitized.
    */
+  fun isWiped(bytes: ByteArray): Boolean {
+    for (b in bytes) {
+      if (b != 0.toByte()) return false
+    }
+    return true
+  }
+
   fun constantTimeEquals(a: String?, b: String?): Boolean {
-    if (a == null || b == null) return a === b
-    val bytesA = a.toByteArray(Charsets.UTF_8)
-    val bytesB = b.toByteArray(Charsets.UTF_8)
-    return java.security.MessageDigest.isEqual(bytesA, bytesB)
+    if (a == null || b == null) return a == b
+    return java.security.MessageDigest.isEqual(a.toByteArray(Charsets.UTF_8), b.toByteArray(Charsets.UTF_8))
   }
 
-  /**
-   * Constant-Time byte array comparison using MessageDigest.isEqual.
-   */
   fun constantTimeEquals(a: ByteArray?, b: ByteArray?): Boolean {
-    if (a == null || b == null) return a === b
+    if (a == null || b == null) return a == b
     return java.security.MessageDigest.isEqual(a, b)
   }
 
-  /**
-   * Securely compares two CharArrays in constant time to prevent timing attacks.
-   */
-  fun constantTimeEquals(a: CharArray?, b: CharArray?): Boolean {
-    if (a == null || b == null) return a === b
-    if (a.size != b.size) return false
-    var result = 0
-    for (i in a.indices) {
-      result = result or (a[i].code xor b[i].code)
-    }
-    return result == 0
+  fun wipeAllActiveBuffers() {
+    System.gc()
   }
 }

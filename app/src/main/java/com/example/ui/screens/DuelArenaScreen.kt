@@ -1,860 +1,781 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Dangerous
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ai.EdgeInferenceManager
-import com.example.audio.CyberSonificationManager
-import com.example.data.AegoraRepository
 import com.example.hardware.DynamicIconManager
-import com.example.subscription.AegoraSubscriptionRepository
-import com.example.ui.components.MatrixRainCanvas
-import com.example.ui.components.PalantirMatteButton
-import com.example.ui.components.ShimmerBox
-import com.example.ui.components.shimmerEffect
-import com.example.model.DuelScenario
-import com.example.model.ScapyParsedPacket
+import com.example.ui.components.CyberComboMultiplierCanvas
+import com.example.ui.components.SecurityStatusModal
+import com.example.ui.components.TacticalPanel
+import com.example.ui.components.TacticalStatusLed
+import com.example.ui.theme.ElectricCyan
+import com.example.ui.theme.HighAlertCrimson
+import com.example.ui.theme.ObsidianBackground
+import com.example.ui.theme.ObsidianSurfaceRaised
+import com.example.ui.theme.SlateBorder
+import com.example.ui.theme.SlateBorderBright
+import com.example.ui.theme.TacticalAmber
+import com.example.ui.theme.TacticalEmerald
+import com.example.ui.theme.TextDim
+import com.example.ui.theme.TextMuted
+import com.example.ui.theme.TextPrimary
+import com.example.ui.theme.TextTerminalGreen
 import com.example.viewmodel.DuelArenaViewModel
-import com.example.viewmodel.DuelIntent
-import com.example.util.SocPdfReportGenerator
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
-/**
- * 1. The Async Adversary Duel Arena
- * This screen forces the user to analyze raw telemetry and decide if the AI is hallucinating,
- * maintaining absolute visual focus on the terminal and the claim.
- * Connected to RevenueCat logic to enforce the paywall after free tier duels.
- */
 @Composable
 fun DuelArenaScreen(
-  onNavigateBack: () -> Unit,
-  onShowPaywall: () -> Unit,
+  viewModel: DuelArenaViewModel,
+  deepLinkSessionId: String? = null,
   modifier: Modifier = Modifier
 ) {
-  val obsidianBg = Color(0xFF090A0C)
-  val matteSteel = Color(0xFF15171C)
-  val slateBorder = Color(0xFF2D313A)
-  val cobaltBlue = Color(0xFF2962FF)
-
-  val haptic = LocalHapticFeedback.current
-  val coroutineScope = rememberCoroutineScope()
   val context = LocalContext.current
+  val uiState by viewModel.uiState.collectAsState()
+  val currentScenario = viewModel.currentScenario
+  val isAlertIconActive by DynamicIconManager.isAlertIconActive.collectAsState()
 
-  val sonificationManager = remember { CyberSonificationManager.getInstance(context) }
-  var isGeigerMuted by remember { mutableStateOf(false) }
-  var isExportingPdf by remember { mutableStateOf(false) }
+  var showAiMentorExpanded by remember { mutableStateOf(true) }
+  var showTelemetryConsole by remember { mutableStateOf(false) }
+  var showAuthVault by remember { mutableStateOf(deepLinkSessionId != null) }
+  var showSettingsDashboard by remember { mutableStateOf(false) }
+  var showSecurityModal by remember { mutableStateOf(false) }
 
-  val subscriptionState by AegoraSubscriptionRepository.subscriptionState.collectAsState()
-  val duelsEngaged by AegoraSubscriptionRepository.adversaryDuelsEngaged.collectAsState()
-
-  val isPro = AegoraSubscriptionRepository.canAccessAdversaryDuel() ||
-    subscriptionState.entitlementIdentifiers.contains(AegoraSubscriptionRepository.ENTITLEMENT_PRO)
-
-  var isLoading by remember { mutableStateOf(false) }
-  val snackbarHostState = remember { SnackbarHostState() }
-
-  val viewModel = remember { DuelArenaViewModel(context) }
-  val uiState by viewModel.viewState.collectAsState()
-  val duelSeeds = DuelArenaViewModel.DEFAULT_SCENARIOS
-
-  val activeSeedIndex = uiState.activeSeedIndex
-  val currentScenario = uiState.scenario
-  val hasDecodedPayload = uiState.hasDecodedPayload
-  val duelOutcome = uiState.duelOutcome
-  val isCorrectDecision = uiState.isCorrectDecision
-  val showPcapTrace = uiState.showPcapTrace
-  val isStreamingPcap = uiState.isStreamingPcap
-  val streamedPackets = uiState.streamedPackets
-
-  // Edge AI Neural Fallback Check
-  val isDeviceOffline = remember(activeSeedIndex) { !EdgeInferenceManager.isOnline(context) }
-  val edgeAiInference = remember(activeSeedIndex, isDeviceOffline) {
-    if (isDeviceOffline) {
-      EdgeInferenceManager.inferEdgeTelemetry(
-        telemetryLog = currentScenario.rawTelemetry,
-        adversary = currentScenario.adversary,
-        threatScore = currentScenario.threatScore
-      )
-    } else null
+  if (showSettingsDashboard) {
+    SettingsDashboard(
+      onNavigateBack = { showSettingsDashboard = false },
+      modifier = modifier
+    )
+    return
   }
 
-  // Active claim text: dynamically shows offline Edge Neural engine text if offline
-  val effectiveAiClaim = edgeAiInference?.analysisSummary ?: currentScenario.aiClaim
-
-  // Cyber Sonification (The Geiger Counter Effect):
-  // Frequency/speed accelerates mathematically as ThreatScore approaches 100/100
-  DisposableEffect(currentScenario.threatScore, isGeigerMuted) {
-    sonificationManager.setMuted(isGeigerMuted)
-    sonificationManager.startGeigerMonitoring(currentScenario.threatScore)
-    onDispose {
-      sonificationManager.stopGeigerMonitoring()
-    }
-  }
-
-  // Dynamic App Icon integration: Updates launcher icon state based on threat severity
-  LaunchedEffect(currentScenario.threatScore) {
-    DynamicIconManager.updateIconForThreatScore(context, currentScenario.threatScore)
-  }
-
-  fun exportDossierPdf() {
-    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-    isExportingPdf = true
-    coroutineScope.launch {
-      delay(200)
-      val reportData = SocPdfReportGenerator.DossierData(
-        reportId = currentScenario.id,
-        adversaryName = currentScenario.adversary,
-        aiClaim = effectiveAiClaim,
-        threatScore = currentScenario.threatScore,
-        killChainStage = currentScenario.mitreKillChainStage,
-        forensicEvidence = if (showPcapTrace && streamedPackets.isNotEmpty()) {
-          streamedPackets.take(5).joinToString("\n") { 
-            "#${it.number} [${it.timestamp}] ${it.protocol} | ${it.summary}" 
-          }
-        } else {
-          currentScenario.rawTelemetry
-        },
-        aiAnalystVerdict = duelOutcome ?: currentScenario.explanation,
-        isVerifiedThreat = !currentScenario.isAiHallucinating,
-        isEdgeAiFallback = isDeviceOffline
-      )
-
-      val pdfFile = SocPdfReportGenerator.generateDossierPdf(context, reportData)
-      isExportingPdf = false
-      if (pdfFile != null) {
-        SocPdfReportGenerator.shareDossier(context, pdfFile)
-        snackbarHostState.showSnackbar("Dossier PDF Exported: ${pdfFile.name}")
-      } else {
-        snackbarHostState.showSnackbar("PDF Generation Encountered an Anomaly.")
-      }
-    }
-  }
-
-  fun ingestPcapTrace() {
-    viewModel.processIntent(DuelIntent.TogglePcapTrace)
-  }
-
-  fun handleDuelDecision(userAcceptedClaim: Boolean) {
-    // RevenueCat Gate Check
-    if (!AegoraSubscriptionRepository.canAccessAdversaryDuel()) {
-      onShowPaywall()
-      return
-    }
-
-    // Record usage
-    AegoraSubscriptionRepository.recordDuelEngaged()
-    viewModel.processIntent(
-      DuelIntent.SubmitDecision(
-        claimedHallucination = !userAcceptedClaim,
-        context = context
-      )
+  if (showSecurityModal) {
+    SecurityStatusModal(
+      onDismiss = { showSecurityModal = false }
     )
   }
 
-  fun triggerSimulatedSync() {
-    coroutineScope.launch {
-      snackbarHostState.showSnackbar("Secure Connection Lost. Retrying...")
-    }
+  if (showAuthVault) {
+    AuthVaultScreen(
+      onNavigateBack = { showAuthVault = false },
+      claimedSessionId = deepLinkSessionId,
+      modifier = modifier
+    )
+    return
   }
 
-  Box(
+  Scaffold(
     modifier = modifier
       .fillMaxSize()
-      .background(obsidianBg)
-  ) {
+      .testTag("duel_arena_scaffold"),
+    containerColor = ObsidianBackground
+  ) { paddingValues ->
     Column(
       modifier = Modifier
         .fillMaxSize()
-        .safeDrawingPadding()
+        .padding(paddingValues)
+        .verticalScroll(rememberScrollState())
         .padding(16.dp),
-      verticalArrangement = Arrangement.spacedBy(16.dp)
+      verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-    // Top Navigation & Header Row
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.SpaceBetween
-    ) {
+      // Top Industrial Action Bar
+      TopActionBar(
+        score = uiState.score,
+        streak = uiState.comboStreak,
+        isMuted = uiState.isAudioMuted,
+        isAlertActive = isAlertIconActive,
+        onToggleAudio = { viewModel.toggleAudio(context) },
+        onOpenVault = { showAuthVault = true },
+        onOpenSecurityStatus = { showSecurityModal = true },
+        onOpenSettings = { showSettingsDashboard = true },
+        onSimulateProcessDeath = {
+          viewModel.simulateProcessDeath(88)
+        },
+        onReset = { viewModel.restartArena(context) }
+      )
+
+      // Alert Forensic Banner
+      uiState.alertBannerMessage?.let { banner ->
+        BannerAlert(message = banner)
+      }
+
+      // Tactical Telemetry HUD
+      ThreatTelemetryHUD(
+        playerShield = uiState.playerShieldIntegrity,
+        adversaryBreach = uiState.adversaryBreachProgress,
+        threatScore = uiState.systemThreatScore
+      )
+
+      // Fiery Cyan Multiplier (Best Game Award)
+      if (uiState.comboStreak >= 3) {
+        CyberComboMultiplierCanvas(
+          comboStreak = uiState.comboStreak,
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
+
+      if (uiState.isDuelComplete) {
+        VictoryOrDefeatCard(
+          playerShield = uiState.playerShieldIntegrity,
+          finalScore = uiState.score,
+          mitigatedCount = uiState.mitigatedCount,
+          onRestart = { viewModel.restartArena(context) }
+        )
+      } else if (currentScenario != null) {
+        // Active MITRE Tactical Frame
+        MitreScenarioCard(
+          scenario = currentScenario,
+          currentIndex = uiState.currentScenarioIndex + 1,
+          totalScenarios = uiState.scenarios.size
+        )
+
+        // Gemini AI Cyber Mentor Section
+        AiMentorBriefingCard(
+          isExpanded = showAiMentorExpanded,
+          isLoading = uiState.isAiLoading,
+          briefing = uiState.aiMentorBriefing,
+          onToggleExpand = { showAiMentorExpanded = !showAiMentorExpanded },
+          onRefreshAdvice = { viewModel.requestAiMentorBriefing() }
+        )
+
+        // Active Countermeasure Grid
+        DefenseActionsSection(
+          options = currentScenario.availableOptions,
+          onSelectAction = { action ->
+            viewModel.onSelectDefenseAction(context, action)
+          }
+        )
+      }
+
+      // Real-time Kernel Forensic Stream
+      TelemetryLogConsole(
+        isExpanded = showTelemetryConsole,
+        logs = uiState.logs,
+        onToggleConsole = { showTelemetryConsole = !showTelemetryConsole }
+      )
+    }
+  }
+}
+
+@Composable
+private fun TopActionBar(
+  score: Int,
+  streak: Int,
+  isMuted: Boolean,
+  isAlertActive: Boolean,
+  onToggleAudio: () -> Unit,
+  onOpenVault: () -> Unit,
+  onOpenSecurityStatus: () -> Unit,
+  onOpenSettings: () -> Unit,
+  onSimulateProcessDeath: () -> Unit,
+  onReset: () -> Unit
+) {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .testTag("top_action_bar"),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Column {
+      Text(
+        text = "CYBER DUEL ARENA",
+        color = ElectricCyan,
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        fontFamily = FontFamily.Monospace,
+        letterSpacing = 1.sp
+      )
       Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(
-          onClick = onNavigateBack,
-          modifier = Modifier.size(36.dp).testTag("duel_arena_back_button")
-        ) {
-          Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-        }
-        Spacer(modifier = Modifier.width(8.dp))
         Text(
-          "ACTIVE DUEL: ${currentScenario.id}",
+          text = "SCORE: $score",
+          color = TextPrimary,
+          fontWeight = FontWeight.SemiBold,
+          fontFamily = FontFamily.Monospace,
+          fontSize = 13.sp
+        )
+        if (streak > 0) {
+          Spacer(modifier = Modifier.width(8.dp))
+          Text(
+            text = "[CHAIN x$streak]",
+            color = TacticalAmber,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 11.sp
+          )
+        }
+      }
+    }
+
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(4.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Box(
+        modifier = Modifier
+          .clip(CutCornerShape(2.dp))
+          .background(if (isAlertActive) HighAlertCrimson else TacticalEmerald)
+          .padding(horizontal = 6.dp, vertical = 2.dp)
+      ) {
+        Text(
+          text = if (isAlertActive) "[CRIT]" else "[NORM]",
           color = Color.White,
-          fontSize = 14.sp,
+          fontSize = 9.sp,
           fontWeight = FontWeight.Bold,
           fontFamily = FontFamily.Monospace
         )
       }
 
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      IconButton(
+        onClick = onOpenSecurityStatus,
+        modifier = Modifier.testTag("open_security_modal_action_button")
       ) {
-        // Geiger Sonification Audio Toggle
-        IconButton(
-          onClick = {
-            isGeigerMuted = !isGeigerMuted
-            sonificationManager.setMuted(isGeigerMuted)
-            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-          },
-          modifier = Modifier
-            .size(32.dp)
-            .testTag("geiger_audio_toggle_button")
-        ) {
-          Icon(
-            if (isGeigerMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-            contentDescription = if (isGeigerMuted) "Unmute Geiger" else "Mute Geiger",
-            tint = if (isGeigerMuted) Color(0xFF8A919E) else Color(0xFF34D399),
-            modifier = Modifier.size(20.dp)
-          )
-        }
-
-        // RevenueCat Entitlement & Quota Pill
-        Surface(
-          onClick = onShowPaywall,
-          shape = RoundedCornerShape(12.dp),
-          color = if (isPro) Color(0x222962FF) else Color(0x2200E676),
-          border = BorderStroke(1.dp, if (isPro) cobaltBlue else Color(0x4400E676)),
-          modifier = Modifier.testTag("duel_paywall_pill")
-        ) {
-          Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-          ) {
-            Icon(
-              if (isPro) Icons.Default.WorkspacePremium else Icons.Default.Bolt,
-              contentDescription = null,
-              tint = if (isPro) cobaltBlue else Color(0xFF00E676),
-              modifier = Modifier.size(14.dp)
-            )
-            Text(
-              text = if (subscriptionState.tier != com.example.model.SubscriptionTier.FREE) "PRO • UNLIMITED" else "${2 - duelsEngaged}/2 DUELS LEFT",
-              fontSize = 10.sp,
-              fontWeight = FontWeight.Bold,
-              color = Color.White
-            )
-          }
-        }
+        Icon(
+          imageVector = Icons.Default.Security,
+          contentDescription = "Security Status & Enclave",
+          tint = ElectricCyan
+        )
       }
-    }
 
-    // Phase 26: UDF State Invariance Watchdog Verification Badge
-    Surface(
-      shape = RoundedCornerShape(6.dp),
-      color = if (uiState.isWatchdogHealthy) Color(0x1500E676) else Color(0x22FF1744),
-      border = BorderStroke(1.dp, if (uiState.isWatchdogHealthy) Color(0x3300E676) else Color(0x66FF1744)),
-      modifier = Modifier
-        .fillMaxWidth()
-        .testTag("state_watchdog_indicator")
-    ) {
-      Row(
-        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+      IconButton(
+        onClick = onOpenSettings,
+        modifier = Modifier.testTag("open_settings_action_button")
       ) {
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-          Icon(
-            imageVector = if (uiState.isWatchdogHealthy) Icons.Default.Shield else Icons.Default.Warning,
-            contentDescription = "State Watchdog",
-            tint = if (uiState.isWatchdogHealthy) Color(0xFF00E676) else Color(0xFFFF1744),
-            modifier = Modifier.size(14.dp)
-          )
-          Text(
-            text = "STATE WATCHDOG: [SHA-256: ${uiState.stateHash.take(8).uppercase()}] • THREAT: ${uiState.threatScore}/100",
-            fontSize = 10.sp,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            color = if (uiState.isWatchdogHealthy) Color(0xFFD1D5DB) else Color(0xFFFF80AB)
-          )
-        }
-        Text(
-          text = if (uiState.lastRehydrationTimestamp > 0) "[SELF-HEALED DB]" else "[INVARIANT VERIFIED]",
-          fontSize = 9.sp,
-          fontFamily = FontFamily.Monospace,
-          color = Color(0xFF00E676)
+        Icon(
+          imageVector = Icons.Default.Tune,
+          contentDescription = "SRE Telemetry & Settings",
+          tint = ElectricCyan
+        )
+      }
+
+      IconButton(
+        onClick = onOpenVault,
+        modifier = Modifier.testTag("open_vault_action_button")
+      ) {
+        Icon(
+          imageVector = Icons.Default.Lock,
+          contentDescription = "Security Vault & Pro",
+          tint = ElectricCyan
+        )
+      }
+
+      IconButton(
+        onClick = onSimulateProcessDeath,
+        modifier = Modifier.testTag("simulate_process_death_button")
+      ) {
+        Icon(
+          imageVector = Icons.Default.Dangerous,
+          contentDescription = "Simulate Process Death",
+          tint = HighAlertCrimson
+        )
+      }
+
+      IconButton(
+        onClick = onToggleAudio,
+        modifier = Modifier.testTag("toggle_audio_button")
+      ) {
+        Icon(
+          imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+          contentDescription = "Toggle Audio Sonification",
+          tint = TextMuted
+        )
+      }
+
+      IconButton(
+        onClick = onReset,
+        modifier = Modifier.testTag("reset_arena_button")
+      ) {
+        Icon(
+          imageVector = Icons.Default.Refresh,
+          contentDescription = "Reset Arena",
+          tint = TextMuted
         )
       }
     }
-
-    // Adversary Selector Strip
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-      duelSeeds.forEachIndexed { index, scenario ->
-        val selected = index == activeSeedIndex
-        Surface(
-          shape = RoundedCornerShape(6.dp),
-          color = if (selected) cobaltBlue.copy(alpha = 0.25f) else matteSteel,
-          border = BorderStroke(1.dp, if (selected) cobaltBlue else slateBorder),
-          modifier = Modifier
-            .weight(1f)
-            .clickable {
-              haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-              viewModel.processIntent(DuelIntent.LoadScenario(index))
-            }
-        ) {
-          Text(
-            text = scenario.id.removePrefix("SEED_"),
-            color = if (selected) Color.White else Color(0xFF8A919E),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier.padding(vertical = 6.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-          )
-        }
-      }
-    }
-
-    // Raw SIEM Telemetry Terminal
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .weight(1f)
-        .background(Color.Black, RoundedCornerShape(8.dp))
-        .border(1.dp, slateBorder, RoundedCornerShape(8.dp))
-        .padding(16.dp)
-        .testTag("raw_siem_terminal")
-    ) {
-      Column(
-        modifier = Modifier
-          .fillMaxSize()
-          .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-      ) {
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-          ) {
-            Text(
-              text = if (showPcapTrace) "PCAP // SCAPY 2.5 DISSECTION" else "SIEM // EDR TELEMETRY STREAM",
-              color = if (showPcapTrace) Color(0xFF22D3EE) else Color(0xFF8A919E),
-              fontSize = 10.sp,
-              fontWeight = FontWeight.Bold,
-              fontFamily = FontFamily.Monospace
-            )
-            if (isStreamingPcap) {
-              ShimmerBox(
-                modifier = Modifier
-                  .width(28.dp)
-                  .height(10.dp),
-                shape = RoundedCornerShape(2.dp),
-                baseColor = Color(0xFF0E2238),
-                highlightColor = Color(0xFF22D3EE)
-              )
-            }
-          }
-
-          Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            // Button: [ INGEST .PCAP TRACE ]
-            Surface(
-              shape = RoundedCornerShape(4.dp),
-              color = if (showPcapTrace) Color(0x3322D3EE) else Color(0x222962FF),
-              border = BorderStroke(1.dp, if (showPcapTrace) Color(0xFF22D3EE) else Color(0xFF2962FF)),
-              modifier = Modifier
-                .clickable {
-                  haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                  if (!showPcapTrace) {
-                    ingestPcapTrace()
-                  } else {
-                    showPcapTrace = false
-                  }
-                }
-                .testTag("duel_ingest_pcap_btn")
-            ) {
-              Text(
-                text = if (showPcapTrace) "[ SHOW SIEM ]" else "[ INGEST .PCAP TRACE ]",
-                color = if (showPcapTrace) Color(0xFF22D3EE) else Color(0xFF82B1FF),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-              )
-            }
-
-            Text(
-              text = if (hasDecodedPayload) "[ HIDE DECODED ]" else "[ DECODE BASE64 ]",
-              color = Color(0xFF00E676),
-              fontSize = 10.sp,
-              fontWeight = FontWeight.Bold,
-              fontFamily = FontFamily.Monospace,
-              modifier = Modifier.clickable {
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                viewModel.processIntent(DuelIntent.TogglePayloadDecode)
-              }
-            )
-          }
-        }
-
-        if (showPcapTrace) {
-          // PCAP Streamed Output
-          Text(
-            text = "> SCAPY CAPTURE FILE: /traces/${currentScenario.id.lowercase()}.pcap\n" +
-              "> DETERMINISTIC DISSECTION STREAM INGESTED (${streamedPackets.size}/${currentScenario.pcapPackets.size} FRAMES)",
-            color = Color(0xFF22D3EE),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 16.sp
-          )
-
-          streamedPackets.forEach { pkt ->
-            Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = if (pkt.isSuspicious) Color(0x22FF1744) else Color(0x1522D3EE),
-              border = BorderStroke(0.8.dp, if (pkt.isSuspicious) Color(0x88FF1744) else Color(0x4422D3EE)),
-              modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
-            ) {
-              Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                  Text(
-                    text = "FRAME #${pkt.number} • ${pkt.timestamp} • ${pkt.protocol} ${pkt.flags}",
-                    color = if (pkt.isSuspicious) Color(0xFFFF5252) else Color(0xFF67E8F9),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                  )
-                  Text(
-                    text = pkt.layers,
-                    color = Color(0xFF8A919E),
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace
-                  )
-                }
-
-                Text(
-                  text = "ETH: ${pkt.ethSrc} -> ${pkt.ethDst} | IP: ${pkt.ipSrc} -> ${pkt.ipDst}",
-                  color = Color(0xFFB0BEC5),
-                  fontSize = 10.sp,
-                  fontFamily = FontFamily.Monospace
-                )
-
-                Text(
-                  text = "TCP: ${pkt.summary}",
-                  color = Color(0xFFE0E0E0),
-                  fontSize = 10.sp,
-                  fontFamily = FontFamily.Monospace
-                )
-
-                if (pkt.payloadHex.isNotBlank()) {
-                  Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = Color(0x33000000),
-                    border = BorderStroke(0.5.dp, Color(0x33FFFFFF)),
-                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
-                  ) {
-                    Column(modifier = Modifier.padding(6.dp)) {
-                      Text(
-                        text = "HEX: ${pkt.payloadHex}",
-                        color = Color(0xFF8A919E),
-                        fontSize = 9.sp,
-                        fontFamily = FontFamily.Monospace
-                      )
-                      Text(
-                        text = "ASCII: ${pkt.payloadAscii}",
-                        color = Color(0xFF00E676),
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace
-                      )
-                    }
-                  }
-                }
-
-                if (pkt.isSuspicious) {
-                  Text(
-                    text = "🚨 SCAPY FORENSICS: C2 BEACON STAGER DETECTED (MITRE T1071.001)",
-                    color = Color(0xFFFF5252),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                  )
-                }
-              }
-            }
-          }
-
-          if (isStreamingPcap) {
-            Text(
-              text = "> [INGESTING NEXT PCAP FRAME VIA SCAPY ENGINE...]",
-              color = Color(0xFF82B1FF),
-              fontFamily = FontFamily.Monospace,
-              fontSize = 10.sp
-            )
-          }
-        } else {
-          // Standard SIEM EDR Text
-          Text(
-            text = currentScenario.rawTelemetry,
-            color = Color(0xFF00E676),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 12.sp,
-            lineHeight = 18.sp
-          )
-
-          AnimatedVisibility(visible = hasDecodedPayload) {
-            Surface(
-              shape = RoundedCornerShape(4.dp),
-              color = Color(0x2200E676),
-              border = BorderStroke(0.8.dp, Color(0x5500E676)),
-              modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-            ) {
-              Text(
-                text = currentScenario.decodedPayload,
-                color = Color(0xFFB9F6CA),
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
-                lineHeight = 16.sp,
-                modifier = Modifier.padding(10.dp)
-              )
-            }
-          }
-        }
-      }
-    }
-
-    // AI Analyst Claim Card with MITRE ATT&CK Kill Chain
-    Card(
-      colors = CardDefaults.cardColors(containerColor = matteSteel),
-      shape = RoundedCornerShape(8.dp),
-      border = BorderStroke(1.dp, if (isLoading) Color(0xFF34D399) else slateBorder),
-      modifier = Modifier
-        .wrapContentHeight()
-        .testTag("ai_analyst_claim_card")
-    ) {
-      Box(modifier = Modifier.fillMaxWidth()) {
-        Column(
-          modifier = Modifier.padding(16.dp),
-          verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Text(
-              if (isLoading) "NEURAL PROCESSING // MITRE ATT&CK" 
-              else if (isDeviceOffline) "EDGE AI HEURISTIC ENGINE // OFFLINE" 
-              else "AI ANALYST CLAIM",
-              color = if (isLoading) Color(0xFF34D399) 
-                else if (isDeviceOffline) Color(0xFFF59E0B) 
-                else Color(0xFF8A919E),
-              fontSize = 10.sp,
-              fontWeight = FontWeight.Bold,
-              fontFamily = FontFamily.Monospace
-            )
-            Text(
-              if (isLoading) "[FASTAPI STREAMING]" 
-              else if (isDeviceOffline) "[AIR-GAPPED FALLBACK]" 
-              else "CONFIDENCE: 94.2%",
-              color = if (isLoading) Color(0xFF34D399) 
-                else if (isDeviceOffline) Color(0xFFF59E0B) 
-                else Color(0xFF2962FF),
-              fontSize = 10.sp,
-              fontFamily = FontFamily.Monospace
-            )
-          }
-
-          // MITRE ATT&CK Horizontal Kill Chain Timeline (Recon -> Delivery -> Exploit -> C2)
-          val killChainStages = listOf("Recon", "Delivery", "Exploit", "C2")
-          val activeStage = currentScenario.mitreKillChainStage
-          Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .testTag("mitre_kill_chain_timeline"),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            killChainStages.forEachIndexed { index, stage ->
-              val isCurrentStage = stage.equals(activeStage, ignoreCase = true)
-              Surface(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(4.dp),
-                color = if (isCurrentStage) Color(0x33EF4444) else Color(0x1F2D313A),
-                border = BorderStroke(
-                  1.dp,
-                  if (isCurrentStage) Color(0xFFEF4444) else Color(0xFF2D313A)
-                )
-              ) {
-                Box(
-                  modifier = Modifier.padding(vertical = 5.dp),
-                  contentAlignment = Alignment.Center
-                ) {
-                  Text(
-                    text = stage.uppercase(),
-                    fontSize = 9.sp,
-                    fontWeight = if (isCurrentStage) FontWeight.Black else FontWeight.Normal,
-                    fontFamily = FontFamily.Monospace,
-                    color = if (isCurrentStage) Color(0xFFEF4444) else Color(0xFF8A919E)
-                  )
-                }
-              }
-              if (index < killChainStages.size - 1) {
-                Text(
-                  text = "›",
-                  color = Color(0xFF4A5568),
-                  fontSize = 12.sp,
-                  fontWeight = FontWeight.Bold
-                )
-              }
-            }
-          }
-
-          Text(
-            if (isLoading) "Intercepting neural inference stream from FastAPI defense backend..." else effectiveAiClaim,
-            color = if (isLoading) Color(0xFFA7F3D0) else Color.White,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            fontWeight = FontWeight.Medium,
-            fontFamily = if (isLoading) FontFamily.Monospace else FontFamily.Default
-          )
-        }
-
-        // Dynamic Hacking Animation: Matrix-Style Rain Canvas while processing
-        if (isLoading) {
-          Box(
-            modifier = Modifier
-              .matchParentSize()
-              .background(Color(0xCC090A0C))
-          ) {
-            MatrixRainCanvas(
-              modifier = Modifier.fillMaxSize(),
-              primaryColor = Color(0xFF34D399),
-              leadColor = Color(0xFFE6FFFA)
-            )
-          }
-        }
-      }
-    }
-
-    // Duel Outcome Card if answered
-    if (duelOutcome != null) {
-      val isAiFailureDetected = duelOutcome?.contains("AI FAILURE DETECTED") == true
-      val badgeAlpha by animateFloatAsState(
-        targetValue = if (isAiFailureDetected) 1f else 0f,
-        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
-        label = "ai_failure_badge_alpha"
-      )
-      val badgeScale by animateFloatAsState(
-        targetValue = if (isAiFailureDetected) 1f else 0.88f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-        label = "ai_failure_badge_scale"
-      )
-
-      Card(
-        colors = CardDefaults.cardColors(
-          containerColor = if (isCorrectDecision == true) Color(0x2200E676) else Color(0x22FF1744)
-        ),
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, if (isCorrectDecision == true) Color(0xFF00E676) else Color(0xFFFF1744)),
-        modifier = Modifier.fillMaxWidth().testTag("duel_outcome_card")
-      ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-          if (isAiFailureDetected || (isCorrectDecision == true && !currentScenario.isAiHallucinating.not())) {
-            Surface(
-              color = Color(0x3300E676),
-              shape = RoundedCornerShape(4.dp),
-              border = BorderStroke(1.dp, Color(0xFF00E676)),
-              modifier = Modifier
-                .padding(bottom = 6.dp)
-                .graphicsLayer(
-                  alpha = badgeAlpha,
-                  scaleX = badgeScale,
-                  scaleY = badgeScale
-                )
-                .testTag("ai_failure_detected_badge")
-            ) {
-              Text(
-                text = "[AI FAILURE DETECTED ✓]",
-                color = Color(0xFF00E676),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-              )
-            }
-          }
-          Text(
-            text = duelOutcome.orEmpty(),
-            color = Color.White,
-            fontSize = 12.sp,
-            lineHeight = 17.sp
-          )
-        }
-      }
-    }
-
-    // Phase 26: Watchdog Fault-Injection / Re-Hydration Integrity Trigger
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.SpaceBetween,
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Text(
-        text = "INVARIANCE AUDIT: ${if (uiState.isWatchdogHealthy) "INTEGRITY 100% (ZERO DRIFT)" else "ANOMALY RECOVERY ACTIVE"}",
-        fontSize = 10.sp,
-        fontFamily = FontFamily.Monospace,
-        color = if (uiState.isWatchdogHealthy) Color(0xFF9CA3AF) else Color(0xFFF87171)
-      )
-      Text(
-        text = "[SIMULATE REHYDRATION]",
-        fontSize = 10.sp,
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.Bold,
-        color = Color(0xFF38BDF8),
-        modifier = Modifier
-          .clickable {
-            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            viewModel.simulateProcessDeath()
-          }
-          .testTag("simulate_process_death_button")
-      )
-    }
-
-    // Action Row
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-      PalantirMatteButton(
-        text = "ACCEPT CLAIM",
-        onClick = {
-          if (!isLoading) {
-            isLoading = true
-            try {
-              handleDuelDecision(userAcceptedClaim = true)
-            } finally {
-              isLoading = false
-            }
-          }
-        },
-        enabled = !isLoading,
-        isLoading = isLoading,
-        containerColor = matteSteel,
-        contentColor = Color.White,
-        borderColor = slateBorder,
-        shape = RoundedCornerShape(8.dp),
-        isMonospace = true,
-        testTag = "duel_accept_claim_button",
-        modifier = Modifier
-          .weight(1f)
-          .height(50.dp)
-      )
-
-      PalantirMatteButton(
-        text = "CHALLENGE AI",
-        onClick = {
-          if (!isLoading) {
-            isLoading = true
-            try {
-              handleDuelDecision(userAcceptedClaim = false)
-            } finally {
-              isLoading = false
-            }
-          }
-        },
-        enabled = !isLoading,
-        isLoading = isLoading,
-        containerColor = cobaltBlue,
-        contentColor = Color.White,
-        borderColor = cobaltBlue,
-        shape = RoundedCornerShape(8.dp),
-        isMonospace = true,
-        testTag = "duel_challenge_ai_button",
-        modifier = Modifier
-          .weight(1f)
-          .height(50.dp)
-      )
-
-      PalantirMatteButton(
-        text = if (isExportingPdf) "GENERATING..." else "EXPORT DOSSIER",
-        onClick = {
-          if (!isExportingPdf) {
-            exportDossierPdf()
-          }
-        },
-        enabled = !isExportingPdf,
-        isLoading = isExportingPdf,
-        containerColor = Color(0xFF1B2332),
-        contentColor = Color(0xFF38BDF8),
-        borderColor = Color(0xFF0284C7),
-        shape = RoundedCornerShape(8.dp),
-        isMonospace = true,
-        testTag = "export_dossier_button",
-        modifier = Modifier
-          .weight(1.2f)
-          .height(50.dp)
-      )
-    }
   }
+}
 
-  // Sleek dark-themed Snackbar with Cobalt Blue text
-  SnackbarHost(
-    hostState = snackbarHostState,
+@Composable
+private fun BannerAlert(message: String) {
+  val isSuccess = message.contains("NEUTRALIZED") || message.contains("VICTORY")
+  val borderColor = if (isSuccess) TacticalEmerald else HighAlertCrimson
+  val chipShape = CutCornerShape(4.dp)
+
+  Box(
     modifier = Modifier
-      .align(Alignment.BottomCenter)
-      .padding(16.dp)
-      .testTag("duel_arena_snackbar_host")
-  ) { data ->
-    Snackbar(
-      modifier = Modifier.border(BorderStroke(1.dp, slateBorder), RoundedCornerShape(8.dp)),
-      containerColor = matteSteel,
-      contentColor = cobaltBlue,
-      shape = RoundedCornerShape(8.dp)
-    ) {
+      .fillMaxWidth()
+      .clip(chipShape)
+      .background(if (isSuccess) Color(0xFF042F2E) else Color(0xFF450A0A))
+      .border(1.dp, borderColor, chipShape)
+      .padding(12.dp)
+      .testTag("banner_alert")
+  ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Icon(
+        imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Warning,
+        contentDescription = null,
+        tint = if (isSuccess) TacticalEmerald else HighAlertCrimson,
+        modifier = Modifier.size(18.dp)
+      )
+      Spacer(modifier = Modifier.width(8.dp))
       Text(
-        text = data.visuals.message,
-        color = cobaltBlue,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 13.sp
+        text = message,
+        color = Color.White,
+        fontWeight = FontWeight.Bold,
+        fontSize = 12.sp,
+        fontFamily = FontFamily.Monospace
       )
     }
   }
 }
+
+@Composable
+private fun ThreatTelemetryHUD(
+  playerShield: Int,
+  adversaryBreach: Int,
+  threatScore: Int
+) {
+  val animatedShield by animateFloatAsState(targetValue = playerShield / 100f, label = "shield")
+  val animatedBreach by animateFloatAsState(targetValue = adversaryBreach / 100f, label = "breach")
+
+  val hudStatusLed = when {
+    threatScore >= 80 -> TacticalStatusLed.ALERT_CRIMSON
+    threatScore >= 50 -> TacticalStatusLed.STANDBY_AMBER
+    else -> TacticalStatusLed.ACTIVE_CYAN
+  }
+
+  TacticalPanel(
+    titleTag = "[HUD-01] // SYSTEM_TELEMETRY",
+    subtitle = "SHIELD INTEGRITY VS INFILTRATION DEPTH",
+    memoryOffset = "RADAR: $threatScore%",
+    statusLed = hudStatusLed,
+    modifier = Modifier.testTag("threat_telemetry_hud")
+  ) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+      // Defensive Shield Bar
+      Column {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+          Text(
+            text = "[SHIELD_INTEGRITY]",
+            color = TextMuted,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace
+          )
+          Text(
+            text = "$playerShield%",
+            color = ElectricCyan,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 11.sp
+          )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+          progress = { animatedShield },
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(6.dp)
+            .clip(CutCornerShape(2.dp)),
+          color = ElectricCyan,
+          trackColor = SlateBorder
+        )
+      }
+
+      // Adversary Infiltration Depth Bar
+      Column {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+          Text(
+            text = "[ADVERSARY_INFILTRATION]",
+            color = TextMuted,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace
+          )
+          Text(
+            text = "$adversaryBreach%",
+            color = HighAlertCrimson,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 11.sp
+          )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+          progress = { animatedBreach },
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(6.dp)
+            .clip(CutCornerShape(2.dp)),
+          color = HighAlertCrimson,
+          trackColor = SlateBorder
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun MitreScenarioCard(
+  scenario: com.example.viewmodel.ThreatScenario,
+  currentIndex: Int,
+  totalScenarios: Int
+) {
+  TacticalPanel(
+    titleTag = "[MITRE-${scenario.mitreId}] // ${scenario.mitreTactic.uppercase()}",
+    subtitle = "VECTOR: ${scenario.title}",
+    memoryOffset = "SEQ $currentIndex/$totalScenarios",
+    statusLed = TacticalStatusLed.ALERT_CRIMSON,
+    modifier = Modifier.testTag("mitre_scenario_card")
+  ) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      Text(
+        text = "ADVERSARY_PROFILE: ${scenario.adversaryProfile}",
+        color = TacticalAmber,
+        fontSize = 11.sp,
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.SemiBold
+      )
+
+      Text(
+        text = scenario.description,
+        color = TextMuted,
+        fontSize = 12.sp,
+        fontFamily = FontFamily.Monospace,
+        lineHeight = 16.sp
+      )
+
+      Spacer(modifier = Modifier.height(2.dp))
+
+      Text(
+        text = "INDICATORS OF COMPROMISE [IOCs]:",
+        color = TextPrimary,
+        fontSize = 11.sp,
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Bold
+      )
+
+      scenario.iocList.forEach { ioc ->
+        Row(
+          modifier = Modifier.padding(vertical = 1.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Icon(
+            imageVector = Icons.Default.BugReport,
+            contentDescription = null,
+            tint = HighAlertCrimson,
+            modifier = Modifier.size(13.dp)
+          )
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(
+            text = ioc,
+            color = TextPrimary,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun AiMentorBriefingCard(
+  isExpanded: Boolean,
+  isLoading: Boolean,
+  briefing: String,
+  onToggleExpand: () -> Unit,
+  onRefreshAdvice: () -> Unit
+) {
+  TacticalPanel(
+    titleTag = "[AI-SOC-03] // GEMINI_NEURAL_MENTOR",
+    subtitle = "REAL-TIME MITIGATION KNOWLEDGE GRAPH",
+    memoryOffset = if (isLoading) "ANALYZING..." else "READY",
+    isProcessing = isLoading,
+    statusLed = TacticalStatusLed.ACTIVE_CYAN,
+    headerTrailingContent = {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(
+          onClick = onRefreshAdvice,
+          modifier = Modifier.size(24.dp)
+        ) {
+          Icon(
+            imageVector = Icons.Default.Refresh,
+            contentDescription = "Refresh Advice",
+            tint = ElectricCyan,
+            modifier = Modifier.size(16.dp)
+          )
+        }
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+          text = if (isExpanded) "[-]" else "[+]",
+          color = TextDim,
+          fontSize = 11.sp,
+          fontFamily = FontFamily.Monospace,
+          modifier = Modifier.clickable { onToggleExpand() }
+        )
+      }
+    },
+    modifier = Modifier.testTag("ai_mentor_card")
+  ) {
+    AnimatedVisibility(visible = isExpanded) {
+      Column {
+        if (isLoading) {
+          Row(
+            modifier = Modifier.padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            CircularProgressIndicator(
+              modifier = Modifier.size(14.dp),
+              color = ElectricCyan,
+              strokeWidth = 2.dp
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+              text = "Parsing MITRE ATT&CK mitigation vectors...",
+              color = TextMuted,
+              fontSize = 11.sp,
+              fontFamily = FontFamily.Monospace
+            )
+          }
+        } else {
+          Text(
+            text = briefing.ifBlank { "Ready to evaluate active telemetry IOCs." },
+            color = TextPrimary,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace,
+            lineHeight = 16.sp
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun DefenseActionsSection(
+  options: List<String>,
+  onSelectAction: (String) -> Unit
+) {
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .testTag("defense_actions_section")
+  ) {
+    Text(
+      text = "[DEPLOY_ACTIVE_COUNTERMEASURE]:",
+      color = TextMuted,
+      fontSize = 11.sp,
+      fontFamily = FontFamily.Monospace,
+      fontWeight = FontWeight.Bold
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    options.forEachIndexed { index, option ->
+      val btnShape = CutCornerShape(4.dp)
+      Button(
+        onClick = { onSelectAction(option) },
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(vertical = 3.dp)
+          .testTag("defense_action_button_$index"),
+        shape = btnShape,
+        colors = ButtonDefaults.buttonColors(containerColor = ObsidianSurfaceRaised),
+        border = androidx.compose.foundation.BorderStroke(1.dp, SlateBorderBright)
+      ) {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Icon(
+            imageVector = Icons.Default.Shield,
+            contentDescription = null,
+            tint = ElectricCyan,
+            modifier = Modifier.size(16.dp)
+          )
+          Spacer(modifier = Modifier.width(8.dp))
+          Text(
+            text = "[0${index + 1}] $option",
+            color = TextPrimary,
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Medium
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun TelemetryLogConsole(
+  isExpanded: Boolean,
+  logs: List<String>,
+  onToggleConsole: () -> Unit
+) {
+  TacticalPanel(
+    titleTag = "[LOG-IOC] // FORENSIC_KERNEL_STREAM",
+    subtitle = "LIVE TELEMETRY SHIFT LOG",
+    memoryOffset = if (isExpanded) "[-]" else "[+]",
+    statusLed = TacticalStatusLed.SECURE_EMERALD,
+    headerTrailingContent = {
+      Text(
+        text = if (isExpanded) "[HIDE]" else "[STREAM]",
+        color = TextDim,
+        fontSize = 10.sp,
+        fontFamily = FontFamily.Monospace,
+        modifier = Modifier.clickable { onToggleConsole() }
+      )
+    },
+    modifier = Modifier.testTag("telemetry_log_console")
+  ) {
+    AnimatedVisibility(visible = isExpanded) {
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(130.dp)
+          .verticalScroll(rememberScrollState())
+      ) {
+        logs.takeLast(14).forEach { log ->
+          Text(
+            text = log,
+            color = when {
+              log.contains("ALERT") || log.contains("FAILED") -> HighAlertCrimson
+              log.contains("SUCCESS") || log.contains("PURGED") -> TextTerminalGreen
+              else -> TextMuted
+            },
+            fontSize = 10.sp,
+            fontFamily = FontFamily.Monospace,
+            lineHeight = 14.sp
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun VictoryOrDefeatCard(
+  playerShield: Int,
+  finalScore: Int,
+  mitigatedCount: Int,
+  onRestart: () -> Unit
+) {
+  val isVictory = playerShield > 0
+  TacticalPanel(
+    titleTag = "[EVALUATION] // ARENA_MISSION_SUMMARY",
+    subtitle = if (isVictory) "INFRASTRUCTURE SECURED" else "CRITICAL BREACH RECORDED",
+    statusLed = if (isVictory) TacticalStatusLed.SECURE_EMERALD else TacticalStatusLed.ALERT_CRIMSON,
+    modifier = Modifier.testTag("victory_defeat_card")
+  ) {
+    Column(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Icon(
+        imageVector = if (isVictory) Icons.Default.Security else Icons.Default.Dangerous,
+        contentDescription = null,
+        tint = if (isVictory) TacticalEmerald else HighAlertCrimson,
+        modifier = Modifier.size(40.dp)
+      )
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      Text(
+        text = if (isVictory) "STATUS: PERIMETER INTACT" else "STATUS: SYSTEM COMPROMISED",
+        color = Color.White,
+        fontWeight = FontWeight.Bold,
+        fontSize = 14.sp,
+        fontFamily = FontFamily.Monospace
+      )
+
+      Spacer(modifier = Modifier.height(4.dp))
+
+      Text(
+        text = "SCORE: $finalScore PTS // MITIGATIONS: $mitigatedCount",
+        color = TextMuted,
+        fontSize = 12.sp,
+        fontFamily = FontFamily.Monospace
+      )
+
+      Spacer(modifier = Modifier.height(12.dp))
+
+      val btnShape = CutCornerShape(4.dp)
+      Button(
+        onClick = onRestart,
+        colors = ButtonDefaults.buttonColors(
+          containerColor = if (isVictory) TacticalEmerald else HighAlertCrimson
+        ),
+        shape = btnShape,
+        modifier = Modifier.testTag("restart_arena_final_button")
+      ) {
+        Text(
+          text = "[ENGAGE NEXT CAMPAIGN]",
+          fontFamily = FontFamily.Monospace,
+          fontWeight = FontWeight.Bold,
+          fontSize = 12.sp
+        )
+      }
+    }
+  }
 }

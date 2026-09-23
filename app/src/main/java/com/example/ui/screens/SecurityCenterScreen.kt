@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -31,6 +32,7 @@ import com.example.data.ZeroTrustSecurityRepository
 import com.example.model.*
 import com.example.ui.components.ChamferedCutCornerShape
 import com.example.ui.components.HexagonShape
+import com.example.ui.components.MerkleChainVisualizer
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,6 +57,7 @@ import kotlinx.coroutines.launch
 fun SecurityCenterScreen(
   onNavigateBack: () -> Unit,
   onNavigateToAuth: () -> Unit,
+  onNavigateToCyberBastion: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   var selectedTab by remember { mutableStateOf(0) } // 0: Overview & Score, 1: Passkeys & MFA, 2: Sessions & Devices, 3: Security Timeline, 4: Threat Model & Arch, 5: Attack Simulator
@@ -141,6 +144,80 @@ fun SecurityCenterScreen(
       verticalArrangement = Arrangement.spacedBy(16.dp),
       contentPadding = PaddingValues(bottom = 40.dp)
     ) {
+      // Apex Cyber Bastion Quick Launcher
+      item {
+        Card(
+          colors = CardDefaults.cardColors(containerColor = Color(0xFF0F1522)),
+          border = BorderStroke(1.5.dp, NeonCyan),
+          shape = ChamferedCutCornerShape,
+          modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNavigateToCyberBastion() }
+            .testTag("security_center_btn_apex_bastion")
+        ) {
+          Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+          ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+              Box(
+                modifier = Modifier
+                  .size(42.dp)
+                  .background(NeonCyan.copy(alpha = 0.15f), CircleShape)
+                  .border(1.dp, NeonCyan, CircleShape),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  Icons.Default.Security,
+                  contentDescription = null,
+                  tint = NeonCyan,
+                  modifier = Modifier.size(24.dp)
+                )
+              }
+              Spacer(modifier = Modifier.width(14.dp))
+              Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  Text(
+                    text = "APEX CYBER BASTION",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                      fontFamily = FontFamily.Monospace,
+                      fontWeight = FontWeight.Black
+                    ),
+                    color = NeonCyan
+                  )
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Surface(
+                    shape = RoundedCornerShape(3.dp),
+                    color = CyberEmerald.copy(alpha = 0.2f),
+                    border = BorderStroke(1.dp, CyberEmerald)
+                  ) {
+                    Text(
+                      text = "PHASE 35/36",
+                      style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold),
+                      color = CyberEmerald,
+                      modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                    )
+                  }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                  text = "Biometrics • Merkle Ledger • Air-Gap Mesh • TFLite • MTD",
+                  style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                  color = CyberTextSecondary
+                )
+              }
+            }
+            Icon(
+              Icons.AutoMirrored.Filled.ArrowForward,
+              contentDescription = "Launch Bastion",
+              tint = NeonCyan,
+              modifier = Modifier.size(20.dp)
+            )
+          }
+        }
+      }
+
       // 0. Architectural Honesty Banner
       item {
         val providerStatus = remember { AegoraAuthRepository.getProviderStatus() }
@@ -255,6 +332,13 @@ fun SecurityCenterScreen(
           // Tab 0: Comprehensive Posture & Actionable Recommendations
           item {
             SecurityPostureDimensionsCard(posture = posture)
+          }
+
+          // Live Merkle Ledger Visualizer in Main Terminal
+          item {
+            MerkleChainVisualizer(
+              modifier = Modifier.fillMaxWidth()
+            )
           }
 
           item {
@@ -658,7 +742,13 @@ fun SecurityCenterScreen(
         }
 
         3 -> {
-          // Tab 3: Tamper-Evident Security Timeline
+          // Tab 3: Tamper-Evident Security Timeline & Real-Time Merkle Chain Visualizer
+          item {
+            MerkleChainVisualizer(
+              modifier = Modifier.fillMaxWidth()
+            )
+          }
+
           item {
             Surface(
               shape = RoundedCornerShape(10.dp),

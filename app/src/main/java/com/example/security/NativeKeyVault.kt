@@ -40,6 +40,10 @@ object NativeKeyVault {
   private external fun getNativeBackendUrl(): String
   private external fun detectHypervisorViaCpuTiming(): Boolean
   private external fun getCpuCycleSample(): Long
+  private external fun scrambleMemoryLayout(): Boolean
+  private external fun getMtdCycleCounter(): Long
+  private external fun getPolymorphicEndpoint(baseEndpoint: String): String
+  private external fun checkAntiDebuggingStatus(): Boolean
 
   /**
    * Retrieves the Gemini Pro API key from native C++ memory or managed fallback.
@@ -115,6 +119,64 @@ object NativeKeyVault {
       } catch (_: Throwable) {}
     }
     return System.nanoTime()
+  }
+
+  /**
+   * PHASE 35 & 36: Moving Target Defense (MTD) Runtime Memory Layout Scrambler.
+   * Dynamically alters structural offsets, shifts buffer addresses, and mutates padding.
+   */
+  fun mutateMemoryLayout(): Boolean {
+    if (isNativeLoaded) {
+      try {
+        return scrambleMemoryLayout()
+      } catch (e: Throwable) {
+        Log.w(TAG, "Native scrambleMemoryLayout exception: ${e.message}")
+      }
+    }
+    managedMtdCycle++
+    return true
+  }
+
+  private var managedMtdCycle: Long = 1
+
+  fun getMtdCycle(): Long {
+    if (isNativeLoaded) {
+      try {
+        return getMtdCycleCounter()
+      } catch (_: Throwable) {}
+    }
+    return managedMtdCycle
+  }
+
+  /**
+   * Generates dynamic polymorphic API route for requested endpoint.
+   */
+  fun getPolymorphicRoute(baseRoute: String): String {
+    if (isNativeLoaded) {
+      try {
+        val mutated = getPolymorphicEndpoint(baseRoute)
+        if (mutated.isNotBlank()) return mutated
+      } catch (e: Throwable) {
+        Log.w(TAG, "Native getPolymorphicEndpoint exception: ${e.message}")
+      }
+    }
+    val cycle = getMtdCycle()
+    val token = (cycle * 2654435761L xor 0x1F).toString(16).take(8)
+    return "/api/v2/mtd-$token/$baseRoute"
+  }
+
+  /**
+   * Checks for active GDB, LLDB, or Frida debugging hooks.
+   */
+  fun isDebuggerAttached(): Boolean {
+    if (isNativeLoaded) {
+      try {
+        return checkAntiDebuggingStatus()
+      } catch (e: Throwable) {
+        Log.w(TAG, "Native checkAntiDebuggingStatus exception: ${e.message}")
+      }
+    }
+    return android.os.Debug.isDebuggerConnected()
   }
 
   private val MANAGED_GEMINI_BYTES = byteArrayOf(

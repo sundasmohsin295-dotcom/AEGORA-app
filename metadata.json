@@ -1,6 +1,6 @@
 {
-  "name": "AEGORA",
-  "description": "The World's Cybersecurity Learning, Practice, Intelligence & Career Ecosystem. Learn, practice, prove, and master cybersecurity.",
+  "name": "CyberDuel",
+  "description": "Cybersecurity Threat Defense Duel Arena with MITRE ATT&CK scenarios, AI defense mentor, sonification audio feedback, and dynamic threat telemetry.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -38,6 +38,14 @@ object DynamicIconManager {
   }
 
   /**
+   * Invoked when a critical MITRE ATT&CK threat or zero-day is successfully mitigated.
+   * Restores the default system telemetry icon.
+   */
+  fun onMitreThreatMitigated(context: Context) {
+    setDefaultIcon(context)
+  }
+
+  /**
    * Toggles the dynamic launcher icon based on current threat score or active vulnerability state.
    */
   fun updateIconForThreatScore(context: Context, threatScore: Int) {
@@ -59,24 +67,20 @@ object DynamicIconManager {
       val targetEnable = if (isAlert) alertComponent else defaultComponent
       val targetDisable = if (isAlert) defaultComponent else alertComponent
 
-      // Enable target component first to avoid launcher state deadlocks
       pm.setComponentEnabledSetting(
         targetEnable,
         PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
         PackageManager.DONT_KILL_APP
       )
-
-      // Disable other alias
       pm.setComponentEnabledSetting(
         targetDisable,
         PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
         PackageManager.DONT_KILL_APP
       )
-
       _isAlertIconActive.value = isAlert
-      Log.i(TAG, "Dynamic icon state updated: isAlert=$isAlert")
+      Log.d(TAG, "Dynamic icon state updated: alertActive=$isAlert")
     } catch (e: Exception) {
-      Log.w(TAG, "Failed to toggle dynamic app icon: ${e.message}")
+      Log.w(TAG, "Failed to apply dynamic icon state: ${e.message}")
     }
   }
 }

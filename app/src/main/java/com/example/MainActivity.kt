@@ -1,78 +1,81 @@
 package com.example
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import androidx.fragment.app.FragmentActivity
+import android.util.Log
+import android.view.MotionEvent
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.view.WindowCompat
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import android.view.WindowManager
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.example.network.NetworkMonitorService
-import com.example.security.IntentFirewall
-import com.example.security.SecurityEnforcer
-import com.example.security.ZeroDayAppSecurityContainer
-import com.example.ui.AegoraApp
-import com.example.ui.theme.AegoraTheme
+import com.example.audio.CyberSonificationManager
+import com.example.hunter.AutonomousThreatHunterScheduler
+import com.example.security.BehavioralBiometricEngine
+import com.example.security.KernelWatchdog
+import com.example.ui.components.GlobalErrorBoundary
+import com.example.ui.screens.DuelArenaScreen
+import com.example.viewmodel.DuelArenaViewModel
 
-class MainActivity : FragmentActivity() {
+class MainActivity : ComponentActivity() {
+
+  private val duelViewModel: DuelArenaViewModel by viewModels()
+  private var activeDeepLinkSessionId by mutableStateOf<String?>(null)
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-
-    // PHASE 18 ZERO-DAY IMMUNITY: Screen Snapshot Shield (Anti-Screenshot / Anti-Screen Recording)
-    window.setFlags(
-      WindowManager.LayoutParams.FLAG_SECURE,
-      WindowManager.LayoutParams.FLAG_SECURE
-    )
-
     enableEdgeToEdge()
-    WindowCompat.setDecorFitsSystemWindows(window, false)
 
-    // Armed Zero-Crash Exception Handler (Captures unhandled exceptions before system dialogue)
-    com.example.util.GlobalExceptionHandler.initialize(applicationContext)
+    // Autonomous Threat Hunter WorkManager & Self-Healing Kernel Watchdog (Phase 33)
+    AutonomousThreatHunterScheduler.schedulePeriodicHunter(this)
+    KernelWatchdog.startMonitoring(this)
 
-    // PHASE 21 STRICT IPC ISOLATION & INTENT FIREWALL
-    IntentFirewall.validateAndSanitize(this, intent)
-
-    NetworkMonitorService.initialize(applicationContext)
-
-    // PHASE 25 ACCESSIBILITY ABUSE SHIELD: Detects untrusted screen-scraping services
-    com.example.security.AccessibilityShield.registerListener(this)
-
-    // RASP (Runtime Application Self-Protection) check:
-    val auditReport = SecurityEnforcer.enforce(applicationContext)
-    if (auditReport.isCompromised) {
-      SecurityEnforcer.clearEncryptedStorage(applicationContext)
-    } else {
-      // 0.1s Zero-Plaintext Encrypted Local Cache Boot
-      com.example.data.AegoraRepository.initEncryptedCache(applicationContext)
-    }
+    handleDeepLink(intent?.data)
 
     setContent {
-      AegoraTheme {
-        ZeroDayAppSecurityContainer(
-          lifecycleOwner = LocalLifecycleOwner.current,
-          context = applicationContext
-        ) {
-          Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color(0xFF000000)
-          ) {
-            AegoraApp(initialAuditReport = auditReport)
-          }
+      com.example.ui.theme.ObsidianIndustrialTheme {
+        GlobalErrorBoundary(modifier = Modifier.fillMaxSize()) {
+          DuelArenaScreen(
+            viewModel = duelViewModel,
+            deepLinkSessionId = activeDeepLinkSessionId,
+            modifier = Modifier.fillMaxSize()
+          )
         }
       }
     }
   }
 
-  override fun onNewIntent(intent: android.content.Intent) {
+  override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
-    setIntent(intent)
-    IntentFirewall.validateAndSanitize(this, intent)
+    handleDeepLink(intent.data)
+  }
+
+  override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+    ev?.let {
+      if (it.action == MotionEvent.ACTION_UP || it.action == MotionEvent.ACTION_DOWN) {
+        val duration = (it.eventTime - it.downTime).coerceAtLeast(10L)
+        BehavioralBiometricEngine.recordTouchInteraction(it.pressure, duration)
+      }
+    }
+    return super.dispatchTouchEvent(ev)
+  }
+
+  private fun handleDeepLink(data: Uri?) {
+    if (data == null) return
+    Log.i("MainActivity", "Deep link intercepted: $data")
+    if (data.scheme == "aegora" && data.host == "claim-web-pro") {
+      val sessionId = data.getQueryParameter("session_id") ?: "sess_web_pro_claimed"
+      activeDeepLinkSessionId = sessionId
+    }
+  }
+
+  override fun onDestroy() {
+    super.onDestroy()
+    CyberSonificationManager.getInstance(this).release()
   }
 }
-
-
