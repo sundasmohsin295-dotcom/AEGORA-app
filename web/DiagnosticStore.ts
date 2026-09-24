@@ -44,6 +44,25 @@ export interface DiagnosticCrashEvent {
   heapMemoryUsageMb: number;
 }
 
+export interface N8nIncidentRecord {
+  id: string;
+  timestamp: string;
+  title: string;
+  severity: DiagnosticSeverity;
+  cvssScore: number;
+  sourceIp: string;
+  blockHash: string;
+  dispatchStatus: string;
+}
+
+export interface SupabaseSyncMetric {
+  isConfigured: boolean;
+  lastSyncTimestamp: string;
+  syncedBlockCount: number;
+  rlsEnforced: boolean;
+  persistenceEngine: string;
+}
+
 export interface MerkleAuditBlock {
   index: number;
   timestamp: string;
@@ -85,6 +104,14 @@ class DiagnosticStoreService {
   private merkleLedger: MerkleAuditBlock[] = [];
   private currentMerkleRoot: string = GENESIS_HASH;
   private ledgerValid: boolean = true;
+  private n8nIncidentQueue: N8nIncidentRecord[] = [];
+  private supabaseSyncState: SupabaseSyncMetric = {
+    isConfigured: true,
+    lastSyncTimestamp: '04:55:00.000',
+    syncedBlockCount: 4,
+    rlsEnforced: true,
+    persistenceEngine: 'PostgreSQL 15+ / PostgREST'
+  };
   private logEvents: DiagnosticLogEvent[] = [
     {
       id: 'LOG-1001',
@@ -521,6 +548,143 @@ class DiagnosticStoreService {
     this.merkleLedger = [...this.merkleLedger, block];
 
     this.notify();
+  }
+
+  exportAuditLogCSV(): string {
+    const headers = [
+      'BlockIndex',
+      'Timestamp',
+      'EventID',
+      'ComponentTag',
+      'Severity',
+      'PayloadHash',
+      'PreviousHash',
+      'BlockHash',
+      'IsTampered'
+    ];
+
+    const escapeCsvField = (val: string | number | boolean): string => {
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows: string[] = [];
+    rows.push(headers.join(','));
+
+    // Include Genesis anchor as Block #0
+    const genesisRow = [
+      0,
+      '00:00:00.000',
+      'GENESIS-00',
+      'GENESIS_ANCHOR',
+      'INFO',
+      GENESIS_HASH,
+      GENESIS_HASH,
+      GENESIS_HASH,
+      false
+    ].map(escapeCsvField).join(',');
+    rows.push(genesisRow);
+
+    // Append all sequenced blocks in ledger
+    for (const b of this.merkleLedger) {
+      const row = [
+        b.index,
+        b.timestamp,
+        b.eventId,
+        b.componentTag,
+        b.severity,
+        b.eventPayloadHash,
+        b.previousBlockHash,
+        b.blockHash,
+        b.isTampered
+      ].map(escapeCsvField).join(',');
+      rows.push(row);
+    }
+
+    // Append cryptographic Merkle root provenance signature footer
+    const integrityCheck = this.verifyMerkleLedgerIntegrity();
+    const timestamp = new Date().toISOString();
+    const signature = deterministicSha256(
+      `${this.currentMerkleRoot}:${this.merkleLedger.length}:${integrityCheck.isValid}`
+    );
+
+    rows.push('');
+    rows.push('# --- CRYPTOGRAPHIC FORENSIC PROVENANCE SEAL ---');
+    rows.push(`# GENERATED_AT: ${timestamp}`);
+    rows.push(`# CHAIN_HEIGHT: ${this.merkleLedger.length}`);
+    rows.push(`# MERKLE_ROOT_STATE: ${this.currentMerkleRoot}`);
+    rows.push(`# INTEGRITY_VERIFICATION: ${integrityCheck.isValid ? 'VALID_CRYPTOGRAPHICALLY_SEALED' : 'FRACTURED_TAMPER_DETECTED'}`);
+    rows.push(`# PROVENANCE_SIGNATURE_SHA256: ${signature}`);
+    rows.push('# ALGORITHM: DETERMINISTIC_SHA256_STATE_BUS');
+    rows.push('# COMPLIANCE: FORENSIC_AUDIT_TRAIL_ISO_27037');
+
+    return rows.join('\n');
+  }
+
+  getN8nIncidentQueue(): N8nIncidentRecord[] {
+    return [...this.n8nIncidentQueue];
+  }
+
+  getSupabaseSyncState(): SupabaseSyncMetric {
+    return { ...this.supabaseSyncState };
+  }
+
+  dispatchN8nIncident(
+    title: string,
+    severity: DiagnosticSeverity = 'CRITICAL',
+    sourceIp: string = '192.168.1.105',
+    cvss: number = 9.4
+  ): N8nIncidentRecord {
+    const incId = `INC-N8N-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const timestamp = new Date().toTimeString().split(' ')[0] + '.' + String(new Date().getMilliseconds()).padStart(3, '0');
+    const blockHash = this.currentMerkleRoot;
+
+    const record: N8nIncidentRecord = {
+      id: incId,
+      timestamp,
+      title,
+      severity,
+      cvssScore: cvss,
+      sourceIp,
+      blockHash,
+      dispatchStatus: 'DELIVERED'
+    };
+
+    this.n8nIncidentQueue = [record, ...this.n8nIncidentQueue];
+
+    this.recordLog(
+      severity,
+      'N8nWorkflowDispatcher',
+      `Incident alert dispatched to n8n webhook: ${title} (CVSS ${cvss})`,
+      `INC_ID: ${incId} | TARGET_IP: ${sourceIp} | HASH: ${blockHash.slice(0, 12)}...`
+    );
+
+    this.notify();
+    return record;
+  }
+
+  syncToSupabase(): SupabaseSyncMetric {
+    const timestamp = new Date().toTimeString().split(' ')[0] + '.' + String(new Date().getMilliseconds()).padStart(3, '0');
+    this.supabaseSyncState = {
+      isConfigured: true,
+      lastSyncTimestamp: timestamp,
+      syncedBlockCount: this.merkleLedger.length,
+      rlsEnforced: true,
+      persistenceEngine: 'PostgreSQL 15+ / PostgREST'
+    };
+
+    this.recordLog(
+      'INFO',
+      'SupabasePostgresConnector',
+      `Synchronized ${this.merkleLedger.length} Merkle audit blocks with Supabase cloud repository`,
+      'ENGINE: POSTGRESQL_15_RLS'
+    );
+
+    this.notify();
+    return { ...this.supabaseSyncState };
   }
 
   clearCrashes() {

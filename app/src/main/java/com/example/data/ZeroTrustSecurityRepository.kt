@@ -433,7 +433,7 @@ object ZeroTrustSecurityRepository {
   // MOCK - NOT PRODUCTION SECURITY, SEE SECURITY_STATUS.md
   fun authenticateWithPassword(email: String, pass: String): Pair<Boolean, String> {
     if (email.isBlank() || pass.length < 8) {
-      return Pair(false, "Invalid credentials format or insufficient complexity.")
+      return Pair(false, "Invalid authentication credentials")
     }
     _isAuthenticated.value = true
     _currentAuthMethod.value = AuthMethod.PASSWORD_ARGON2

@@ -114,7 +114,7 @@ class RealFirebaseAuthProvider(
         AuthResult.Failure(err)
       }
     } catch (e: Exception) {
-      val err = e.localizedMessage ?: "Firebase authentication failed"
+      val err = "Invalid authentication credentials"
       _authState.value = AuthState.AuthenticationFailed(err)
       AuthResult.Failure(err)
     }

@@ -5,6 +5,8 @@ import { SettingsDashboard } from './SettingsDashboard';
 import { SecurityStatusModal } from './SecurityStatusModal';
 import { DiagnosticStore } from './DiagnosticStore';
 import { MerkleChainVisualizer } from './MerkleChainVisualizer';
+import { ReputationNodeGraph } from './ReputationNodeGraph';
+import { StrixPentestTelemetry } from './StrixPentestTelemetry';
 
 export const MainAppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<'ARENA' | 'SETTINGS'>('ARENA');
@@ -118,6 +120,12 @@ export const MainAppContent: React.FC = () => {
           Real-time circuit breaker metrics, latency P95/P99 distributions, and FactChecker audit records are streaming continuously.
           Use the [SRE DASHBOARD] above to inspect the sub-view or [TEST CRASH BOUNDARY] to verify the Global Error Boundary fallback.
         </div>
+
+        {/* Real-time Strix Pentest Telemetry Console */}
+        <StrixPentestTelemetry />
+
+        {/* Real-time D3.js Neural Reputation Graph (Top 5 High-Centrality C2 & Attack Graph) */}
+        <ReputationNodeGraph />
 
         {/* Real-time D3.js Merkle Audit Chain Visualizer */}
         <MerkleChainVisualizer />

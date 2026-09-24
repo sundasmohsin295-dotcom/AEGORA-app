@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.StrixPentestTelemetry
 import com.example.hardware.DynamicIconManager
 import com.example.ui.components.CyberComboMultiplierCanvas
 import com.example.ui.components.SecurityStatusModal
@@ -205,6 +206,14 @@ fun DuelArenaScreen(
         isExpanded = showTelemetryConsole,
         logs = uiState.logs,
         onToggleConsole = { showTelemetryConsole = !showTelemetryConsole }
+      )
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      // Strix Pentest Telemetry Console with [RECON_STARTED] & [VERIFIED_PoC_LOCKED] tags
+      StrixPentestTelemetry(
+        modifier = Modifier.fillMaxWidth(),
+        initiallyExpanded = true
       )
     }
   }

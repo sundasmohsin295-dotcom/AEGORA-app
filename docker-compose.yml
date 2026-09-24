@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  aegora-soc-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegora-soc-core
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - AEGORA_DEBUG_MODE=false
+      - SUPABASE_URL=http://postgres:5432
+      - SUPABASE_SERVICE_ROLE_KEY=dev_service_role_secret_key_2026
+      - N8N_INCIDENT_WEBHOOK_URL=http://n8n-runner:5678/webhook/aegora-threat-incident
+      - AGENT_WEBHOOK_SECRET=aegora_super_secret_hmac_key_9942
+      - JWT_SECRET_KEY=aegora_hs512_hyper_secure_military_master_secret_2026_rotatable_enclave_key
+    depends_on:
+      - postgres
+      - n8n-runner
+    networks:
+      - aegora-mesh
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: aegora-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aegora_enterprise
+      POSTGRES_USER: aegora_admin
+      POSTGRES_PASSWORD: aegora_hyper_secure_db_pass_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/init-schema.sql:ro
+    networks:
+      - aegora-mesh
+
+  n8n-runner:
+    image: n8nio/n8n:latest
+    container_name: aegora-n8n-automation
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_ENCRYPTION_KEY=aegora_n8n_master_encryption_key_2026
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+    volumes:
+      - n8ndata:/home/node/.n8n
+    networks:
+      - aegora-mesh
+
+networks:
+  aegora-mesh:
+    driver: bridge
+
+volumes:
+  pgdata:
+  n8ndata:

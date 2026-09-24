@@ -669,6 +669,34 @@ export const MerkleChainVisualizer: React.FC<MerkleChainVisualizerProps> = ({
         >
           [+AUDIT EVENT]
         </button>
+
+        <button
+          onClick={() => {
+            const csvContent = DiagnosticStore.exportAuditLogCSV();
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'aegora_merkle_audit_ledger_signed.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            setVerificationFeedback('FORENSIC CSV EXPORTED: Downloaded aegora_merkle_audit_ledger_signed.csv with cryptographic provenance seal.');
+          }}
+          style={{
+            backgroundColor: '#0B0F19',
+            border: '1px solid #10B981',
+            color: '#10B981',
+            padding: '7px 12px',
+            fontSize: '10px',
+            fontWeight: 'bold',
+            fontFamily: 'JetBrains Mono, monospace',
+            cursor: 'pointer'
+          }}
+        >
+          [EXPORT LOGS (CSV)]
+        </button>
       </div>
 
       {/* Verification Feedback Banner */}

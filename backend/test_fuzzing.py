@@ -195,3 +195,128 @@ def test_hardware_binding_mismatch_revokes_session():
     assert rogue_resp.status_code == 403
     assert "hardware binding" in rogue_resp.json()["detail"].lower()
 
+
+# --- Phase 41: OWASP Security Headers, Sanitization, Supabase & n8n Tests ---
+
+def test_owasp_security_headers_present():
+    """Verify all OWASP recommended security headers are enforced on responses"""
+    response = client.get("/healthz")
+    assert response.status_code == 200
+    headers = response.headers
+    assert "default-src 'self'" in headers.get("Content-Security-Policy", "")
+    assert headers.get("X-Content-Type-Options") == "nosniff"
+    assert headers.get("X-Frame-Options") == "DENY"
+    assert "max-age=63072000" in headers.get("Strict-Transport-Security", "")
+    assert headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+    assert "camera=()" in headers.get("Permissions-Policy", "")
+    assert headers.get("Server") == "AEGORA-FORTRESS/1.0"
+
+
+def test_owasp_query_param_injection_blocked_400():
+    """Verify that malicious query parameters are intercepted by OWASPSecurityHeadersMiddleware"""
+    resp = client.get("/healthz?filter=1%27%20OR%201=1%20--")
+    assert resp.status_code == 400
+    assert resp.json()["code"] == "OWASP_SECURITY_VIOLATION"
+
+
+def test_n8n_incident_dispatch_endpoint():
+    """Verify automated n8n webhook incident dispatch accepts valid telemetry and returns structured confirmation"""
+    payload = {
+        "threat_title": "Exfiltration Beacon via DNS Tunnel",
+        "cvss_score": 9.4,
+        "severity": "CRITICAL",
+        "source_ip": "198.51.100.44"
+    }
+    resp = client.post("/api/v1/n8n/dispatch-incident", json=payload)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "DISPATCHED"
+    assert data["incident_id"].startswith("INC-")
+    assert "n8n_response" in data
+
+
+def test_supabase_sync_status_endpoint():
+    """Verify Supabase status reports configured status or active local fallback"""
+    resp = client.get("/api/v1/supabase/status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["rls_enforced"] is True
+    assert "schema_version" in data
+
+
+# --- Phase 42: Enterprise Authentication Security Hardening Tests ---
+
+def test_password_hashing_and_salting_vault():
+    """Verify PBKDF2/Bcrypt salted hashing produces distinct salts and validates correctly"""
+    from backend.security_auth import PasswordSecurityVault
+    pass1 = "ComplexSecretPass123!"
+    hash1 = PasswordSecurityVault.hash_password(pass1)
+    hash2 = PasswordSecurityVault.hash_password(pass1)
+
+    # Hashes for same password must differ due to unique CSPRNG dynamic salts
+    assert hash1 != hash2
+    assert "$pbkdf2-sha256$" in hash1
+    assert "$pbkdf2-sha256$" in hash2
+
+    # Verification must succeed for valid and fail for invalid
+    assert PasswordSecurityVault.verify_password(pass1, hash1) is True
+    assert PasswordSecurityVault.verify_password(pass1, hash2) is True
+    assert PasswordSecurityVault.verify_password("WrongPassword999!", hash1) is False
+    assert PasswordSecurityVault.verify_password("", hash1) is False
+
+
+def test_owasp_generic_auth_error_anti_enumeration():
+    """
+    Verify that invalid usernames and invalid passwords produce identical generic 401 error messages.
+    Prevents account enumeration attacks.
+    """
+    # 1. Non-existent user
+    resp1 = client.post("/api/v1/auth/login", json={
+        "username": "non_existent_operator",
+        "password": "RandomPassword123!",
+        "device_fingerprint": "HW-FP-TEST-001"
+    })
+    assert resp1.status_code == 401
+    assert resp1.json()["detail"] == "Invalid authentication credentials"
+
+    # 2. Existing user with wrong password
+    resp2 = client.post("/api/v1/auth/login", json={
+        "username": "ciso_admin",
+        "password": "WrongPasswordEnclave2026!",
+        "device_fingerprint": "HW-FP-TEST-001"
+    })
+    assert resp2.status_code == 401
+    assert resp2.json()["detail"] == "Invalid authentication credentials"
+    assert resp1.json()["detail"] == resp2.json()["detail"]
+
+
+def test_auth_pydantic_server_side_validation():
+    """Verify strict server-side Pydantic rejection of malformed or malicious auth inputs"""
+    # Too short password
+    resp = client.post("/api/v1/auth/login", json={
+        "username": "ciso_admin",
+        "password": "short",
+        "device_fingerprint": "HW-FP-TEST-001"
+    })
+    assert resp.status_code == 422
+
+    # Malicious injection in username rejected by OWASP sanitizer & regex
+    resp2 = client.post("/api/v1/auth/login", json={
+        "username": "admin' OR 1=1 --",
+        "password": "ValidLengthPassword123!",
+        "device_fingerprint": "HW-FP-TEST-001"
+    })
+    assert resp2.status_code in [400, 422]
+
+
+def test_auth_architecture_policy_compliance_endpoint():
+    """Verify auth architecture policy documents the managed auth guardrails"""
+    resp = client.get("/api/v1/auth/architecture-policy")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["architecture_rule"] == "Never build custom cryptography for session tokens."
+    assert data["compliance_status"] == "COMPLIANT_ENTERPRISE_GRADE"
+    assert len(data["standards_enforced"]) >= 4
+
+
+
