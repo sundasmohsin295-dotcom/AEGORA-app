@@ -1,7 +1,13 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -56,8 +62,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.telemetry.CircuitStatus
+import com.example.telemetry.DiagnosticSeverity
+import com.example.telemetry.DiagnosticStore
 import com.example.ui.components.StrixPentestTelemetry
 import com.example.hardware.DynamicIconManager
 import com.example.ui.components.CyberComboMultiplierCanvas
@@ -66,12 +77,15 @@ import com.example.ui.components.TacticalPanel
 import com.example.ui.components.TacticalStatusLed
 import com.example.ui.theme.ElectricCyan
 import com.example.ui.theme.HighAlertCrimson
+import com.example.ui.theme.HighAlertCrimsonDark
 import com.example.ui.theme.ObsidianBackground
 import com.example.ui.theme.ObsidianSurfaceRaised
 import com.example.ui.theme.SlateBorder
 import com.example.ui.theme.SlateBorderBright
 import com.example.ui.theme.TacticalAmber
+import com.example.ui.theme.TacticalAmberDark
 import com.example.ui.theme.TacticalEmerald
+import com.example.ui.theme.TacticalEmeraldDark
 import com.example.ui.theme.TextDim
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
@@ -94,6 +108,23 @@ fun DuelArenaScreen(
   var showAuthVault by remember { mutableStateOf(deepLinkSessionId != null) }
   var showSettingsDashboard by remember { mutableStateOf(false) }
   var showSecurityModal by remember { mutableStateOf(false) }
+
+  val logEvents by DiagnosticStore.logEvents.collectAsState()
+  val crashEvents by DiagnosticStore.crashEvents.collectAsState()
+  val circuitBreakers by DiagnosticStore.circuitBreakers.collectAsState()
+
+  val criticalThreatCount = remember(logEvents, crashEvents, circuitBreakers) {
+    logEvents.count { it.severity == DiagnosticSeverity.CRITICAL } +
+      crashEvents.size +
+      circuitBreakers.count { it.status == CircuitStatus.OPEN }
+  }
+  val warnThreatCount = remember(logEvents, circuitBreakers) {
+    logEvents.count { it.severity == DiagnosticSeverity.WARN } +
+      circuitBreakers.count { it.status == CircuitStatus.HALF_OPEN }
+  }
+  val totalActiveAlerts = remember(criticalThreatCount, warnThreatCount) {
+    criticalThreatCount + warnThreatCount
+  }
 
   if (showSettingsDashboard) {
     SettingsDashboard(
@@ -137,7 +168,10 @@ fun DuelArenaScreen(
         score = uiState.score,
         streak = uiState.comboStreak,
         isMuted = uiState.isAudioMuted,
-        isAlertActive = isAlertIconActive,
+        isAlertActive = isAlertIconActive || criticalThreatCount > 0,
+        activeAlertCount = totalActiveAlerts,
+        criticalThreatCount = criticalThreatCount,
+        warnThreatCount = warnThreatCount,
         onToggleAudio = { viewModel.toggleAudio(context) },
         onOpenVault = { showAuthVault = true },
         onOpenSecurityStatus = { showSecurityModal = true },
@@ -225,6 +259,9 @@ private fun TopActionBar(
   streak: Int,
   isMuted: Boolean,
   isAlertActive: Boolean,
+  activeAlertCount: Int,
+  criticalThreatCount: Int,
+  warnThreatCount: Int,
   onToggleAudio: () -> Unit,
   onOpenVault: () -> Unit,
   onOpenSecurityStatus: () -> Unit,
@@ -232,6 +269,39 @@ private fun TopActionBar(
   onSimulateProcessDeath: () -> Unit,
   onReset: () -> Unit
 ) {
+  // Pulsing animation for the active alerts badge
+  val infiniteTransition = rememberInfiniteTransition(label = "top_bar_threat_pulse")
+  val pulseAlpha by infiniteTransition.animateFloat(
+    initialValue = 0.35f,
+    targetValue = 1.0f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(
+        durationMillis = if (criticalThreatCount > 0) 550 else if (warnThreatCount > 0) 850 else 1400,
+        easing = FastOutSlowInEasing
+      ),
+      repeatMode = RepeatMode.Reverse
+    ),
+    label = "top_bar_pulse_alpha"
+  )
+
+  val (badgeBgColor, badgeBorderColor, badgeTextColor) = when {
+    criticalThreatCount > 0 -> Triple(
+      HighAlertCrimsonDark.copy(alpha = 0.65f),
+      HighAlertCrimson,
+      HighAlertCrimson
+    )
+    warnThreatCount > 0 -> Triple(
+      TacticalAmberDark.copy(alpha = 0.65f),
+      TacticalAmber,
+      TacticalAmber
+    )
+    else -> Triple(
+      TacticalEmeraldDark.copy(alpha = 0.45f),
+      TacticalEmerald,
+      TacticalEmerald
+    )
+  }
+
   Row(
     modifier = Modifier
       .fillMaxWidth()
@@ -243,18 +313,61 @@ private fun TopActionBar(
       Text(
         text = "CYBER DUEL ARENA",
         color = ElectricCyan,
-        fontSize = 18.sp,
+        fontSize = 17.sp,
         fontWeight = FontWeight.Bold,
         fontFamily = FontFamily.Monospace,
         letterSpacing = 1.sp
       )
+
+      Spacer(modifier = Modifier.height(3.dp))
+
+      // Live-updating threat count display with pulsing color-coded badge
+      Row(
+        modifier = Modifier
+          .clip(RoundedCornerShape(4.dp))
+          .background(badgeBgColor)
+          .border(1.dp, badgeBorderColor.copy(alpha = pulseAlpha), RoundedCornerShape(4.dp))
+          .padding(horizontal = 6.dp, vertical = 2.dp)
+          .testTag("cyber_duel_header_threat_count"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
+      ) {
+        Box(
+          modifier = Modifier
+            .size(6.dp)
+            .clip(CircleShape)
+            .background(badgeBorderColor.copy(alpha = pulseAlpha))
+        )
+
+        Text(
+          text = "ACTIVE ALERTS: $activeAlertCount",
+          color = badgeTextColor,
+          fontSize = 10.sp,
+          fontWeight = FontWeight.Bold,
+          fontFamily = FontFamily.Monospace,
+          letterSpacing = 0.5.sp
+        )
+
+        Text(
+          text = if (criticalThreatCount > 0) "[${criticalThreatCount} CRIT]"
+                 else if (warnThreatCount > 0) "[${warnThreatCount} WARN]"
+                 else "[SECURE]",
+          color = badgeTextColor,
+          fontSize = 8.5.sp,
+          fontWeight = FontWeight.Bold,
+          fontFamily = FontFamily.Monospace
+        )
+      }
+
+      Spacer(modifier = Modifier.height(3.dp))
+
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
           text = "SCORE: $score",
           color = TextPrimary,
           fontWeight = FontWeight.SemiBold,
           fontFamily = FontFamily.Monospace,
-          fontSize = 13.sp
+          fontSize = 12.sp
         )
         if (streak > 0) {
           Spacer(modifier = Modifier.width(8.dp))
@@ -276,11 +389,14 @@ private fun TopActionBar(
       Box(
         modifier = Modifier
           .clip(CutCornerShape(2.dp))
-          .background(if (isAlertActive) HighAlertCrimson else TacticalEmerald)
+          .background(badgeBorderColor.copy(alpha = if (criticalThreatCount > 0 || isAlertActive) pulseAlpha else 1.0f))
           .padding(horizontal = 6.dp, vertical = 2.dp)
+          .testTag("active_alerts_badge")
       ) {
         Text(
-          text = if (isAlertActive) "[CRIT]" else "[NORM]",
+          text = if (criticalThreatCount > 0 || isAlertActive) "[CRIT: $criticalThreatCount]"
+                 else if (warnThreatCount > 0) "[WARN: $warnThreatCount]"
+                 else "[NORM]",
           color = Color.White,
           fontSize = 9.sp,
           fontWeight = FontWeight.Bold,

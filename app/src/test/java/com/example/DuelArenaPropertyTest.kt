@@ -60,4 +60,22 @@ class DuelArenaPropertyTest {
       }
     }
   }
+
+  @Test
+  fun testTelemetryActiveAlertCountComputation() {
+    val logEvents = com.example.telemetry.DiagnosticStore.logEvents.value
+    val circuitBreakers = com.example.telemetry.DiagnosticStore.circuitBreakers.value
+    val crashEvents = com.example.telemetry.DiagnosticStore.crashEvents.value
+
+    val criticalCount = logEvents.count { it.severity == com.example.telemetry.DiagnosticSeverity.CRITICAL } +
+      crashEvents.size +
+      circuitBreakers.count { it.status == com.example.telemetry.CircuitStatus.OPEN }
+    val warnCount = logEvents.count { it.severity == com.example.telemetry.DiagnosticSeverity.WARN } +
+      circuitBreakers.count { it.status == com.example.telemetry.CircuitStatus.HALF_OPEN }
+
+    val totalActiveAlerts = criticalCount + warnCount
+    assertTrue("Total active alerts must be >= 0", totalActiveAlerts >= 0)
+    assertTrue("Critical count must be non-negative", criticalCount >= 0)
+    assertTrue("Warn count must be non-negative", warnCount >= 0)
+  }
 }

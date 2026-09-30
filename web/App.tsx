@@ -1,5 +1,4 @@
-// web/App.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GlobalErrorBoundary } from './GlobalErrorBoundary';
 import { SettingsDashboard } from './SettingsDashboard';
 import { SecurityStatusModal } from './SecurityStatusModal';
@@ -12,6 +11,29 @@ export const MainAppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<'ARENA' | 'SETTINGS'>('ARENA');
   const [isSecurityModalOpen, setSecurityModalOpen] = useState(false);
   const [shouldCrash, setShouldCrash] = useState(false);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    return DiagnosticStore.subscribe(() => {
+      setTick(t => t + 1);
+    });
+  }, []);
+
+  const logEvents = DiagnosticStore.getLogEvents();
+  const crashEvents = DiagnosticStore.getCrashEvents();
+  const circuitBreakers = DiagnosticStore.getCircuitBreakers();
+
+  const criticalThreatCount = logEvents.filter(e => e.severity === 'CRITICAL').length +
+    crashEvents.length +
+    circuitBreakers.filter(cb => cb.status === 'OPEN').length;
+
+  const warnThreatCount = logEvents.filter(e => e.severity === 'WARN').length +
+    circuitBreakers.filter(cb => cb.status === 'HALF_OPEN').length;
+
+  const totalActiveAlerts = criticalThreatCount + warnThreatCount;
+
+  const badgeColor = criticalThreatCount > 0 ? '#EF4444' : warnThreatCount > 0 ? '#F59E0B' : '#10B981';
+  const badgeBg = criticalThreatCount > 0 ? 'rgba(69, 10, 10, 0.7)' : warnThreatCount > 0 ? 'rgba(69, 26, 3, 0.7)' : 'rgba(6, 78, 59, 0.5)';
 
   if (shouldCrash) {
     throw new Error('Simulated critical UI render failure in MainAppContent tree');
@@ -32,6 +54,13 @@ export const MainAppContent: React.FC = () => {
       flexDirection: 'column',
       gap: '16px'
     }}>
+      <style>{`
+        @keyframes headerThreatPulse {
+          0% { opacity: 0.5; box-shadow: 0 0 4px rgba(0,0,0,0.5); }
+          50% { opacity: 1; box-shadow: 0 0 10px ${badgeColor}66; }
+          100% { opacity: 0.5; box-shadow: 0 0 4px rgba(0,0,0,0.5); }
+        }
+      `}</style>
       <SecurityStatusModal
         isOpen={isSecurityModalOpen}
         onClose={() => setSecurityModalOpen(false)}
@@ -46,10 +75,36 @@ export const MainAppContent: React.FC = () => {
         paddingBottom: '12px'
       }}>
         <div>
-          <div style={{ color: '#00E5FF', fontWeight: 'bold', fontSize: '18px', letterSpacing: '1px' }}>
-            CYBER DUEL ARENA
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ color: '#00E5FF', fontWeight: 'bold', fontSize: '18px', letterSpacing: '1px' }}>
+              CYBER DUEL ARENA
+            </span>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: badgeBg,
+              border: `1px solid ${badgeColor}`,
+              borderRadius: '4px',
+              padding: '3px 8px',
+              fontSize: '10px',
+              fontWeight: 'bold',
+              color: badgeColor,
+              animation: 'headerThreatPulse 1.2s infinite ease-in-out'
+            }}>
+              <span style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: badgeColor
+              }} />
+              <span>ACTIVE ALERTS: {totalActiveAlerts}</span>
+              <span style={{ fontSize: '9px', opacity: 0.9 }}>
+                {criticalThreatCount > 0 ? `[${criticalThreatCount} CRIT]` : warnThreatCount > 0 ? `[${warnThreatCount} WARN]` : '[SECURE]'}
+              </span>
+            </div>
           </div>
-          <div style={{ color: '#64748B', fontSize: '11px', marginTop: '2px' }}>
+          <div style={{ color: '#64748B', fontSize: '11px', marginTop: '4px' }}>
             SRE TELEMETRY & DETERMINISTIC SECURITY ACTIVE
           </div>
         </div>
