@@ -67,10 +67,12 @@ fun SocCommandCenterScreen(
     label = "pulse_alpha"
   )
 
+  val colors = AegoraAppTheme.colors
+
   BoxWithConstraints(
     modifier = modifier
       .fillMaxSize()
-      .background(ObsidianBackground)
+      .background(colors.background)
   ) {
     val isWideScreen = maxWidth >= 840.dp
     val isMediumScreen = maxWidth >= 600.dp && maxWidth < 840.dp
@@ -101,7 +103,7 @@ fun SocCommandCenterScreen(
               placeholder = {
                 Text(
                   text = "Search threats, IPs, hosts, or ask Sentinel...",
-                  color = TextDim,
+                  color = colors.textDim,
                   fontSize = 12.sp,
                   fontFamily = FontFamily.Monospace
                 )
@@ -110,18 +112,18 @@ fun SocCommandCenterScreen(
                 Icon(
                   Icons.Default.Search,
                   contentDescription = "Search",
-                  tint = TextMuted,
+                  tint = colors.textMuted,
                   modifier = Modifier.size(18.dp)
                 )
               },
               singleLine = true,
               colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = ObsidianSurface,
-                unfocusedContainerColor = ObsidianSurface,
-                focusedBorderColor = ElectricCyan,
-                unfocusedBorderColor = SlateBorder,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
+                focusedContainerColor = colors.surface,
+                unfocusedContainerColor = colors.surface,
+                focusedBorderColor = colors.accent,
+                unfocusedBorderColor = colors.border,
+                focusedTextColor = colors.textPrimary,
+                unfocusedTextColor = colors.textPrimary
               ),
               shape = RoundedCornerShape(8.dp)
             )
@@ -131,8 +133,8 @@ fun SocCommandCenterScreen(
             // Status Badge & Clock
             Row(
               modifier = Modifier
-                .background(ObsidianSurface, RoundedCornerShape(8.dp))
-                .border(1.dp, SlateBorder, RoundedCornerShape(8.dp))
+                .background(colors.surface, RoundedCornerShape(8.dp))
+                .border(1.dp, colors.border, RoundedCornerShape(8.dp))
                 .padding(horizontal = 10.dp, vertical = 8.dp),
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -141,11 +143,11 @@ fun SocCommandCenterScreen(
                 modifier = Modifier
                   .size(8.dp)
                   .clip(CircleShape)
-                  .background(TacticalEmerald.copy(alpha = pulseAlpha))
+                  .background(colors.emerald.copy(alpha = pulseAlpha))
               )
               Text(
                 text = "Online",
-                color = TacticalEmerald,
+                color = colors.emerald,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace
@@ -154,11 +156,11 @@ fun SocCommandCenterScreen(
                 modifier = Modifier
                   .width(1.dp)
                   .height(14.dp)
-                  .background(SlateBorder)
+                  .background(colors.border)
               )
               Text(
                 text = "14:32 • Apr 26",
-                color = TextMuted,
+                color = colors.textMuted,
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace
               )
@@ -331,10 +333,12 @@ private fun SocMetricCard(
   icon: androidx.compose.ui.graphics.vector.ImageVector,
   modifier: Modifier = Modifier
 ) {
+  val colors = AegoraAppTheme.colors
+
   Card(
     modifier = modifier,
-    colors = CardDefaults.cardColors(containerColor = ObsidianSurface),
-    border = BorderStroke(1.dp, SlateBorder),
+    colors = CardDefaults.cardColors(containerColor = colors.surface),
+    border = BorderStroke(1.dp, colors.border),
     shape = RoundedCornerShape(10.dp)
   ) {
     Column(modifier = Modifier.padding(14.dp)) {
@@ -345,7 +349,7 @@ private fun SocMetricCard(
       ) {
         Text(
           text = title,
-          color = TextDim,
+          color = colors.textDim,
           fontSize = 11.sp,
           fontFamily = FontFamily.Monospace
         )
@@ -366,7 +370,7 @@ private fun SocMetricCard(
       ) {
         Text(
           text = value,
-          color = TextPrimary,
+          color = colors.textPrimary,
           fontSize = 22.sp,
           fontWeight = FontWeight.Bold,
           fontFamily = FontFamily.Monospace
@@ -385,10 +389,12 @@ private fun SocMetricCard(
 
 @Composable
 private fun NetworkActivityCard(modifier: Modifier = Modifier) {
+  val colors = AegoraAppTheme.colors
+
   Card(
     modifier = modifier,
-    colors = CardDefaults.cardColors(containerColor = ObsidianSurface),
-    border = BorderStroke(1.dp, SlateBorder),
+    colors = CardDefaults.cardColors(containerColor = colors.surface),
+    border = BorderStroke(1.dp, colors.border),
     shape = RoundedCornerShape(10.dp)
   ) {
     Column(modifier = Modifier.padding(14.dp)) {
@@ -399,7 +405,7 @@ private fun NetworkActivityCard(modifier: Modifier = Modifier) {
       ) {
         Text(
           text = "Network Activity",
-          color = TextPrimary,
+          color = colors.textPrimary,
           fontSize = 13.sp,
           fontWeight = FontWeight.Bold,
           fontFamily = FontFamily.Monospace
@@ -408,12 +414,12 @@ private fun NetworkActivityCard(modifier: Modifier = Modifier) {
           Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(ElectricCyan))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Inbound", color = TextDim, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+            Text("Inbound", color = colors.textDim, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
           }
           Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(CyberViolet))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Outbound", color = TextDim, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+            Text("Outbound", color = colors.textDim, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
           }
         }
       }
@@ -520,16 +526,18 @@ private fun NetworkActivityCard(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ThreatDistributionCard(modifier: Modifier = Modifier) {
+  val colors = AegoraAppTheme.colors
+
   Card(
     modifier = modifier,
-    colors = CardDefaults.cardColors(containerColor = ObsidianSurface),
-    border = BorderStroke(1.dp, SlateBorder),
+    colors = CardDefaults.cardColors(containerColor = colors.surface),
+    border = BorderStroke(1.dp, colors.border),
     shape = RoundedCornerShape(10.dp)
   ) {
     Column(modifier = Modifier.padding(14.dp)) {
       Text(
         text = "Threat Distribution",
-        color = TextPrimary,
+        color = colors.textPrimary,
         fontSize = 13.sp,
         fontWeight = FontWeight.Bold,
         fontFamily = FontFamily.Monospace
@@ -574,8 +582,8 @@ private fun ThreatDistributionCard(modifier: Modifier = Modifier) {
           }
 
           Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("1,284", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
-            Text("Total", color = TextDim, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
+            Text("1,284", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+            Text("Total", color = colors.textDim, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
           }
         }
 
@@ -594,11 +602,12 @@ private fun ThreatDistributionCard(modifier: Modifier = Modifier) {
 
 @Composable
 private fun LegendRow(label: String, pct: String, color: Color) {
+  val colors = AegoraAppTheme.colors
   Row(verticalAlignment = Alignment.CenterVertically) {
     Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(color))
     Spacer(modifier = Modifier.width(6.dp))
-    Text(text = label, color = TextMuted, fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(72.dp))
-    Text(text = pct, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+    Text(text = label, color = colors.textMuted, fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(72.dp))
+    Text(text = pct, color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
   }
 }
 
@@ -608,16 +617,18 @@ private fun RecentIncidentsTable(
   onSelectIncident: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val colors = AegoraAppTheme.colors
+
   Card(
     modifier = modifier,
-    colors = CardDefaults.cardColors(containerColor = ObsidianSurface),
-    border = BorderStroke(1.dp, SlateBorder),
+    colors = CardDefaults.cardColors(containerColor = colors.surface),
+    border = BorderStroke(1.dp, colors.border),
     shape = RoundedCornerShape(10.dp)
   ) {
     Column(modifier = Modifier.padding(14.dp)) {
       Text(
         text = "Recent Incidents",
-        color = TextPrimary,
+        color = colors.textPrimary,
         fontSize = 13.sp,
         fontWeight = FontWeight.Bold,
         fontFamily = FontFamily.Monospace
@@ -630,8 +641,8 @@ private fun RecentIncidentsTable(
             modifier = Modifier
               .fillMaxWidth()
               .clip(RoundedCornerShape(6.dp))
-              .background(ObsidianBackground)
-              .border(1.dp, SlateBorder, RoundedCornerShape(6.dp))
+              .background(colors.background)
+              .border(1.dp, colors.border, RoundedCornerShape(6.dp))
               .clickable { onSelectIncident(inc.id) }
               .padding(horizontal = 10.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

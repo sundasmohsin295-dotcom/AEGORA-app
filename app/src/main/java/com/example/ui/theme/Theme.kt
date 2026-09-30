@@ -3,7 +3,12 @@ package com.example.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +36,30 @@ private val ObsidianColorScheme = darkColorScheme(
   surfaceVariant = ObsidianSurfaceRaised,
   onSurfaceVariant = TextMuted,
   outline = SlateBorder
+)
+
+private val AegoraLightColorScheme = lightColorScheme(
+  primary = Color(0xFF0284C7),
+  onPrimary = Color.White,
+  primaryContainer = Color(0xFFE0F2FE),
+  onPrimaryContainer = Color(0xFF0369A1),
+  secondary = Color(0xFF64748B),
+  onSecondary = Color.White,
+  secondaryContainer = Color(0xFFF1F5F9),
+  onSecondaryContainer = Color(0xFF334155),
+  tertiary = Color(0xFFD97706),
+  onTertiary = Color.White,
+  error = Color(0xFFDC2626),
+  onError = Color.White,
+  errorContainer = Color(0xFFFEE2E2),
+  onErrorContainer = Color(0xFF991B1B),
+  background = Color(0xFFF8FAFC),
+  onBackground = Color(0xFF0F172A),
+  surface = Color(0xFFFFFFFF),
+  onSurface = Color(0xFF0F172A),
+  surfaceVariant = Color(0xFFF1F5F9),
+  onSurfaceVariant = Color(0xFF475569),
+  outline = Color(0xFFCBD5E1)
 )
 
 val MonospaceTypography = Typography(
@@ -88,11 +117,17 @@ val MonospaceTypography = Typography(
 fun ObsidianIndustrialTheme(
   content: @Composable () -> Unit
 ) {
-  MaterialTheme(
-    colorScheme = ObsidianColorScheme,
-    typography = MonospaceTypography,
-    content = content
-  )
+  val isDark by ThemeManager.isDarkTheme.collectAsState()
+  val colorScheme = if (isDark) ObsidianColorScheme else AegoraLightColorScheme
+  val tokens = if (isDark) DarkColorTokens else LightColorTokens
+
+  CompositionLocalProvider(LocalAegoraTokens provides tokens) {
+    MaterialTheme(
+      colorScheme = colorScheme,
+      typography = MonospaceTypography,
+      content = content
+    )
+  }
 }
 
 @Composable

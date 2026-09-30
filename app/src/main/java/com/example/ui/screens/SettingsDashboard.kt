@@ -58,6 +58,12 @@ import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextTerminalGreen
 
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.runtime.collectAsState
+import com.example.ui.theme.AegoraAppTheme
+import com.example.ui.theme.ThemeManager
+
 /**
  * SettingsDashboard - Enterprise Operations & SRE Observability Center.
  * Houses the SreTelemetryView sub-view and Security Status modal inspector.
@@ -67,6 +73,8 @@ fun SettingsDashboard(
   onNavigateBack: () -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val colors = AegoraAppTheme.colors
+  val isDark by ThemeManager.isDarkTheme.collectAsState()
   var selectedTab by remember { mutableIntStateOf(0) }
   var showSecurityModal by remember { mutableStateOf(false) }
 
@@ -80,7 +88,7 @@ fun SettingsDashboard(
     modifier = modifier
       .fillMaxSize()
       .testTag("settings_dashboard_scaffold"),
-    containerColor = ObsidianBackground
+    containerColor = colors.background
   ) { paddingValues ->
     Column(
       modifier = Modifier
@@ -104,13 +112,13 @@ fun SettingsDashboard(
             Icon(
               imageVector = Icons.Default.ArrowBack,
               contentDescription = "Back",
-              tint = ElectricCyan
+              tint = colors.accent
             )
           }
           Spacer(modifier = Modifier.width(6.dp))
           Text(
             text = "SETTINGS // SRE DASHBOARD",
-            color = ElectricCyan,
+            color = colors.accent,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Monospace,
@@ -118,27 +126,101 @@ fun SettingsDashboard(
           )
         }
 
-        Button(
-          onClick = { showSecurityModal = true },
-          colors = ButtonDefaults.buttonColors(containerColor = ObsidianSurfaceRaised),
-          border = androidx.compose.foundation.BorderStroke(1.dp, SlateBorderBright),
-          shape = CutCornerShape(4.dp),
-          modifier = Modifier.testTag("open_security_status_modal_button")
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+          IconButton(
+            onClick = { ThemeManager.toggleTheme() },
+            modifier = Modifier
+              .size(36.dp)
+              .clip(CutCornerShape(4.dp))
+              .background(colors.surfaceRaised)
+              .border(1.dp, colors.border, CutCornerShape(4.dp))
+              .testTag("settings_theme_toggle_btn")
+          ) {
+            Icon(
+              imageVector = if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
+              contentDescription = "Toggle Theme",
+              tint = if (isDark) colors.amber else colors.accent,
+              modifier = Modifier.size(18.dp)
+            )
+          }
+
+          Button(
+            onClick = { showSecurityModal = true },
+            colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceRaised),
+            border = androidx.compose.foundation.BorderStroke(1.dp, colors.border),
+            shape = CutCornerShape(4.dp),
+            modifier = Modifier.testTag("open_security_status_modal_button")
+          ) {
+            Icon(
+              imageVector = Icons.Default.Security,
+              contentDescription = null,
+              tint = colors.accent,
+              modifier = Modifier.size(14.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+              text = "[SECURITY STATUS]",
+              color = colors.accent,
+              fontSize = 10.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace
+            )
+          }
+        }
+      }
+
+      // Theme Selector Banner
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .clip(CutCornerShape(6.dp))
+          .background(colors.surface)
+          .border(1.dp, colors.border, CutCornerShape(6.dp))
+          .padding(12.dp)
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Icon(
-            imageVector = Icons.Default.Security,
-            contentDescription = null,
-            tint = ElectricCyan,
-            modifier = Modifier.size(14.dp)
-          )
-          Spacer(modifier = Modifier.width(6.dp))
-          Text(
-            text = "[SECURITY STATUS]",
-            color = ElectricCyan,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace
-          )
+          Column {
+            Text(
+              "MULTI-GEN DYNAMIC THEME ENGINE",
+              color = colors.accent,
+              fontSize = 11.sp,
+              fontWeight = FontWeight.Bold,
+              fontFamily = FontFamily.Monospace
+            )
+            Text(
+              if (isDark) "Active: Cyberpunk Obsidian Dark (#030712)" else "Active: Enterprise Minimalist Light (#F8FAFC)",
+              color = colors.textMuted,
+              fontSize = 10.sp,
+              fontFamily = FontFamily.Monospace
+            )
+          }
+
+          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+              modifier = Modifier
+                .clip(CutCornerShape(4.dp))
+                .background(if (isDark) colors.accentContainer else colors.surfaceRaised)
+                .border(1.dp, if (isDark) colors.accent else colors.border, CutCornerShape(4.dp))
+                .clickable { ThemeManager.setDark(true) }
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+              Text("DARK", color = if (isDark) colors.accent else colors.textDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+            }
+            Box(
+              modifier = Modifier
+                .clip(CutCornerShape(4.dp))
+                .background(if (!isDark) colors.accentContainer else colors.surfaceRaised)
+                .border(1.dp, if (!isDark) colors.accent else colors.border, CutCornerShape(4.dp))
+                .clickable { ThemeManager.setDark(false) }
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+              Text("LIGHT", color = if (!isDark) colors.accent else colors.textDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+            }
+          }
         }
       }
 
@@ -155,15 +237,15 @@ fun SettingsDashboard(
           modifier = Modifier
             .weight(1f)
             .clip(tabShape)
-            .background(if (isTab0Active) ElectricCyanDark else ObsidianSurfaceRaised)
-            .border(1.dp, if (isTab0Active) ElectricCyan else SlateBorder, tabShape)
+            .background(if (isTab0Active) colors.accentContainer else colors.surfaceRaised)
+            .border(1.dp, if (isTab0Active) colors.accent else colors.border, tabShape)
             .clickable { selectedTab = 0 }
             .padding(vertical = 10.dp),
           contentAlignment = Alignment.Center
         ) {
           Text(
             text = "[SRE_TELEMETRY]",
-            color = if (isTab0Active) ElectricCyan else TextMuted,
+            color = if (isTab0Active) colors.accent else colors.textMuted,
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
             fontFamily = FontFamily.Monospace
@@ -176,15 +258,15 @@ fun SettingsDashboard(
           modifier = Modifier
             .weight(1f)
             .clip(tabShape)
-            .background(if (isTab1Active) ElectricCyanDark else ObsidianSurfaceRaised)
-            .border(1.dp, if (isTab1Active) ElectricCyan else SlateBorder, tabShape)
+            .background(if (isTab1Active) colors.accentContainer else colors.surfaceRaised)
+            .border(1.dp, if (isTab1Active) colors.accent else colors.border, tabShape)
             .clickable { selectedTab = 1 }
             .padding(vertical = 10.dp),
           contentAlignment = Alignment.Center
         ) {
           Text(
             text = "[ENCLAVE_CONFIG]",
-            color = if (isTab1Active) ElectricCyan else TextMuted,
+            color = if (isTab1Active) colors.accent else colors.textMuted,
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
             fontFamily = FontFamily.Monospace

@@ -68,10 +68,13 @@ fun AegoraMasterHub(
     }
   }
 
+  val colors = AegoraAppTheme.colors
+  val isDark by ThemeManager.isDarkTheme.collectAsState()
+
   BoxWithConstraints(
     modifier = modifier
       .fillMaxSize()
-      .background(ObsidianBackground)
+      .background(colors.background)
   ) {
     val isTabletOrDesktop = maxWidth >= 840.dp
 
@@ -102,7 +105,7 @@ fun AegoraMasterHub(
       // Mobile / Compact Screen: Top Header with Logo + Content + Bottom Nav
       Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = ObsidianBackground,
+        containerColor = colors.background,
         topBar = {
           MasterMobileTopBar(
             currentScreen = currentScreen,
@@ -138,7 +141,7 @@ fun AegoraMasterHub(
       if (showMoreMenuDrawer) {
         ModalBottomSheet(
           onDismissRequest = { showMoreMenuDrawer = false },
-          containerColor = ObsidianSurface,
+          containerColor = colors.surface,
           shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
         ) {
           Column(
@@ -147,21 +150,50 @@ fun AegoraMasterHub(
               .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
           ) {
-            Text(
-              "ALL AEGORA PLATFORM SCREENS",
-              color = ElectricCyan,
-              fontWeight = FontWeight.Bold,
-              fontSize = 12.sp,
-              fontFamily = FontFamily.Monospace,
-              letterSpacing = 1.sp
-            )
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(
+                "ALL AEGORA PLATFORM SCREENS",
+                color = colors.accent,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.sp
+              )
+              Row(
+                modifier = Modifier
+                  .clip(RoundedCornerShape(6.dp))
+                  .background(colors.surfaceRaised)
+                  .clickable { ThemeManager.toggleTheme() }
+                  .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+              ) {
+                Icon(
+                  if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
+                  contentDescription = null,
+                  tint = if (isDark) TacticalAmber else colors.accent,
+                  modifier = Modifier.size(14.dp)
+                )
+                Text(
+                  if (isDark) "Switch to Light" else "Switch to Dark",
+                  color = colors.textPrimary,
+                  fontSize = 10.sp,
+                  fontFamily = FontFamily.Monospace,
+                  fontWeight = FontWeight.SemiBold
+                )
+              }
+            }
 
             AegoraScreen.entries.forEach { screen ->
               Row(
                 modifier = Modifier
                   .fillMaxWidth()
                   .clip(RoundedCornerShape(8.dp))
-                  .background(if (currentScreen == screen) ElectricCyanMuted else ObsidianBackground)
+                  .background(if (currentScreen == screen) colors.accentContainer else colors.surfaceRaised)
                   .clickable {
                     currentScreen = screen
                     showMoreMenuDrawer = false
@@ -170,10 +202,15 @@ fun AegoraMasterHub(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
               ) {
-                Icon(screen.icon, contentDescription = null, tint = if (currentScreen == screen) Color.White else ElectricCyan, modifier = Modifier.size(20.dp))
+                Icon(
+                  screen.icon,
+                  contentDescription = null,
+                  tint = if (currentScreen == screen) colors.accent else colors.textMuted,
+                  modifier = Modifier.size(20.dp)
+                )
                 Text(
                   screen.title,
-                  color = if (currentScreen == screen) Color.White else TextPrimary,
+                  color = if (currentScreen == screen) colors.accent else colors.textPrimary,
                   fontWeight = if (currentScreen == screen) FontWeight.Bold else FontWeight.Normal,
                   fontSize = 13.sp,
                   fontFamily = FontFamily.Monospace
@@ -252,12 +289,15 @@ private fun MasterSidebarRail(
   currentScreen: AegoraScreen,
   onSelectScreen: (AegoraScreen) -> Unit
 ) {
+  val colors = AegoraAppTheme.colors
+  val isDark by ThemeManager.isDarkTheme.collectAsState()
+
   Surface(
     modifier = Modifier
       .width(220.dp)
       .fillMaxHeight(),
-    color = ObsidianSurface,
-    border = BorderStroke(1.dp, SlateBorder)
+    color = colors.surface,
+    border = BorderStroke(1.dp, colors.border)
   ) {
     Column(
       modifier = Modifier
@@ -278,8 +318,8 @@ private fun MasterSidebarRail(
             modifier = Modifier.size(32.dp)
           )
           Column {
-            Text("AEGORA", color = ElectricCyan, fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp)
-            Text("Autonomous SOC", color = TextDim, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
+            Text("AEGORA", color = colors.accent, fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp)
+            Text("Autonomous SOC", color = colors.textDim, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
           }
         }
 
@@ -290,7 +330,7 @@ private fun MasterSidebarRail(
             modifier = Modifier
               .fillMaxWidth()
               .clip(RoundedCornerShape(6.dp))
-              .background(if (isSelected) ElectricCyanMuted else Color.Transparent)
+              .background(if (isSelected) colors.accentContainer else Color.Transparent)
               .clickable { onSelectScreen(screen) }
               .padding(horizontal = 10.dp, vertical = 8.dp)
               .testTag(screen.tag),
@@ -300,12 +340,12 @@ private fun MasterSidebarRail(
             Icon(
               screen.icon,
               contentDescription = screen.title,
-              tint = if (isSelected) Color.White else TextMuted,
+              tint = if (isSelected) colors.accent else colors.textMuted,
               modifier = Modifier.size(18.dp)
             )
             Text(
               screen.title,
-              color = if (isSelected) Color.White else TextMuted,
+              color = if (isSelected) colors.accent else colors.textMuted,
               fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
               fontSize = 11.5.sp,
               fontFamily = FontFamily.Monospace
@@ -314,28 +354,68 @@ private fun MasterSidebarRail(
         }
       }
 
-      // Bottom Operator Profile Pill (Sundas, SOC Analyst | L2)
-      Row(
-        modifier = Modifier
-          .fillMaxWidth()
-          .background(ObsidianBackground, RoundedCornerShape(8.dp))
-          .border(1.dp, SlateBorder, RoundedCornerShape(8.dp))
-          .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-        Box(
+      // Bottom Section: Theme Toggle + Operator Profile Pill
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Theme Toggle Switcher Button
+        Row(
           modifier = Modifier
-            .size(30.dp)
-            .clip(CircleShape)
-            .background(ElectricCyan.copy(alpha = 0.2f)),
-          contentAlignment = Alignment.Center
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(colors.surfaceRaised)
+            .border(1.dp, colors.border, RoundedCornerShape(6.dp))
+            .clickable { ThemeManager.toggleTheme() }
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .testTag("theme_toggle_sidebar_btn"),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.SpaceBetween
         ) {
-          Icon(Icons.Default.Person, contentDescription = null, tint = ElectricCyan, modifier = Modifier.size(16.dp))
+          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(
+              imageVector = if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
+              contentDescription = "Toggle Theme",
+              tint = if (isDark) TacticalAmber else colors.accent,
+              modifier = Modifier.size(16.dp)
+            )
+            Text(
+              if (isDark) "Light Mode" else "Dark Mode",
+              color = colors.textPrimary,
+              fontSize = 10.sp,
+              fontFamily = FontFamily.Monospace,
+              fontWeight = FontWeight.SemiBold
+            )
+          }
+          Text(
+            if (isDark) "DARK" else "LIGHT",
+            color = if (isDark) colors.textDim else colors.emerald,
+            fontSize = 9.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold
+          )
         }
-        Column {
-          Text("Sundas", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-          Text("SOC Analyst | L2", color = TextDim, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
+
+        // Bottom Operator Profile Pill (Sundas, SOC Analyst | L2)
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surfaceRaised, RoundedCornerShape(8.dp))
+            .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+            .padding(8.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Box(
+            modifier = Modifier
+              .size(30.dp)
+              .clip(CircleShape)
+              .background(colors.accent.copy(alpha = 0.2f)),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(Icons.Default.Person, contentDescription = null, tint = colors.accent, modifier = Modifier.size(16.dp))
+          }
+          Column {
+            Text("Sundas", color = colors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+            Text("SOC Analyst | L2", color = colors.textDim, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
+          }
         }
       }
     }
@@ -347,12 +427,15 @@ private fun MasterMobileTopBar(
   currentScreen: AegoraScreen,
   onOpenMoreMenu: () -> Unit
 ) {
+  val colors = AegoraAppTheme.colors
+  val isDark by ThemeManager.isDarkTheme.collectAsState()
+
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .background(ObsidianSurface)
+      .background(colors.surface)
       .windowInsetsPadding(WindowInsets.statusBars)
-      .border(BorderStroke(1.dp, SlateBorder))
+      .border(BorderStroke(1.dp, colors.border))
       .padding(horizontal = 14.dp, vertical = 10.dp),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
@@ -363,21 +446,39 @@ private fun MasterMobileTopBar(
         contentDescription = "AEGORA Logo",
         modifier = Modifier.size(24.dp)
       )
-      Text("AEGORA", color = ElectricCyan, fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp)
+      Text("AEGORA", color = colors.accent, fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp)
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+      // Mobile Theme Toggle Button
+      IconButton(
+        onClick = { ThemeManager.toggleTheme() },
+        modifier = Modifier
+          .size(30.dp)
+          .clip(CircleShape)
+          .background(colors.surfaceRaised)
+          .border(1.dp, colors.border, CircleShape)
+          .testTag("theme_toggle_mobile_btn")
+      ) {
+        Icon(
+          imageVector = if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
+          contentDescription = "Toggle Theme",
+          tint = if (isDark) TacticalAmber else colors.accent,
+          modifier = Modifier.size(16.dp)
+        )
+      }
+
       Box(
         modifier = Modifier
-          .background(ObsidianBackground, RoundedCornerShape(4.dp))
-          .border(1.dp, SlateBorder, RoundedCornerShape(4.dp))
+          .background(colors.surfaceRaised, RoundedCornerShape(4.dp))
+          .border(1.dp, colors.border, RoundedCornerShape(4.dp))
           .padding(horizontal = 6.dp, vertical = 2.dp)
       ) {
-        Text("Sundas • L2", color = TextMuted, fontSize = 9.5.sp, fontFamily = FontFamily.Monospace)
+        Text("Sundas • L2", color = colors.textMuted, fontSize = 9.5.sp, fontFamily = FontFamily.Monospace)
       }
 
       IconButton(onClick = onOpenMoreMenu, modifier = Modifier.size(30.dp)) {
-        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = ElectricCyan, modifier = Modifier.size(20.dp))
+        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = colors.accent, modifier = Modifier.size(20.dp))
       }
     }
   }
@@ -389,6 +490,7 @@ private fun MasterMobileBottomBar(
   onSelectScreen: (AegoraScreen) -> Unit,
   onOpenMore: () -> Unit
 ) {
+  val colors = AegoraAppTheme.colors
   val primaryTabs = listOf(
     AegoraScreen.COMMAND_CENTER,
     AegoraScreen.INCIDENT_INVESTIGATION,
@@ -401,8 +503,8 @@ private fun MasterMobileBottomBar(
     modifier = Modifier
       .fillMaxWidth()
       .windowInsetsPadding(WindowInsets.navigationBars),
-    color = ObsidianSurface,
-    border = BorderStroke(1.dp, SlateBorder)
+    color = colors.surface,
+    border = BorderStroke(1.dp, colors.border)
   ) {
     Row(
       modifier = Modifier
@@ -424,12 +526,12 @@ private fun MasterMobileBottomBar(
           Icon(
             screen.icon,
             contentDescription = screen.title,
-            tint = if (isSelected) ElectricCyan else TextDim,
+            tint = if (isSelected) colors.accent else colors.textDim,
             modifier = Modifier.size(20.dp)
           )
           Text(
             text = screen.title,
-            color = if (isSelected) ElectricCyan else TextDim,
+            color = if (isSelected) colors.accent else colors.textDim,
             fontSize = 9.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             fontFamily = FontFamily.Monospace
@@ -446,10 +548,10 @@ private fun MasterMobileBottomBar(
           .testTag("nav_more"),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        Icon(Icons.Default.Apps, contentDescription = "More", tint = TextDim, modifier = Modifier.size(20.dp))
+        Icon(Icons.Default.Apps, contentDescription = "More", tint = colors.textDim, modifier = Modifier.size(20.dp))
         Text(
           text = "More",
-          color = TextDim,
+          color = colors.textDim,
           fontSize = 9.sp,
           fontFamily = FontFamily.Monospace
         )
@@ -457,3 +559,4 @@ private fun MasterMobileBottomBar(
     }
   }
 }
+
