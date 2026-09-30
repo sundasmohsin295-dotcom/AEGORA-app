@@ -1,0 +1,41 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <!-- Left Chevron Wing -->
+    <path
+        android:pathData="M32,8 L12,48 L22,54 L32,32 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="12"
+                android:startY="8"
+                android:endX="32"
+                android:endY="54"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#00E5FF" />
+                <item android:offset="1.0" android:color="#0077FE" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Right Chevron Wing -->
+    <path
+        android:pathData="M32,8 L52,48 L42,54 L32,32 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="52"
+                android:startY="8"
+                android:endX="32"
+                android:endY="54"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#38BDF8" />
+                <item android:offset="1.0" android:color="#2563EB" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Center Core Emblem Shield -->
+    <path
+        android:pathData="M32,24 L26,46 L32,42 L38,46 Z"
+        android:fillColor="#00E5FF" />
+</vector>

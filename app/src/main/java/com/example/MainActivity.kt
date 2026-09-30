@@ -40,8 +40,8 @@ class MainActivity : ComponentActivity() {
     setContent {
       com.example.ui.theme.ObsidianIndustrialTheme {
         GlobalErrorBoundary(modifier = Modifier.fillMaxSize()) {
-          DuelArenaScreen(
-            viewModel = duelViewModel,
+          com.example.ui.AegoraMasterHub(
+            duelViewModel = duelViewModel,
             deepLinkSessionId = activeDeepLinkSessionId,
             modifier = Modifier.fillMaxSize()
           )
