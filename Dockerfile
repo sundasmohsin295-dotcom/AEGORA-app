@@ -6,7 +6,7 @@
 # ==============================================================================
 
 # --- STAGE 1: Dependency Builder ---
-FROM python:3.11-slim-bullseye AS builder
+FROM python:3.11-slim-bookworm AS builder
 
 WORKDIR /build
 
@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 
 
 # --- STAGE 2: Hardened Production Runtime ---
-FROM python:3.11-slim-bullseye AS runner
+FROM python:3.11-slim-bookworm AS runner
 
 # Security: Enforce non-root execution (UID 10001)
 RUN groupadd -g 10001 aegora && \
